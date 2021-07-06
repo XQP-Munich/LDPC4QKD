@@ -1,0 +1,58 @@
+# CLion
+.idea/
+cmake-build-debug/
+cmake-build-release/
+cmake-build-debug-coverage/
+
+# virtual environment and pycache
+venv/
+__pycache__/
+
+# log files and key files
+log/
+./data/
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+*.dSYM/*
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Executables
+bin/
+
+# Code coverage, profiling, and memory leak files
+coverage/
+valgrind.log
+callgrind.out.*
+
+# Jupyter Lab/Notebook checkpoints
+.ipynb_checkpoints/
