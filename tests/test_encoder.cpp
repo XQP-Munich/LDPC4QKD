@@ -73,9 +73,10 @@ TEST(encoder, Hx_benchmark) {
 
 
 TEST(encoder, rate_adapted_Hx_benchmark) {
+    constexpr std::size_t n_left_out_rate_adaption_steps = 2;
     std::array<Bit, AutogenLDPC::N> input{};
     std::array<Bit, AutogenLDPC::M> output{};
-    std::array<Bit, AutogenLDPC::M/2 + 100> ra_output{};
+    std::array<Bit, AutogenLDPC::M/2 + n_left_out_rate_adaption_steps> ra_output{};
 
     constexpr int num_runs = 500;
     unsigned int seed = 0;
@@ -105,9 +106,10 @@ TEST(encoder, rate_adapted_Hx_benchmark) {
 
 
 TEST(encoder, rate_adapted_Hx_benchmark_unsafe) {
+    constexpr std::size_t n_left_out_rate_adaption_steps = 2;
     std::array<Bit, AutogenLDPC::N> input{};
     std::array<Bit, AutogenLDPC::M> output{};
-    std::array<Bit, AutogenLDPC::M/2 + 100> ra_output{};
+    std::array<Bit, AutogenLDPC::M/2 + n_left_out_rate_adaption_steps> ra_output{};
 
     constexpr int num_runs = 500;
     unsigned int seed = 0;
@@ -138,9 +140,9 @@ TEST(encoder, rate_adapted_Hx_benchmark_unsafe) {
 
 TEST(encoder, rate_adapt_demo) {
     std::array<Bit, AutogenLDPC::N> input{
-        1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,0,1,0,1,0,1,1,1,1};
+        1,1,1,1,0,0,0,0,1,1};
     std::array<Bit, AutogenLDPC::M> syndrome{};
-    constexpr std::size_t rate_adaption_steps = 2400;
+    constexpr std::size_t rate_adaption_steps = AutogenRateAdapt::rows.size() / 2;
     std::array<Bit, AutogenLDPC::M - rate_adaption_steps> ratead_synd{};
 //    vec_to_arr<Bit, AutogenLDPC::N>(get_bitstring(AutogenLDPC::N), input);
 
@@ -162,9 +164,9 @@ TEST(encoder, rate_adapt_demo) {
 
 TEST(encoder, rate_adapt_unsafe_demo) {
     std::array<Bit, AutogenLDPC::N> input{
-            1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,0,1,0,1,0,1,1,1,1};
+            1,1,1,1,0,0,0,0,1,1};
     std::array<Bit, AutogenLDPC::M> syndrome{};
-    constexpr std::size_t rate_adaption_steps = 2400;
+    constexpr std::size_t rate_adaption_steps = AutogenRateAdapt::rows.size() / 2;
     std::array<Bit, AutogenLDPC::M - rate_adaption_steps> ratead_synd{};
 //    vec_to_arr<Bit, AutogenLDPC::N>(get_bitstring(AutogenLDPC::N), input);
 

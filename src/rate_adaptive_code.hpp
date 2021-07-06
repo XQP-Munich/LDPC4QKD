@@ -9,8 +9,15 @@
 
 
 #ifdef DEBUG_MESSAGES_ENABLED
+
 #include <iostream>
+
 #define DEBUG_MESSAGE(msg) do {std::cerr << msg << std::endl;} while (false)
+
+#else
+
+#define DEBUG_MESSAGE(msg)
+
 #endif /* ifdef DEBUG_MESSAGES_ENABLED */
 
 

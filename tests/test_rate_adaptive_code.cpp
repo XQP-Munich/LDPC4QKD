@@ -94,8 +94,8 @@ TEST(rate_adaptive_code, decode_test_big) {
 TEST(rate_adaptive_code, node_degrees) {
     auto H = get_code_big();
 
-    EXPECT_EQ(hash_vector(H.getCheckNodeDegrees()), 1322904358);
-    EXPECT_EQ(hash_vector(H.getVariableNodeDegrees()), 3094386084);
+    EXPECT_EQ(hash_vector(H.getCheckNodeDegrees()), 570034666);
+    EXPECT_EQ(hash_vector(H.getVariableNodeDegrees()), 482537648);
 }
 
 
@@ -106,7 +106,7 @@ TEST(rate_adaptive_code, encode) {
 
     H.encode(in, out);
 
-    EXPECT_EQ(hash_vector(out), 270285428);
+    EXPECT_EQ(hash_vector(out), 3649049174);
 }
 
 
@@ -130,7 +130,7 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 
 TEST(rate_adaptive_code, getters) {
     auto H = get_code_big();
-    EXPECT_EQ(H.getNonzeros(), 96375);
-    EXPECT_EQ(H.getNRows(), 4915);
-    EXPECT_EQ(H.getNCols(), 16384);
+    EXPECT_EQ(H.getNonzeros(), 5);
+    EXPECT_EQ(H.getNRows(), 5);
+    EXPECT_EQ(H.getNCols(), 10);
 }

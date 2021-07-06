@@ -1,3 +1,5 @@
+![workflow](https://github.com/XQP-Munich/LDPC4QKD/actions/workflows/ci-cmake_tests.yml/badge.svg)
+
 # LDPC4QKD
 
 Rate adaptive LDPC-based constructions designed for distributed source coding.
