@@ -135,7 +135,7 @@ function write_cpp_constexpr_CSC(
         end
         println(f, "\n};\n\n")
 
-        println(f, "} // namespace RALDPC")
+        println(f, "} // namespace AutogenLDPC")
     end
 
 end
