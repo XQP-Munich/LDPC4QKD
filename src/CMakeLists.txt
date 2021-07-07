@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
 project(LDPC4QKDLibrary)
 
 
-if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
+if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
     message(WARNING "C++ code containing the LDPC matrix not found.
     Use the Julia scripts to automatically generate it form an .alist file! A minimal example will be generated automatically.")
 
@@ -14,11 +14,11 @@ if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
             "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc_example.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp"
             VERBATIM
-            )
-endif(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
+    )
+endif (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
 
 
-if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp")
+if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp")
     message(WARNING "C++ code containing the rate adaption for the LDPC matrix not found.
     Use Julia to automatically generate it form an appropriate CSV file! A minimal example will be generated automatically.")
 
@@ -29,8 +29,8 @@ if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp")
             "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption_example.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp"
             VERBATIM
-            )
-endif(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp")
+    )
+endif (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp")
 
 
 add_library(LDPC4QKD INTERFACE

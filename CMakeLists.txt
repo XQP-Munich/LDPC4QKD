@@ -1,6 +1,6 @@
 # CMake file building demos and tests for the error correction library.
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 message("CMake version: ${CMAKE_VERSION}")
 project(LDPC4QKD
         VERSION 0.0.0 # This version is meaningless at the moment! TODO generate Cmake-Project-version dynamically
