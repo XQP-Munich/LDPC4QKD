@@ -20,14 +20,25 @@ namespace HelpersForTests {
  * Adapted from https://stackoverflow.com/a/27216842
  *
  * Corresponding Python code:
- * ```python3
+    ```python3
     # numpy v1.19.0
     def hash_vector(vec):
-    assert len(vec.shape) == 1, "only accepts 1d vectors"
-    seed = np.uint32(vec.shape[0])
-    for i in vec:
-        seed ^= np.uint32(i) + np.uint32(0x9e3779b9) + (seed << np.uint32(6)) + (seed >> np.uint32(2))
-    return seed
+        assert len(vec.shape) == 1, "only accepts 1d vectors"
+        seed = np.uint32(vec.shape[0])
+        for i in vec:
+            seed ^= np.uint32(i) + np.uint32(0x9e3779b9) + (seed << np.uint32(6)) + (seed >> np.uint32(2))
+        return seed
+    ```
+* Corresponding Julia code:
+    ```julia
+    # Julia v1.6
+    function hash_vector(vec::AbstractArray{T} where T <: Integer)
+        seed = UInt32(length(vec))
+        for i in vec
+            seed = xor(seed, UInt32(i) + UInt32(0x9e3779b9) + (seed << UInt32(6)) + (seed >> UInt32(2)))
+        end
+        return seed
+    end
     ```
  * @tparam T should be primitive type std::uint[x]_t
  * @param vec Vector
