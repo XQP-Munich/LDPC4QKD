@@ -35,20 +35,46 @@ namespace LDPC4QKD {
         using MatrixEntry = Bit;
 
         // ------------------------------------------------------------------------------------------------ constructors
+        /// constructor for using the code without rate adaption.
         RateAdaptiveCode(const std::vector<colptr_t> &colptr, const std::vector<idx_t> &rowIdx)
                 : colptr(colptr), row_idx(rowIdx),
                   n_cols(colptr.size() - 1),
-                  n_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1) {
-            recompute_check_node_degs();
-            recompute_var_node_degs();
-            recompute_pos_checkn();
-            recompute_pos_varn();
+                  n_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
+                  rows_to_combine({}) {
+            constexpr std::size_t n_line_combs = 0;
+
+            recompute_pos_checkn(n_line_combs);
+            recompute_pos_varn(n_line_combs);
         }
 
+        /// constructor for using the code with rate adaption
+        RateAdaptiveCode(const std::vector<colptr_t> &colptr,
+                         const std::vector<idx_t> &rowIdx,
+                         const std::vector<idx_t> &rows_to_combine_rate_adapt,
+                         std::size_t initial_row_combs = 0)
+                : colptr(colptr), row_idx(rowIdx),
+                  n_cols(colptr.size() - 1),
+                  n_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1 - rows_to_combine_rate_adapt.size() / 2),
+                  rows_to_combine(rows_to_combine_rate_adapt) {
+            if (rows_to_combine.size() % 2 != 0) {
+                throw std::domain_error("The number of rows to combine for rate adaption "
+                                        "(size of argument array) is an odd number (expected even).");
+            }
+
+            if (initial_row_combs >= rows_to_combine.size() / 2) {
+                throw std::domain_error("The number of desired initial row combinations for rate adaption "
+                                        "is larger than the given array of lines to combine.");
+            }
+
+            recompute_pos_checkn(initial_row_combs);
+            recompute_pos_varn(initial_row_combs);
+        }
+
+
         // ---------------------------------------------------------------------------------------------- public methods
-        constexpr void encode(const std::vector<Bit> &in, std::vector<Bit> &out) const {
+        constexpr void encode_no_ra(const std::vector<Bit> &in, std::vector<Bit> &out) const {
             if (in.size() != n_cols) {
-                DEBUG_MESSAGE("Encoder received invalid input length.");  // TODO maybe use exception?
+                DEBUG_MESSAGE("Encoder (encode_no_ra) received invalid input length.");  // TODO maybe use exception?
                 return;
             }
             out = std::vector<Bit>(n_rows);
@@ -56,6 +82,40 @@ namespace LDPC4QKD {
             for (std::size_t col = 0; col < in.size(); col++)
                 for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
                     out[row_idx[j]] = xor_as_bools(out[row_idx[j]], in[col]);
+        }
+
+        /// does not change internal rate adaption state!
+        constexpr void encode_with_ra(
+                const std::vector<Bit> &in, std::vector<Bit> &out, std::size_t n_line_combs) const {
+            if (in.size() != n_cols) {
+                DEBUG_MESSAGE("Encoder (encode_with_ra) received invalid input length.");  // TODO maybe use exception?
+                return;
+            }
+
+            if (n_line_combs >= rows_to_combine.size() / 2) {
+                throw std::domain_error("The number of desired initial row combinations for rate adaption "
+                                        "is larger than the given array of lines to combine.");
+            }
+
+            out = std::vector<Bit>(n_rows - n_line_combs);
+
+            for(std::size_t i{}; i < n_line_combs; ++i) {
+
+            }
+        }
+
+        /// decoder infers rate from the length of the syndrome
+        /// and changes the internal decoder state to match this rate.
+        /// Note: this change may be somewhat computationally expensive TODO benchmark this
+        bool decode_infer_rate(const std::vector<double> &llrs,
+                               const std::vector<Bit> &syndrome,
+                               std::vector<Bit> &out,
+                               const std::uint8_t max_num_iter = 50,
+                               const double vsat = 100) {
+            if (llrs.size() != n_cols) {
+                set_rate(syndrome.size());
+            }
+            return decode_at_current_rate(llrs, syndrome, out, max_num_iter, vsat);
         }
 
         /*!
@@ -71,16 +131,22 @@ namespace LDPC4QKD {
          * @return true if and only if the syndrome of buffer `out` matches given `syndrome`,
          *      i.e., in case the decoder converged.
          */
-        bool decode(const std::vector<double> &llrs,
-                    const std::vector<Bit> &syndrome,
-                    std::vector<Bit> &out,
-                    const std::uint8_t max_num_iter = 50,
-                    const double vsat = 100) const {
+        bool decode_at_current_rate(const std::vector<double> &llrs,
+                                    const std::vector<Bit> &syndrome,
+                                    std::vector<Bit> &out,
+                                    const std::uint8_t max_num_iter = 50,
+                                    const double vsat = 100) const {
             // check inputs.
             if (llrs.size() != n_cols) {
-                DEBUG_MESSAGE("Decoder received invalid input length."); // TODO maybe use exception?
+                throw std::runtime_error("Decoder received invalid input length."); // TODO maybe use exception?
                 return false;
             }
+
+            if (syndrome.size() != get_n_rows_after_rate_adaption()) {
+                throw std::runtime_error(
+                        "Decoder (decode_at_current_rate) received invalid syndrome size for current rate.");
+            }
+
             out.resize(llrs.size());
 
             std::vector<std::vector<double>> msg_v(n_rows);  // messages from variable nodes to check nodes
@@ -112,7 +178,7 @@ namespace LDPC4QKD {
 
                 // terminate decoding if codeword matches syndrome
                 std::vector<Bit> decision_syndrome(syndrome.size());
-                encode(out, decision_syndrome);
+                encode_at_current_rate(out, decision_syndrome);
                 if (decision_syndrome == syndrome) {
                     return true;
                 }
@@ -141,12 +207,13 @@ namespace LDPC4QKD {
             return pos_varn;
         }
 
-        // TODO Unnecessary for users. Remove? Also: disallow any user access to colptr and row_idx.
-        [[nodiscard]] colptr_t getNonzeros() const {
-            return row_idx.size();
+        /// ignores rate adaption! Only gives number of rows in the mother matrix.
+        [[nodiscard]] std::size_t get_NRows_mother_matrix() const {
+            return n_rows;
         }
 
-        [[nodiscard]] std::size_t getNRows() const {
+        /// Includes rate adaption. Access to internal state!
+        [[nodiscard]] std::size_t get_n_rows_after_rate_adaption() const {
             return n_rows;
         }
 
@@ -154,17 +221,30 @@ namespace LDPC4QKD {
             return n_cols;
         }
 
-        [[nodiscard]]
-        const std::vector<NodeDegree> &getCheckNodeDegrees() const {
-            return check_node_degrees;
-        }
+        /// TODO make private
+        constexpr void encode_at_current_rate(
+                const std::vector<Bit> &in, std::vector<Bit> &out) const {
+            if (in.size() != n_cols) {
+                DEBUG_MESSAGE("Encoder received invalid input length.");  // TODO maybe use exception?
+                return;
+            }
 
-        [[nodiscard]]
-        const std::vector<NodeDegree> &getVariableNodeDegrees() const {
-            return variable_node_degrees;
-        }
+            out = std::vector<Bit>(pos_varn.size());
 
+            for (std::size_t i{}; i < pos_varn.size(); ++i) {
+                for (auto & var_node : pos_varn[i]) {
+                    out[i] = xor_as_bools(out[i], in[var_node]);
+                }
+            }
+        }
     private:   // -------------------------------------------------------------------------------------- private members
+        void set_rate(std::size_t n_line_combs) {
+            recompute_pos_checkn(n_line_combs);
+            recompute_pos_varn(n_line_combs);
+        }
+
+
+
         constexpr static bool xor_as_bools(Bit lhs, Bit rhs) {
             return (static_cast<bool>(lhs) != static_cast<bool>(rhs));
         }
@@ -178,7 +258,8 @@ namespace LDPC4QKD {
             for (std::size_t m{}; m < n_rows; ++m) {
                 // product of incoming messages
                 double mc_prod = 1 - 2 * static_cast<double>(syndrome[m]);
-                const auto curr_check_node_degree = check_node_degrees[m];
+                // Note: pos_varn[m].size() = check_node_degrees[m]
+                const auto curr_check_node_degree = pos_varn[m].size();
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
                     mc_prod *= ::tanh(0.5 * msg_v[m][k]);
                 }
@@ -215,7 +296,8 @@ namespace LDPC4QKD {
             for (std::size_t m{}; m < llrs.size(); ++m) {
                 const double mv_sum = std::accumulate(msg_c[m].begin(), msg_c[m].end(), llrs[m]);
 
-                for (std::size_t k{}; k < variable_node_degrees[m]; ++k) {
+                // Note: pos_checkn[m].size() = var_node_degs[m]
+                for (std::size_t k{}; k < pos_checkn[m].size(); ++k) {
                     const double msg = mv_sum - msg_c[m][k];
 
                     // place the message at the correct position in the output array
@@ -249,22 +331,7 @@ namespace LDPC4QKD {
             }
         }
 
-        void recompute_check_node_degs() {
-            check_node_degrees = std::vector<NodeDegree>(n_rows);
-
-            for (std::size_t col = 0; col < n_cols; col++)
-                for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
-                    check_node_degrees[row_idx[j]] += 1;
-        }
-
-        void recompute_var_node_degs() {
-            variable_node_degrees = std::vector<NodeDegree>(n_cols);
-            for (std::size_t col = 0; col < n_cols; col++)
-                for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
-                    variable_node_degrees[col] += 1;
-        }
-
-        void recompute_pos_varn() {
+        void recompute_pos_varn(std::size_t n_line_combs) {
             // This uses different size vectors for nodes with different degrees.
             // Alternatively, one could set the sizes to be the same using
 //            auto max_check_deg = *std::max_element(check_node_degrees.begin(), check_node_degrees.end());
@@ -275,7 +342,7 @@ namespace LDPC4QKD {
                     pos_varn[row_idx[j]].push_back(col);
         }
 
-        void recompute_pos_checkn() {
+        void recompute_pos_checkn(std::size_t n_line_combs) {
             // This uses different size vectors for nodes with different degrees.
             // Alternatively, one could set the sizes to be the same using
 //            auto max_var_deg = *std::max_element(variable_node_degrees.begin(), variable_node_degrees.end());
@@ -287,16 +354,15 @@ namespace LDPC4QKD {
         }
 
         // ---------------------------------------------------------------------------------------------- private fields
-        std::vector<colptr_t> colptr;  // TODO declare const?
-        std::vector<idx_t> row_idx;  // TODO declare const?
+        const std::vector<colptr_t> colptr;
+        const std::vector<idx_t> row_idx;
+        const std::vector<idx_t> rows_to_combine;
 
-        std::vector<NodeDegree> check_node_degrees;  // TODO remove?
-        std::vector<NodeDegree> variable_node_degrees;  // TODO remove?
         std::vector<std::vector<idx_t>> pos_checkn;  // Input check nodes to each variable node
         std::vector<std::vector<idx_t>> pos_varn;  // Input variable nodes to each check node
 
-        std::size_t n_rows;
-        std::size_t n_cols;
+        const std::size_t n_rows;
+        const std::size_t n_cols;
     };
 
 }

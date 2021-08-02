@@ -44,7 +44,7 @@ TEST(rate_adaptive_code, decode_test_small) {
 
     std::vector<Bit> x{1, 1, 1, 1, 0, 0, 0}; // true data to be sent
     std::vector<Bit> syndrome;
-    H.encode(x, syndrome);
+    H.encode_no_ra(x, syndrome);
 
     std::vector<Bit> x_noised{1, 1, 1, 1, 0, 0, 1}; // distorted data
     double p = 1. / 7; // channel error probability (we flipped 1 symbol out of 7)
@@ -56,7 +56,7 @@ TEST(rate_adaptive_code, decode_test_small) {
     }
 
     std::vector<Bit> solution;
-    bool success = H.decode(llrs, syndrome, solution);
+    bool success = H.decode_at_current_rate(llrs, syndrome, solution);
     EXPECT_TRUE(success);
     EXPECT_EQ(solution, x);
 }
@@ -66,7 +66,7 @@ TEST(rate_adaptive_code, decode_test_big) {
 
     std::vector<Bit> x = get_bitstring(H.getNCols()); // true data to be sent
     std::vector<Bit> syndrome;
-    H.encode(x, syndrome);
+    H.encode_no_ra(x, syndrome);
 
     constexpr double p = 0.04; // channel error probability
     std::vector<Bit> x_noised = x; // distorted data
@@ -79,7 +79,7 @@ TEST(rate_adaptive_code, decode_test_big) {
     }
 
     std::vector<Bit> solution;
-    bool success = H.decode(llrs, syndrome, solution);
+    bool success = H.decode_at_current_rate(llrs, syndrome, solution);
     EXPECT_TRUE(success);
     EXPECT_EQ(solution, x);
     for (std::size_t i{}; i < x.size(); ++i) {
@@ -91,20 +91,41 @@ TEST(rate_adaptive_code, decode_test_big) {
 
 
 
-TEST(rate_adaptive_code, node_degrees) {
-    auto H = get_code_big();
+//TEST(rate_adaptive_code, node_degrees) {
+//    auto H = get_code_big();
+//
+//    EXPECT_EQ(hash_vector(H.getCheckNodeDegrees()), 570034666);
+//    EXPECT_EQ(hash_vector(H.getVariableNodeDegrees()), 482537648);
+//
+//    const auto& cn_degs = H.getCheckNodeDegrees();
+//    for (std::size_t i{}; i < cn_degs.size(); ++i) {
+//        EXPECT_EQ(cn_degs[i], H.getPosVarn()[i].size());
+//    }
+//
+//    const auto& vn_degs = H.getVariableNodeDegrees();
+//    for (std::size_t i{}; i < vn_degs.size(); ++i) {
+//        EXPECT_EQ(cn_degs[i], H.getPosCheckn()[i].size());
+//    }
+//}
 
-    EXPECT_EQ(hash_vector(H.getCheckNodeDegrees()), 570034666);
-    EXPECT_EQ(hash_vector(H.getVariableNodeDegrees()), 482537648);
+
+TEST(rate_adaptive_code, encode_no_ra) {
+    auto H = get_code_big();
+    std::vector<Bit> in = get_bitstring(H.getNCols());
+    std::vector<Bit> out(H.get_NRows_mother_matrix());
+
+    H.encode_no_ra(in, out);
+
+    EXPECT_EQ(hash_vector(out), 3649049174);
 }
 
 
-TEST(rate_adaptive_code, encode) {
+TEST(rate_adaptive_code, encode_current_rate) {
     auto H = get_code_big();
     std::vector<Bit> in = get_bitstring(H.getNCols());
-    std::vector<Bit> out(H.getNRows());
+    std::vector<Bit> out(H.get_NRows_mother_matrix());
 
-    H.encode(in, out);
+    H.encode_at_current_rate(in, out);
 
     EXPECT_EQ(hash_vector(out), 3649049174);
 }
@@ -130,7 +151,19 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 
 TEST(rate_adaptive_code, getters) {
     auto H = get_code_big();
-    EXPECT_EQ(H.getNonzeros(), 5);
-    EXPECT_EQ(H.getNRows(), 5);
+    EXPECT_EQ(H.get_NRows_mother_matrix(), 5);
     EXPECT_EQ(H.getNCols(), 10);
+
+//    H.get_current_n_rate_adapted_rows();
+}
+
+
+TEST(rate_adaptive_code, rate_adaption) {
+    // TODO
+    FAIL();
+//    auto H = get_code_big(give rate adaption initial);
+    // check sizes
+    // change rate adaption
+    // check sizes
+
 }
