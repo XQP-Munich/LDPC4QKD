@@ -77,7 +77,7 @@ namespace LDPC4QKD {
                 DEBUG_MESSAGE("Encoder (encode_no_ra) received invalid input length.");  // TODO maybe use exception?
                 return;
             }
-            out = std::vector<Bit>(n_rows);
+            out.assign(n_rows, 0);
 
             for (std::size_t col = 0; col < in.size(); col++)
                 for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
@@ -85,22 +85,46 @@ namespace LDPC4QKD {
         }
 
         /// does not change internal rate adaption state!
-        constexpr void encode_with_ra(
-                const std::vector<Bit> &in, std::vector<Bit> &out, std::size_t n_line_combs) const {
+        void encode_with_ra(
+                const std::vector<Bit> &in, std::vector<Bit> &out, std::size_t output_syndrome_length) const {
             if (in.size() != n_cols) {
                 DEBUG_MESSAGE("Encoder (encode_with_ra) received invalid input length.");  // TODO maybe use exception?
                 return;
             }
-
-            if (n_line_combs >= rows_to_combine.size() / 2) {
-                throw std::domain_error("The number of desired initial row combinations for rate adaption "
-                                        "is larger than the given array of lines to combine.");
+            if (output_syndrome_length > n_rows) {
+                throw std::domain_error("Requested syndrome is larger than the number of rows of the mother matrix.");
+            }
+            if (output_syndrome_length < n_rows - (rows_to_combine.size() / 2)) {
+                throw std::domain_error("Requested syndrome is smaller than supported by the specified rate adaption.");
             }
 
-            out = std::vector<Bit>(n_rows - n_line_combs);
+            std::vector<int> non_ra_encoding(n_rows);
+            // encode with rate adaption
+            for (std::size_t col = 0; col < in.size(); col++)
+                for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
+                    non_ra_encoding[row_idx[j]] = xor_as_bools(non_ra_encoding[row_idx[j]], in[col]);
 
-            for(std::size_t i{}; i < n_line_combs; ++i) {
+            const std::size_t n_line_combinations = n_rows - output_syndrome_length;
 
+            out.assign(output_syndrome_length, 0);
+
+            std::size_t start_of_ra_part = output_syndrome_length - n_line_combinations;
+            // put results of combined lines at the back of output.
+            for (std::size_t i{}; i < n_line_combinations; ++i) {
+                out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[rows_to_combine[2*i]],
+                                      non_ra_encoding[rows_to_combine[2*i+1]]);
+                non_ra_encoding[rows_to_combine[2*i]] = -1;  // -1 marks that the value has been used.
+                non_ra_encoding[rows_to_combine[2*i+1]] = -1;
+            }
+
+            std::size_t j{};
+            // put the remaining bits that were not rate adapted at the front of output.
+            for (std::size_t i{}; i < start_of_ra_part; ++i) {
+                while (non_ra_encoding[j] == -1) {
+                    j++;
+                }
+                out[i] = non_ra_encoding[j];
+                j++;
             }
         }
 
@@ -138,8 +162,7 @@ namespace LDPC4QKD {
                                     const double vsat = 100) const {
             // check inputs.
             if (llrs.size() != n_cols) {
-                throw std::runtime_error("Decoder received invalid input length."); // TODO maybe use exception?
-                return false;
+                throw std::runtime_error("Decoder received invalid input length.");
             }
 
             if (syndrome.size() != get_n_rows_after_rate_adaption()) {
@@ -229,20 +252,20 @@ namespace LDPC4QKD {
                 return;
             }
 
-            out = std::vector<Bit>(pos_varn.size());
+            out.assign(pos_varn.size(), 0);
 
             for (std::size_t i{}; i < pos_varn.size(); ++i) {
-                for (auto & var_node : pos_varn[i]) {
+                for (auto &var_node : pos_varn[i]) {
                     out[i] = xor_as_bools(out[i], in[var_node]);
                 }
             }
         }
+
     private:   // -------------------------------------------------------------------------------------- private members
         void set_rate(std::size_t n_line_combs) {
             recompute_pos_checkn(n_line_combs);
             recompute_pos_varn(n_line_combs);
         }
-
 
 
         constexpr static bool xor_as_bools(Bit lhs, Bit rhs) {
@@ -335,7 +358,7 @@ namespace LDPC4QKD {
             // This uses different size vectors for nodes with different degrees.
             // Alternatively, one could set the sizes to be the same using
 //            auto max_check_deg = *std::max_element(check_node_degrees.begin(), check_node_degrees.end());
-            pos_varn = std::vector<std::vector<idx_t>>(n_rows);
+            pos_varn.assign(n_rows, std::vector<idx_t>{});
 
             for (std::size_t col = 0; col < n_cols; col++)
                 for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
@@ -346,7 +369,7 @@ namespace LDPC4QKD {
             // This uses different size vectors for nodes with different degrees.
             // Alternatively, one could set the sizes to be the same using
 //            auto max_var_deg = *std::max_element(variable_node_degrees.begin(), variable_node_degrees.end());
-            pos_checkn = std::vector<std::vector<idx_t>>(n_cols);
+            pos_checkn.assign(n_cols, std::vector<idx_t>{});
 
             for (std::size_t col = 0; col < n_cols; col++)
                 for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)

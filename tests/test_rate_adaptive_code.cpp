@@ -38,6 +38,12 @@ namespace {
 
 }
 
+TEST(rate_adaptive_code, TMPTMPTMPTMTPTMP) {
+    auto H = get_code_big();
+    EXPECT_EQ(hash_vector(H.colptr), 736283749);
+    EXPECT_EQ(hash_vector(H.row_idx), 4281948431);
+}
+
 
 TEST(rate_adaptive_code, decode_test_small) {
     auto H = get_code_small();
@@ -90,33 +96,15 @@ TEST(rate_adaptive_code, decode_test_big) {
 }
 
 
-
-//TEST(rate_adaptive_code, node_degrees) {
-//    auto H = get_code_big();
-//
-//    EXPECT_EQ(hash_vector(H.getCheckNodeDegrees()), 570034666);
-//    EXPECT_EQ(hash_vector(H.getVariableNodeDegrees()), 482537648);
-//
-//    const auto& cn_degs = H.getCheckNodeDegrees();
-//    for (std::size_t i{}; i < cn_degs.size(); ++i) {
-//        EXPECT_EQ(cn_degs[i], H.getPosVarn()[i].size());
-//    }
-//
-//    const auto& vn_degs = H.getVariableNodeDegrees();
-//    for (std::size_t i{}; i < vn_degs.size(); ++i) {
-//        EXPECT_EQ(cn_degs[i], H.getPosCheckn()[i].size());
-//    }
-//}
-
-
 TEST(rate_adaptive_code, encode_no_ra) {
     auto H = get_code_big();
     std::vector<Bit> in = get_bitstring(H.getNCols());
     std::vector<Bit> out(H.get_NRows_mother_matrix());
 
+    std::cout << hash_vector(in) << std::endl;
     H.encode_no_ra(in, out);
 
-    EXPECT_EQ(hash_vector(out), 3649049174);
+    EXPECT_EQ(hash_vector(out), 2814594723);
 }
 
 
@@ -127,7 +115,9 @@ TEST(rate_adaptive_code, encode_current_rate) {
 
     H.encode_at_current_rate(in, out);
 
-    EXPECT_EQ(hash_vector(out), 3649049174);
+    EXPECT_EQ(hash_vector(out), 2814594723);
+
+    // TODO change rate!!
 }
 
 
@@ -151,10 +141,33 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 
 TEST(rate_adaptive_code, getters) {
     auto H = get_code_big();
-    EXPECT_EQ(H.get_NRows_mother_matrix(), 5);
-    EXPECT_EQ(H.getNCols(), 10);
+    EXPECT_EQ(H.get_NRows_mother_matrix(), 2048);
+    EXPECT_EQ(H.getNCols(), 6144);
 
 //    H.get_current_n_rate_adapted_rows();
+}
+
+TEST(rate_adaptive_code, encode_with_ra) {
+    auto H = get_code_big();
+
+    std::vector<Bit> input = get_bitstring(H.getNCols()); // true data to be sent
+
+    // storage for syndrome. Initialize with arbitrary values, which must be overwritten by encoder.
+    std::vector<Bit> syndrome = get_bitstring(H.get_NRows_mother_matrix());
+
+    // test agreement with encoder that doesn't use rate adaption
+    H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix());
+
+    EXPECT_EQ(hash_vector(syndrome), 2814594723);
+
+    // check that invalid requests lead to exceptions
+    EXPECT_ANY_THROW(H.encode_with_ra({true, false}, syndrome, -1));  // invalid input size
+    EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, -1)); // invalid requested size
+    EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix() + 1)); // too big requested size
+
+    H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix() / 2 + 1);
+    EXPECT_EQ(hash_vector(syndrome), 2814594723);
+
 }
 
 

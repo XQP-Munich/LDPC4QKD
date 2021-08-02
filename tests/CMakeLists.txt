@@ -52,6 +52,7 @@ add_executable(unit_tests_error_correction test_main.cpp
         # -------- Actual Unit tests --------
         test_encoder.cpp
         test_rate_adaptive_code.cpp
+        test_read_scmat_format.cpp
 
         # Static data LDPC code used for tests:
         fortest_autogen_ldpc_matrix_csc.hpp
