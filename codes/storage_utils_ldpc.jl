@@ -208,6 +208,22 @@ function save_to_cscmat(
 end
 
 
+function read_file_header(file_path; comment_marker = '#')
+    header = ""
+    open(file_path, "r") do file
+        next_line = ""
+        while true
+            header *= (next_line*"\n")
+            next_line = readline(file)
+
+            (length(next_line) > 0 && next_line[1] == comment_marker) || break
+        end
+    end
+
+    return header
+end
+
+
 """
 read the three arrays defining compressed sparse column (CSC) storage of a matrix into a file.
 
@@ -340,7 +356,7 @@ function load_matrix_from_qc_cscmat_file(file_path::AbstractString; expansion_fa
             end
         end
         
-        m = match(r"Quasi cyclic exponents for a binary LDPC matrix with expansion_factor ([0-9]*)\.", header)
+        m = match(r"Quasi cyclic exponents for a binary LDPC matrix with expansion factor ([0-9]*)\.", header)
         if isnothing(m)
             error("Failed to infer expansion factor! No header line found containing it.")
         else

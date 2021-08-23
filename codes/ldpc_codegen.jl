@@ -4,9 +4,11 @@
 
 using SparseArrays
 using LinearAlgebra
+using ArgParse # Must be installed (use the Pkg package manager)
 
-# Must be installed:
-using ArgParse
+
+# helper methods for reading and writing LDPC matrices to files
+include("storage_utils_ldpc.jl"); using .StorageUtilsLDPC
 
 
 header = raw"""
@@ -37,10 +39,11 @@ function parse_my_args(args)
         ; allow_ambiguous_opts=false)
 
     @add_arg_table! s begin
-        "alist_path"
+        "--input_code_path"
             required = true
             arg_type = ValidPath
-            help = "Path to .alist file containing LDPC code."
+            help = "Path to .alist or .cscmat file containing the LDPC code. 
+                For .cscmat files, both qc-exponents as well as raw LDPC storage is supported."
         "--output_path"
             default = "autogen_ldpc_matrix_csc.hpp"
             arg_type = String
@@ -56,96 +59,11 @@ function parse_my_args(args)
         println("  $key  =>  $(repr(val))")
     end
 
-    return abspath(parsed_args["alist_path"].val),
+    return abspath(parsed_args["input_code_path"].val),
             abspath(parsed_args["output_path"]),
             parsed_args["debug_use_only_part"]
 end
 
-
-"""parse a single line of space separated integers"""
-space_sep_ints(s::AbstractString) = parse.(Int, split(s))
-
- 
-function file_extension(path::String)
-    if contains(path, ".")
-        return path[findlast(isequal('.'),path):end]
-    else
-        return ""
-    end
-end 
-
- 
- """Load an LDPC matrix from a text file in alist format."""
-function load_alist(
-    file_path::AbstractString; check_redundant=false
-    )
-    if file_extension(file_path) != ".alist"
-        @warn "load_alist called on file with extension '$(file_extension(file_path))', expected '.alist'"
-    end
-
-    file = open(file_path, "r")
-    nVN, nCN = space_sep_ints(readline(file))
-    dmax_VN, dmax_CN = space_sep_ints(readline(file))
-    var_node_degs = space_sep_ints(readline(file))
-    check_node_degs = space_sep_ints(readline(file))
-    remaining_lines = readlines(file)
-    close(file)
-
-    if length(remaining_lines) != nVN + nCN
-        error("Number of lines in $file_path is inconcistent with stated matrix size.")
-    end
-
-    if dmax_CN != maximum(check_node_degs)
-        error("Alist file $file_path claims: max. CN degree=$dmax_CN but contents give $(maximum(check_node_degs)).")
-    end
-
-    if dmax_VN != maximum(var_node_degs)
-        error("Alist file $file_path claims: max. VN degree=$dmax_CN but contents give $(maximum(var_node_degs)).")
-    end
-
-    # parity check matrix
-    H = spzeros(Int8, nCN, nVN)
-
-    # fill the matrix
-    for col_ind in 1:nVN
-        rows = space_sep_ints(remaining_lines[col_ind])
-
-        if check_redundant && length(rows) != var_node_degs[col_ind]
-            error("Variable node degree in $file_path inconcistent with below data for VN $col_ind.")
-        end
-
-        for row_ind in rows
-            H[row_ind, col_ind] = 1
-        end
-    end
-
-
-    # the second half of the alist file is redundant. Check that it is consistent.
-    if check_redundant
-        entry_counter = 0
-        for row_ind in 1:nCN
-            cols = space_sep_ints(remaining_lines[nVN + row_ind])
-
-            check_node_degree = length(cols)
-            if check_node_degree != check_node_degs[row_ind]
-                error("Check node degree in $file_path inconcistent with below data for CN $row_ind.")
-            end
-
-            entry_counter += check_node_degree
-            for col_ind in cols
-                if H[row_ind, col_ind] != 1
-                    error("VN and CN specifications in $file_path disagree on matrix entry ($row_ind, $col_ind).")
-                end
-            end
-        end
-
-        if entry_counter != sum(H)
-            error("VN and CN specification in $file_path are inconsistent.")
-        end
-    end
-
-    return H
-end
 
 function write_cpp_constexpr_CSC(
     H::AbstractArray{Int8, 2}, 
@@ -223,9 +141,41 @@ function write_cpp_constexpr_CSC(
 end
 
 
+function load_cscmat_standard_or_qc_exponents(code_path; mode=:AUTO)
+    if mode == :AUTO
+        header = StorageUtilsLDPC.read_file_header(code_path)
+        if contains(header, "Quasi cyclic exponents")
+            mode = :QC_EXPONENTS
+        else
+            mode = :UNSTRUCTURED
+        end
+    end
+
+    if mode == :QC_EXPONENTS
+        return load_matrix_from_qc_cscmat_file(code_path)
+    elseif mode == :UNSTRUCTURED
+        H = load_cscmat(code_path)
+        if any(x-> 0 <= x <= 1, H)
+            @warn "Failed to obtain binary LDPC matrix from CSCMAT file!"
+        end
+        return H
+    else
+        @error "unsupported mode $mode"
+    end
+end
+
+
 function main(args)
-    alist_path, output_path, only_debug_mode = parse_my_args(args)
-    H = load_alist(alist_path)
+    code_path, output_path, only_debug_mode = parse_my_args(args)
+    if StorageUtilsLDPC.file_extension(code_path) == ".alist"
+        H = load_alist(code_path)
+    elseif StorageUtilsLDPC.file_extension(code_path) == ".cscmat"
+
+        H = load_cscmat_standard_or_qc_exponents(code_path)
+    else
+        @error "Unsupported input file at path $code_path. Expected file extension `.cscmat` or `.alist`."
+    end
+
     write_cpp_constexpr_CSC(H, output_path; only_debug_mode)
 
     @info "Saved C++ file ($(Base.stat(output_path).size) bytes) at '$(output_path)'."
