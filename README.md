@@ -7,22 +7,29 @@ Note: This repository is still missing some features which will be added very so
 
 ## Overview
 
-The problem solved by distributed source coding is the following. Suppose Alice and Bob 
+This repository aims to solve the following problem. Suppose Alice and Bob each have a bit-string of length $N$. Bobs bit-string is the result of randomly flipping each bit of Alice with probability $p$, i.e., it is the output of a binary symmetric channel with **channel parameter** $p$. (Note: the same considerations apply for soft inputs instead of bit-strings and a Gaussian channel.) The goal is for Alice to send (via a noise-less channel) to Bob a message (called syndrome), such that Bob can recover Alice's bit-string given his bit-string and the syndrome received from Alice. There are two important metrics, which we want to minimize: 
+- the probability that Bob will fail to recover Alice's bit-string, which is called the frame error rate (FER)
+- the length of the syndrome
 
-Contrary to how forward error correction works, generator matrices for the LDPC code are not used at all for distributed source coding. This repository does not provide generator matrices (although calculating them from the parity check matrix is straightforward, s)
-Our decoder operates on a bit-string (noisy version of true message) and its correct syndrome. This is slightly different from what is used for forward error correction (as in e.g. AFF3CT), where the decoder operates on only the noisy codeword (which is the result transmitting the codeword, which in turn is the encoding the true message using a generator matrix).
+We define the syndrome to be the matrix-vector product (modulo 2) of a sparse binary matrix (LDPC matrix) and Alice's bit-string. In this case, Bob can use an inference algorithm (loopy belief propagation) to obtain a guess of Alice's bit-string. If the LDPC matrix has size $M \times N$, we call $M/N$ the **rate** of the LDPC matrix and $N$ the **block size**. (Note: the term rate is used differently in forward error correction, where it means $1 - M/N$.) Minimizing the length of the syndrome actually means minimizing the rate for a given channel parameter. Note that, for any given channel parameter, there is a trade-off between small rate, small FER and small block size. Furthermore, there are theoretical limits as to how small the rate can be (the Slepian Wolf limit, sometimes called Shannon limit, applies to assymptotically large bloc size. Limits for finite block sizes also exists but are more complicated).
+
+### Contrast with forward error correction
+
+Contrary to how forward error correction works, generator matrices for the LDPC code are not used at all for distributed source coding. This repository does not provide generator matrices (calculating them from the parity check matrices is straightforward).
+Our decoder implementation operates on a bit-string (noisy version of true message) and its correct syndrome. This is slightly different from what is used for forward error correction (as in e.g. AFF3CT), where the decoder operates on only the noisy codeword. The noisy codeword is the result transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
 
 ## How to contribute
 This repository is actively maintained. Issues and pull requests will be responded to and processed.
 
-If you're having problems with the provided materials, want to contribute new ideas or need modifications or our work for your application, please contact us.
+Let us know if you're having problems with the provided materials, wish to contribute new ideas or need modifications or our work for your application.
 
 ## List of contents
 
 ### Data files
 - A number of LDPC codes. Their parity check matrices are stored in a custom file format (called `CSCMAT`).
-- Simulations results (done using AFF3CT) showing the quality of the LDPC matrices.
-- For each LDPC matrix, a specification of rate adaption. This is a list of pairs of row indices of the matrix that are combined (added mod 2) in each rate adaption step. 
+- Simulations results (done using AFF3CT) showing FER of the LDPC matrices at various channel parameters.
+- Simulation results done using this repository only, showing FER of LDPC matrices, their rate adapted versions, and average rate under rate adaption (Work in progress!).
+- For each LDPC matrix, a specification of rate adaption. This is a list of pairs of row indices of the matrix that are combined (added mod 2) in each rate adaption step.
 
 ### Julia code to
 - load the LDPC matrices from `CSCMAT` files
@@ -37,7 +44,7 @@ TODO add paths
 
 ## How to use
 
-Start from the `examples` directory, which shows how to use the C++ header containing the decoder. 
+Start from the `examples` directory, which shows a basic example of how to use the C++ header containing the decoder. 
 TODO
 
 
