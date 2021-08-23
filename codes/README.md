@@ -1,6 +1,6 @@
 # LDPC matrices
 
-The following is a list of LDPC matrices of size MxN that are provided in this repository. The sha256 hashes of data files are given to make clear which data files and simulations refer to which code. The alist file hash is given to connect it to AFF3CT simulation results (AFF3CT accepts alist format but not our custom format. Alist files can be quite large and are therefore not part of this repository. To reproduce the aff3ct simulation results, Julia code is provided to convert from cscmat to alist format.)
+The following is a list of LDPC matrices of size MxN that are provided in this repository. The sha256 hashes of data files are given to make clear which data files and simulations refer to which code. The alist file hash is given to connect it to [AFF3CT](https://github.com/aff3ct/aff3ct) simulation results ([AFF3CT](https://github.com/aff3ct/aff3ct) accepts alist format but not our custom format. Alist files can be quite large and are therefore not part of this repository. To reproduce the [AFF3CT](https://github.com/aff3ct/aff3ct) simulation results, Julia code is provided to convert from cscmat to alist format.)
 
 | Rate | M (= Rate * N) |    N    | Code Structure |    sha256 of alist file     |    sha256 of cscmat file (exponents)   |
 |------|----------------|---------|----------------|----------------------------|-----------------------------|
@@ -11,3 +11,4 @@ The following is a list of LDPC matrices of size MxN that are provided in this r
 | 1/3  | 8192           | 24576 | Protograph-QC  | d839b0af96478e8d1e6c80ce52236aa284fcffcdc6ef7ed1603598a5eb22f184                        | 5502076bac2654824b58fe1744d106341b97c4f0c03c1be001d2f9bff07f273b                             |
 | 1/3  | 524288         | 1572864 | Protograph-QC  | dd32e139f2ab999ec18d8c4933dcb112fbfa4a26b511f29f57cd71590c8440dc                        | ba59da531aa7683ee0a6ccc913d2dc58b449c6b0345acdb565ff2fc1bbfac962                             |
 
+[AFF3CT](https://github.com/aff3ct/aff3ct) simulations for all LDPC codes (without considering rate adaption) can be found in the folder `codes/aff3ct_fer_simulations` and are marked with the sha256 hash of the corresponding alist file.

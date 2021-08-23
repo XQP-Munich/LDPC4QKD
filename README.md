@@ -15,7 +15,7 @@ We define the syndrome to be the matrix-vector product (modulo 2) of a sparse bi
 ### Contrast with forward error correction
 
 Contrary to how forward error correction works, generator matrices for the LDPC code are not used at all for distributed source coding. This repository does not provide generator matrices (calculating them from the parity check matrices is straightforward).
-Our decoder implementation operates on a bit-string (noisy version of true message) and its correct syndrome. This is slightly different from what is used for forward error correction (as in e.g. AFF3CT), where the decoder operates on only the noisy codeword. The noisy codeword is the result transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
+Our decoder implementation operates on a bit-string (noisy version of true message) and its correct syndrome. This is slightly different from what is used for forward error correction (as in e.g. [AFF3CT](https://github.com/aff3ct/aff3ct)), where the decoder operates on only the noisy codeword. The noisy codeword is the result transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
 
 
 ## How to use
@@ -32,8 +32,8 @@ Let us know if you're having problems with the provided materials, wish to contr
 
 ### Data files
 - A number of LDPC codes. Their parity check matrices are stored in a custom file format (called `CSCMAT`).
-- Simulations results (done using AFF3CT) showing FER of the LDPC matrices at various channel parameters.
-- Simulation results done using this repository only, showing FER of LDPC matrices, their rate adapted versions, and average rate under rate adaption (Work in progress!).
+- Simulations results done using [AFF3CT](https://github.com/aff3ct/aff3ct), showing FER of the LDPC matrices at various channel parameters.
+- Simulation results done using the decoder in this repository, showing FER of LDPC matrices, their rate adapted versions, and average rate under rate adaption (Work in progress!).
 - For each LDPC matrix, a specification of rate adaption. This is a list of pairs of row indices of the matrix that are combined (added mod 2) in each rate adaption step.
 
 ### Julia code to
