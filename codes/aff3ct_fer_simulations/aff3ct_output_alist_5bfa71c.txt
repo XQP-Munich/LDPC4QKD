@@ -1,0 +1,185 @@
+> sha256sum ../MATRICES/QCrypt21/L1=64_L2=64_s=2x4_11201235.jld.alist
+5bfa71c25ddb19f88a791fc15da9ecbe09dbe3bd49ebba87ecb596f5e1a6ea4f  ../MATRICES/QCrypt21/L1=64_L2=64_s=2x4_11201235.jld.alist
+
+
+# ----------------------------------------------------
+# ---- A FAST FORWARD ERROR CORRECTION TOOLBOX >> ----
+# ----------------------------------------------------
+# Parameters:
+# * Simulation ------------------------------------
+#    ** Type                      = BFER
+#    ** Type of bits              = int32
+#    ** Type of reals             = float32
+#    ** Date (UTC)                = 2021-07-31 22:51:08
+#    ** Git version               = v2.3.5-387-g4fdaa13
+#    ** Code type (C)             = LDPC
+#    ** Noise range               = 0.04 -> 0.11 dB
+#    ** Noise type (E)            = EP
+#    ** Seed                      = 0
+#    ** Statistics                = off
+#    ** Debug mode                = off
+#    ** Multi-threading (t)       = 14 thread(s)
+#    ** Coset approach (c)        = no
+#    ** Coded monitoring          = no
+#    ** Bad frames tracking       = off
+#    ** Bad frames replay         = off
+#    ** Clone allocations         = on
+#    ** Sequence multithreading   = on
+#    ** Bit rate                  = 0.5 (1/2)
+#    ** Inter frame level         = 1
+# * Source ----------------------------------------
+#    ** Type                      = AZCW
+#    ** Implementation            = STD
+#    ** Info. bits (K_info)       = 8192
+# * Codec -----------------------------------------
+#    ** Type                      = LDPC
+#    ** Info. bits (K)            = 8192
+#    ** Codeword size (N_cw)      = 16384
+#    ** Frame size (N)            = 16384
+#    ** Code rate                 = 0.5 (1/2)
+# * Encoder ---------------------------------------
+#    ** Type                      = AZCW
+#    ** Systematic                = yes
+# * Decoder ---------------------------------------
+#    ** Type (D)                  = BP_FLOODING
+#    ** Implementation            = SPA
+#    ** Systematic                = yes
+#    ** H matrix path             = ../MATRICES/QCrypt21/L1=64_L2=64_s=2x4_11201235.jld.alist
+#    ** H matrix reordering       = NONE
+#    ** Num. of iterations (i)    = 1000
+#    ** Stop criterion (syndrome) = on
+#    ** Stop criterion depth      = 1
+# * Modem -----------------------------------------
+#    ** Type                      = OOK
+#    ** Implementation            = STD
+#    ** Bits per symbol           = 1
+#    ** Sigma square              = on
+# * Channel ---------------------------------------
+#    ** Type                      = BSC
+#    ** Implementation            = STD
+#    ** Complex                   = off
+#    ** Add users                 = off
+# * Monitor ---------------------------------------
+#    ** Lazy reduction            = off
+#    ** Frame error count (e)     = 500
+#    ** Compute mutual info       = no
+# * Terminal --------------------------------------
+#    ** Enabled                   = yes
+#    ** Frequency (ms)            = 500
+# 
+# The simulation is running...
+# -----------------||------------------------------------------------------||---------------------
+# Event Probability||   Bit Error Rate (BER) and Frame Error Rate (FER)    ||  Global throughput  
+#       (EP)       ||                                                      ||  and elapsed time   
+# -----------------||------------------------------------------------------||---------------------
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+#               EP ||      FRA |       BE |       FE |      BER |      FER ||  SIM_THR |    ET/RT 
+#                  ||          |          |          |          |          ||   (Mb/s) | (hhmmss) 
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+#           0.1100 ||      513 |   448109 |      513 | 1.07e-01 | 1.00e+00 ||    0.057 | 00h01'13
+#           0.1090 ||      527 |   454571 |      527 | 1.05e-01 | 1.00e+00 ||    0.057 | 00h01'15
+#           0.1080 ||      522 |   443808 |      522 | 1.04e-01 | 1.00e+00 ||    0.057 | 00h01'15
+#           0.1070 ||      525 |   439985 |      525 | 1.02e-01 | 1.00e+00 ||    0.057 | 00h01'15
+#           0.1060 ||      522 |   430405 |      522 | 1.01e-01 | 1.00e+00 ||    0.057 | 00h01'15
+#           0.1050 ||      525 |   427401 |      525 | 9.94e-02 | 1.00e+00 ||    0.057 | 00h01'15
+            0.1040 ||      524 |   418130 |      524 | 9.74e-02 | 1.00e+00 ||    0.057 | 00h01'15   
+            0.1030 ||      523 |   408367 |      521 | 9.53e-02 | 9.96e-01 ||    0.057 | 00h01'15   
+            0.1020 ||      525 |   402546 |      524 | 9.36e-02 | 9.98e-01 ||    0.057 | 00h01'15   
+            0.1010 ||      534 |   394053 |      526 | 9.01e-02 | 9.85e-01 ||    0.058 | 00h01'15   
+            0.1000 ||      523 |   375285 |      514 | 8.76e-02 | 9.83e-01 ||    0.058 | 00h01'13   
+            0.0990 ||      573 |   374377 |      518 | 7.98e-02 | 9.04e-01 ||    0.062 | 00h01'15   
+            0.0980 ||      623 |   364000 |      519 | 7.13e-02 | 8.33e-01 ||    0.067 | 00h01'15   
+            0.0970 ||      751 |   362354 |      525 | 5.89e-02 | 6.99e-01 ||    0.079 | 00h01'17   
+            0.0960 ||      889 |   348138 |      515 | 4.78e-02 | 5.79e-01 ||    0.094 | 00h01'17   
+            0.0950 ||     1167 |   341134 |      513 | 3.57e-02 | 4.40e-01 ||    0.120 | 00h01'19   
+            0.0940 ||     1727 |   342485 |      521 | 2.42e-02 | 3.02e-01 ||    0.168 | 00h01'24   
+            0.0930 ||     2870 |   330359 |      510 | 1.41e-02 | 1.78e-01 ||    0.263 | 00h01'29   
+            0.0920 ||     5207 |   329119 |      508 | 7.72e-03 | 9.76e-02 ||    0.419 | 00h01'41   
+            0.0910 ||    11194 |   329609 |      516 | 3.59e-03 | 4.61e-02 ||    0.688 | 00h02'13   
+            0.0900 ||    25426 |   319898 |      504 | 1.54e-03 | 1.98e-02 ||    1.057 | 00h03'17   
+            0.0890 ||    70650 |   314636 |      501 | 5.44e-04 | 7.09e-03 ||    1.483 | 00h06'30   
+            0.0880 ||   209716 |   311767 |      502 | 1.81e-04 | 2.39e-03 ||    1.820 | 00h15'44   
+            0.0870 ||   690897 |   295708 |      500 | 5.22e-05 | 7.24e-04 ||    2.050 | 00h46'00   
+            0.0860 ||  2486721 |   266015 |      500 | 1.31e-05 | 2.01e-04 ||    2.216 | 02h33'11   
+            0.0850 ||  8269257 |   185697 |      500 | 2.74e-06 | 6.05e-05 ||    2.359 | 07h58'37   
+            0.0840 || 18741968 |    62494 |      500 | 4.07e-07 | 2.67e-05 ||    2.480 | 17h11'50   
+            0.0830 || 23708334 |    18287 |      500 | 9.42e-08 | 2.11e-05 ||    2.594 | 20h47'38   
+            0.0820 || 25893170 |     6351 |      500 | 2.99e-08 | 1.93e-05 ||    2.704 | 21h47'15
+
+# ----------------------------------------------------
+# ---- A FAST FORWARD ERROR CORRECTION TOOLBOX >> ----
+# ----------------------------------------------------
+# Parameters:
+# * Simulation ------------------------------------
+#    ** Type                      = BFER
+#    ** Type of bits              = int32
+#    ** Type of reals             = float32
+#    ** Date (UTC)                = 2021-08-04 18:42:24
+#    ** Git version               = v2.3.5-387-g4fdaa13
+#    ** Code type (C)             = LDPC
+#    ** Noise range               = 0.04 -> 0.081 dB
+#    ** Noise type (E)            = EP
+#    ** Seed                      = 0
+#    ** Statistics                = off
+#    ** Debug mode                = off
+#    ** Multi-threading (t)       = 14 thread(s)
+#    ** Coset approach (c)        = no
+#    ** Coded monitoring          = no
+#    ** Bad frames tracking       = off
+#    ** Bad frames replay         = off
+#    ** Clone allocations         = on
+#    ** Sequence multithreading   = on
+#    ** Bit rate                  = 0.5 (1/2)
+#    ** Inter frame level         = 1
+# * Source ----------------------------------------
+#    ** Type                      = AZCW
+#    ** Implementation            = STD
+#    ** Info. bits (K_info)       = 8192
+# * Codec -----------------------------------------
+#    ** Type                      = LDPC
+#    ** Info. bits (K)            = 8192
+#    ** Codeword size (N_cw)      = 16384
+#    ** Frame size (N)            = 16384
+#    ** Code rate                 = 0.5 (1/2)
+# * Encoder ---------------------------------------
+#    ** Type                      = AZCW
+#    ** Systematic                = yes
+# * Decoder ---------------------------------------
+#    ** Type (D)                  = BP_FLOODING
+#    ** Implementation            = SPA
+#    ** Systematic                = yes
+#    ** H matrix path             = ../MATRICES/QCrypt21/L1=64_L2=64_s=2x4_11201235.jld.alist
+#    ** H matrix reordering       = NONE
+#    ** Num. of iterations (i)    = 1000
+#    ** Stop criterion (syndrome) = on
+#    ** Stop criterion depth      = 1
+# * Modem -----------------------------------------
+#    ** Type                      = OOK
+#    ** Implementation            = STD
+#    ** Bits per symbol           = 1
+#    ** Sigma square              = on
+# * Channel ---------------------------------------
+#    ** Type                      = BSC
+#    ** Implementation            = STD
+#    ** Complex                   = off
+#    ** Add users                 = off
+# * Monitor ---------------------------------------
+#    ** Lazy reduction            = off
+#    ** Frame error count (e)     = 500
+#    ** Compute mutual info       = no
+# * Terminal --------------------------------------
+#    ** Enabled                   = yes
+#    ** Frequency (ms)            = 500
+#
+# The simulation is running...
+# -----------------||------------------------------------------------------||---------------------
+# Event Probability||   Bit Error Rate (BER) and Frame Error Rate (FER)    ||  Global throughput
+#       (EP)       ||                                                      ||  and elapsed time
+# -----------------||------------------------------------------------------||---------------------
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+#               EP ||      FRA |       BE |       FE |      BER |      FER ||  SIM_THR |    ET/RT
+#                  ||          |          |          |          |          ||   (Mb/s) | (hhmmss)
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+            0.0810 || 32778908 |     3998 |      500 | 1.49e-08 | 1.53e-05 ||    2.804 | 26h36'01
+            0.0800 || 35973315 |     4020 |      500 | 1.36e-08 | 1.39e-05 ||    2.912 | 28h06'28
+

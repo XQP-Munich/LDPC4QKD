@@ -4,6 +4,9 @@ cmake-build-debug/
 cmake-build-release/
 cmake-build-debug-coverage/
 
+# VSCode
+.vscode
+
 # virtual environment and pycache
 venv/
 __pycache__/
