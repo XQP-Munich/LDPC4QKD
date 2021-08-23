@@ -1,6 +1,6 @@
 # 0.0.2
 # Compressed sparse column storage of matrix (arrays `colptr`, `rowval`, `stored_values` as space separated decimal integers. Stored entries may be zero.).
-# Quasi cyclic exponents for a binary LDPC matrix with lifting factor 64.
+# Quasi cyclic exponents for a binary LDPC matrix with expansion factor 64.
 # n_rows n_columns n_stored_entries
 128 384 1600
 
