@@ -3,7 +3,7 @@ module StorageUtilsLDPC
 using SparseArrays
 using LinearAlgebra
 
-export load_alist, save_to_alist, save_to_cscmat, load_cscmat
+export load_alist, save_to_alist, save_to_cscmat, load_cscmat, load_matrix_from_qc_cscmat_file
 
 
 """Load an LDPC matrix from a text file in alist format."""
@@ -282,6 +282,78 @@ function file_extension(path::String)
     else
         return ""
     end
+end
+
+
+"""
+convert matrix of exponents for QC LDPC matrix to the actual binary LDPC matrix.
+
+The resulting QC-LDPC matrix is a block matrix where each block is either zero, 
+or a circ-shifted identity matrix of size `expansion_factor`x`expansion_factor`.
+Each entry of the matrix Hqc denotes the amount of circular shift in the QC-LDPC matrix.
+No entry (i.e., a zero but not a stored one) at a given position in Hqc means the associated block is zero.
+"""
+function Hqc_to_pcm(
+    Hqc::SparseMatrixCSC{T,Int} where T <: Integer, 
+    expansion_factor::Integer, 
+    )
+    scale_idx(idx::Integer, expansion_factor::Integer) = (idx - 1) * expansion_factor + 1
+    shifted_identity(N::Integer, shift::Integer, scalar_one=Int8(1)) = circshift(Matrix(scalar_one*I, N, N), (0, shift))
+
+    H = spzeros(Int8, size(Hqc, 1) * expansion_factor, size(Hqc, 2) * expansion_factor)
+
+    Is, Js, Vs = findnz(Hqc)
+
+    for (i, j, v) in zip(Is, Js, Vs)
+        i_start = scale_idx(i, expansion_factor)
+        i_end = scale_idx(i+1,expansion_factor) - 1
+        j_start = scale_idx(j, expansion_factor)
+        j_end = scale_idx(j+1, expansion_factor) - 1
+        H[i_start:i_end, j_start:j_end] = shifted_identity(expansion_factor, v, Int8(1))
+    end
+    
+    return H
+end
+
+
+"""
+Load exponents for a QC-LDPC matrix from a `.CSCMAT` file and return the binary LDPC matrix.
+
+Not every input `.cscmat` file will give a meaninful result. 
+The `.cscmat` format allows to store general sparse matrices in text format. 
+Meanwhile, this function expects that the file stores exponents for a quasi-cyclic LDPC matrix.
+The exponent matrix is read and expanded using the expansion factor.
+
+If the expansion factor is not provided, the CSCMAT file must contain a line specifying it.
+"""
+function load_matrix_from_qc_cscmat_file(file_path::AbstractString; expansion_factor=nothing)
+    if isnothing(expansion_factor)
+        header = ""
+        next_line = ""
+        
+        open(file_path, "r") do f
+            while true
+                header *= (next_line * "\n")
+                next_line = readline(f)
+        
+                (length(next_line) > 0 && next_line[1] == '#') || break
+            end
+        end
+        
+        m = match(r"Quasi cyclic exponents for a binary LDPC matrix with expansion_factor ([0-9]*)\.", header)
+        if isnothing(m)
+            error("Failed to infer expansion factor! No header line found containing it.")
+        else
+            expansion_factor = parse(Int, m.captures[1])
+            @info "Inferred expansion factor from file header: $expansion_factor"
+        end
+    end
+
+    Hqc = load_cscmat(file_path)
+
+    H = Hqc_to_pcm(Hqc, expansion_factor)
+
+    return H
 end
 
 
