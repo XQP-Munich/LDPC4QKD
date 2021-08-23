@@ -59,4 +59,4 @@ TODO add paths
 
 ### Table of LDPC matrices
 
-TODO
+See directory `codes`.
