@@ -1,7 +1,6 @@
 [![workflow](https://github.com/XQP-Munich/LDPC4QKD/actions/workflows/ci-cmake_tests.yml/badge.svg)](https://github.com/XQP-Munich/LDPC4QKD/actions)
 [![License](https://img.shields.io/github/license/XQP-Munich/LDPC4QKD)](./LICENSE)
-
-# LDPC4QKD: Rate adaptive LDPC-based methods for distributed source coding.
+# LDPC4QKD - LDPC codes for rate adaptive distributed source coding
 
 Note: This repository is still missing some features which will be added very soon.
 
@@ -17,6 +16,12 @@ We define the syndrome to be the matrix-vector product (modulo 2) of a sparse bi
 
 Contrary to how forward error correction works, generator matrices for the LDPC code are not used at all for distributed source coding. This repository does not provide generator matrices (calculating them from the parity check matrices is straightforward).
 Our decoder implementation operates on a bit-string (noisy version of true message) and its correct syndrome. This is slightly different from what is used for forward error correction (as in e.g. AFF3CT), where the decoder operates on only the noisy codeword. The noisy codeword is the result transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
+
+
+## How to use
+
+Start from the `examples` directory, which shows a basic example of how to use the C++ header containing the decoder. 
+TODO
 
 ## How to contribute
 This repository is actively maintained. Issues and pull requests will be responded to and processed.
@@ -41,12 +46,6 @@ Let us know if you're having problems with the provided materials, wish to contr
 - For this purpose, the LDPC matrix can be stored within the executable. Julia code is provided to automatically generate header files storing an LDPC code in constant arrays.
 
 TODO add paths
-
-## How to use
-
-Start from the `examples` directory, which shows a basic example of how to use the C++ header containing the decoder. 
-TODO
-
 
 ## Planned features and improvements
 - Code to automatically generate reports on quality of all LDPC codes and rate adapted performance (work in progress)
