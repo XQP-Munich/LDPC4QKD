@@ -138,7 +138,23 @@ function save_to_alist(matrix::AbstractArray{Int8,2}, out_file_path::String)
 end
 
 
-CSC_FORMAT_VERSION = v"0.0.2"  # track version of our custom CSCMAT file format.
+
+ # helper methods for testing the parity check matrix
+ function get_variable_node_degrees(matrix::AbstractArray{Int8,2})
+    @assert(length(size(matrix)) == 2, "Matrix required. Wrong number of dimensions")
+    return [sum(row) for row in eachcol(matrix)]
+ end
+
+
+ function get_check_node_degrees(matrix::AbstractArray{Int8,2})
+    @assert(length(size(matrix)) == 2, "Matrix required. Wrong number of dimensions")
+    return [sum(row) for row in eachrow(matrix)]
+ end
+
+
+# Methods relevant to CSCMAT format
+
+CSCMAT_FORMAT_VERSION = v"0.0.2"  # track version of our custom CSCMAT file format.
 
 
 """
@@ -171,7 +187,7 @@ function save_to_cscmat(
     number_map(n::Integer) = string(n, base=try_hex ? 16 : 10)
 
     open(destination_file_path, "w+") do file
-        println(file, "# $CSC_FORMAT_VERSION")
+        println(file, "# $CSCMAT_FORMAT_VERSION")
         println(file, "# Compressed sparse column storage of matrix (arrays `colptr`, `rowval`, `stored_values`"
             *" as space separated $(try_hex ? "hexadecimal" : "decimal") integers. Stored entries may be zero.).")
         println(file, additional_header_lines)
@@ -216,7 +232,7 @@ function load_cscmat(file_path::String;
     end
 
     try
-        header[1] == "# $CSC_FORMAT_VERSION" && @warn "File written in format $(header[1][2:end]) is being read in format $CSC_FORMAT_VERSION"
+        header[1] == "# $CSCMAT_FORMAT_VERSION" && @warn "File written in format $(header[1][2:end]) is being read in format $CSCMAT_FORMAT_VERSION"
     catch e
         @warn "Failed to verify CSC file format version: $e"
     end
