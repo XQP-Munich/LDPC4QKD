@@ -97,17 +97,20 @@ namespace LDPC4QKD {
                 throw std::domain_error("Requested syndrome is smaller than supported by the specified rate adaption.");
             }
 
-            std::vector<int> non_ra_encoding(n_rows);
-            // encode with rate adaption
+            // int8_t because value -1 is used to mark bits included into final output
+            std::vector<std::int8_t> non_ra_encoding(n_rows);
+
+            // first encode without rate adaption
             for (std::size_t col = 0; col < in.size(); col++)
                 for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
                     non_ra_encoding[row_idx[j]] = xor_as_bools(non_ra_encoding[row_idx[j]], in[col]);
 
+            // now use the non-rate adapted syndrome to compute the rate adapted syndrome
             const std::size_t n_line_combinations = n_rows - output_syndrome_length;
-
             out.assign(output_syndrome_length, 0);
 
             std::size_t start_of_ra_part = output_syndrome_length - n_line_combinations;
+
             // put results of combined lines at the back of output.
             for (std::size_t i{}; i < n_line_combinations; ++i) {
                 out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[rows_to_combine[2 * i]],
