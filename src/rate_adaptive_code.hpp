@@ -88,8 +88,7 @@ namespace LDPC4QKD {
         void encode_with_ra(
                 const std::vector<Bit> &in, std::vector<Bit> &out, std::size_t output_syndrome_length) const {
             if (in.size() != n_cols) {
-                DEBUG_MESSAGE("Encoder (encode_with_ra) received invalid input length.");  // TODO maybe use exception?
-                return;
+                throw std::domain_error("Encoder (encode_with_ra) received invalid input length.");
             }
             if (output_syndrome_length > n_rows) {
                 throw std::domain_error("Requested syndrome is larger than the number of rows of the mother matrix.");
@@ -111,10 +110,10 @@ namespace LDPC4QKD {
             std::size_t start_of_ra_part = output_syndrome_length - n_line_combinations;
             // put results of combined lines at the back of output.
             for (std::size_t i{}; i < n_line_combinations; ++i) {
-                out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[rows_to_combine[2*i]],
-                                      non_ra_encoding[rows_to_combine[2*i+1]]);
-                non_ra_encoding[rows_to_combine[2*i]] = -1;  // -1 marks that the value has been used.
-                non_ra_encoding[rows_to_combine[2*i+1]] = -1;
+                out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[rows_to_combine[2 * i]],
+                                                         non_ra_encoding[rows_to_combine[2 * i + 1]]);
+                non_ra_encoding[rows_to_combine[2 * i]] = -1;  // -1 marks that the value has been used.
+                non_ra_encoding[rows_to_combine[2 * i + 1]] = -1;
             }
 
             std::size_t j{};

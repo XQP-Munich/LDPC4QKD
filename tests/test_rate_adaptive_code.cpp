@@ -38,11 +38,11 @@ namespace {
 
 }
 
-TEST(rate_adaptive_code, TMPTMPTMPTMTPTMP) {
-    auto H = get_code_big();
-    EXPECT_EQ(hash_vector(H.colptr), 736283749);
-    EXPECT_EQ(hash_vector(H.row_idx), 4281948431);
-}
+//TEST(rate_adaptive_code, TMPTMPTMPTMTPTMP) { // this test accesses private fields.
+//    auto H = get_code_big();
+//    EXPECT_EQ(hash_vector(H.colptr), 736283749);
+//    EXPECT_EQ(hash_vector(H.row_idx), 4281948431);
+//}
 
 
 TEST(rate_adaptive_code, decode_test_small) {
