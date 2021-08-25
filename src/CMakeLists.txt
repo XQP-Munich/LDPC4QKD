@@ -9,9 +9,9 @@ if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
 
     add_custom_command(
             OUTPUT autogen_ldpc_matrix_csc.hpp
-            DEPENDS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc_example.hpp"
+            DEPENDS "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_ldpc_matrix_csc.hpp"
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc_example.hpp"
+            "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_ldpc_matrix_csc.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp"
             VERBATIM
     )
@@ -24,9 +24,9 @@ if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp")
 
     add_custom_command(
             OUTPUT autogen_rate_adaption.hpp
-            DEPENDS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption_example.hpp"
+            DEPENDS "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_rate_adaption.hpp"
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption_example.hpp"
+            "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_rate_adaption.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp"
             VERBATIM
     )
