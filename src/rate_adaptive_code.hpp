@@ -44,8 +44,7 @@ namespace LDPC4QKD {
                   rows_to_combine({}) {
             constexpr std::size_t n_line_combs = 0;
 
-            recompute_pos_checkn(n_line_combs);
-            recompute_pos_varn(n_line_combs);
+            recompute_pos_vn_cn(n_line_combs);
         }
 
         /// constructor for using the code with rate adaption
@@ -68,8 +67,7 @@ namespace LDPC4QKD {
                                         "is larger than the given array of lines to combine.");
             }
 
-            recompute_pos_checkn(initial_row_combs);
-            recompute_pos_varn(initial_row_combs);
+            recompute_pos_vn_cn(initial_row_combs);
         }
 
 
@@ -225,6 +223,12 @@ namespace LDPC4QKD {
             return false;  // Decoding was not successful.
         }
 
+        /// manually trigger rate adaption. In normal circumstances, the user does not need this function
+        // TODO maybe make private?
+        void set_rate(std::size_t n_line_combs) {
+            recompute_pos_vn_cn(n_line_combs);
+        }
+
         // ----------------------------------------------------------------------------------------- getters and setters
         [[nodiscard]]
         const std::vector<std::vector<idx_t>> &getPosCheckn() const {
@@ -237,7 +241,7 @@ namespace LDPC4QKD {
         }
 
         /// ignores rate adaption! Only gives number of rows in the mother matrix.
-        [[nodiscard]] std::size_t get_NRows_mother_matrix() const {
+        [[nodiscard]] std::size_t get_n_rows_mother_matrix() const {
             return n_mother_rows;
         }
 
@@ -267,12 +271,22 @@ namespace LDPC4QKD {
             }
         }
 
-    private:   // -------------------------------------------------------------------------------------- private members
-        void set_rate(std::size_t n_line_combs) {
-            recompute_pos_checkn(n_line_combs);
-            recompute_pos_varn(n_line_combs);
+        bool operator==(const RateAdaptiveCode &rhs) const {
+            return colptr == rhs.colptr &&
+                   row_idx == rhs.row_idx &&
+                   rows_to_combine == rhs.rows_to_combine &&
+                   pos_checkn == rhs.pos_checkn &&
+                   pos_varn == rhs.pos_varn &&
+                   n_mother_rows == rhs.n_mother_rows &&
+                   n_cols == rhs.n_cols &&
+                   n_ra_rows == rhs.n_ra_rows;
         }
 
+        bool operator!=(const RateAdaptiveCode &rhs) const {
+            return rhs != *this;
+        }
+
+    private:   // -------------------------------------------------------------------------------------- private members
 
         constexpr static bool xor_as_bools(Bit lhs, Bit rhs) {
             return (static_cast<bool>(lhs) != static_cast<bool>(rhs));
@@ -360,26 +374,77 @@ namespace LDPC4QKD {
             }
         }
 
-        void recompute_pos_varn(std::size_t n_line_combs) {  // TODO implement ra
-            // This uses different size vectors for nodes with different degrees.
-            // Alternatively, one could set the sizes to be the same using
+        void recompute_pos_vn_cn(std::size_t n_line_combs) {
+
+            {   // recompute pos_varn ---------------------------------------------------------------
+                // TODO check if this assumes full rank of H (should have that anyway)
+                // This uses different size vectors for nodes with different degrees.
+                // Alternatively, one could set the sizes to be the same using
 //            auto max_check_deg = *std::max_element(check_node_degrees.begin(), check_node_degrees.end());
-            pos_varn.assign(n_mother_rows, std::vector<idx_t>{});
 
-            for (std::size_t col = 0; col < n_cols; col++)
-                for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
-                    pos_varn[row_idx[j]].push_back(col);
-        }
+                n_ra_rows = n_mother_rows - n_line_combs;
+                pos_varn.assign(n_ra_rows, std::vector<idx_t>{});
 
-        void recompute_pos_checkn(std::size_t n_line_combs) {  // TODO implement ra
-            // This uses different size vectors for nodes with different degrees.
-            // Alternatively, one could set the sizes to be the same using
-//            auto max_var_deg = *std::max_element(variable_node_degrees.begin(), variable_node_degrees.end());
-            pos_checkn.assign(n_cols, std::vector<idx_t>{});
+                std::vector<std::vector<idx_t>> pos_varn_nora{};
 
-            for (std::size_t col = 0; col < n_cols; col++)
-                for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
-                    pos_checkn[col].push_back(row_idx[j]);
+                if (n_line_combs == 0) {
+                    for (std::size_t col = 0; col < n_cols; col++) {
+                        for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++) {
+                            pos_varn[row_idx[j]].push_back(col);
+                        }
+                    }
+                } else {
+                    // first compute non-rate adapted variable nodes and store in temporary vector
+                    pos_varn_nora.resize(n_mother_rows);
+
+                    for (std::size_t col = 0; col < n_cols; col++) {
+                        for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++) {
+                            pos_varn_nora[row_idx[j]].push_back(col);
+                        }
+                    }
+
+                    // put results of combined lines at the back of the new LDPC code
+                    const std::size_t start_of_ra_part = n_mother_rows - 2 * n_line_combs;
+
+                    for (std::size_t i{}; i < n_line_combs; ++i) {
+                        pos_varn[start_of_ra_part + i].insert(pos_varn[start_of_ra_part + i].end(),
+                                                              pos_varn_nora[rows_to_combine[2 * i]].begin(),
+                                                              pos_varn_nora[rows_to_combine[2 * i]].end());
+                        pos_varn[start_of_ra_part + i].insert(pos_varn[start_of_ra_part + i].end(),
+                                                              pos_varn_nora[rows_to_combine[2 * i + 1]].begin(),
+                                                              pos_varn_nora[rows_to_combine[2 * i + 1]].end());
+
+                        pos_varn_nora[rows_to_combine[2 * i]].clear();
+                        pos_varn_nora[rows_to_combine[2 * i + 1]].clear();
+                    }
+
+                    std::size_t j{};
+
+                    // put the remaining lines that were not rate adapted at the front of the new LDPC code.
+                    for (std::size_t i{}; i < start_of_ra_part; ++i) {
+                        while (pos_varn_nora[j].empty()) {
+                            j++;
+                        }
+                        pos_varn[i] = pos_varn_nora[j];  // TODO consider move-assignment for better performance
+                        j++;
+                    }
+
+                }
+            }  // end recompute pos_varn
+
+            {   // recompute pos_checkn -------------------------------------------------------------------------------
+                // Now compute pos_checkn from the previously computed pos_varn.
+                // These arrays contain the same information.
+                pos_checkn.assign(n_cols, std::vector<idx_t>{});
+
+                // TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                for (std::size_t col = 0; col < n_cols; col++) {
+                    for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++) {
+                        pos_checkn[col].push_back(row_idx[j]);
+                    }
+                }
+            }  // end recompute pos_checkn
         }
 
         // ---------------------------------------------------------------------------------------------- private fields
@@ -393,6 +458,7 @@ namespace LDPC4QKD {
         const std::size_t n_mother_rows;
         const std::size_t n_cols;
         std::size_t n_ra_rows;
+
     };
 
 }

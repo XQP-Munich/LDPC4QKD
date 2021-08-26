@@ -27,7 +27,7 @@ namespace {
         return RateAdaptiveCode<Bit>(colptr, row_idx);
     }
 
-    RateAdaptiveCode<Bit> get_code_wra() {
+    RateAdaptiveCode<Bit> get_code_big_wra() {
         std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
         std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
         std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
@@ -107,7 +107,7 @@ TEST(rate_adaptive_code, decode_test_big) {
 TEST(rate_adaptive_code, encode_no_ra) {
     auto H = get_code_big_nora();
     std::vector<Bit> in = get_bitstring(H.getNCols());
-    std::vector<Bit> out(H.get_NRows_mother_matrix());
+    std::vector<Bit> out(H.get_n_rows_mother_matrix());
 
     std::cout << hash_vector(in) << std::endl;
     H.encode_no_ra(in, out);
@@ -119,7 +119,7 @@ TEST(rate_adaptive_code, encode_no_ra) {
 TEST(rate_adaptive_code, encode_current_rate) {
     auto H = get_code_big_nora();
     std::vector<Bit> in = get_bitstring(H.getNCols());
-    std::vector<Bit> out(H.get_NRows_mother_matrix());
+    std::vector<Bit> out(H.get_n_rows_mother_matrix());
 
     H.encode_at_current_rate(in, out);
 
@@ -149,42 +149,54 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 
 TEST(rate_adaptive_code, getters) {
     auto H = get_code_big_nora();
-    EXPECT_EQ(H.get_NRows_mother_matrix(), 2048);
+    EXPECT_EQ(H.get_n_rows_mother_matrix(), 2048);
     EXPECT_EQ(H.getNCols(), 6144);
 
 //    H.get_current_n_rate_adapted_rows();
 }
 
 TEST(rate_adaptive_code, encode_with_ra) {
-    auto H = get_code_wra();
+    auto H = get_code_big_wra();
 
     std::vector<Bit> input = get_bitstring(H.getNCols()); // true data to be sent
 
     // storage for syndrome. Initialize with arbitrary values, which must be overwritten by encoder.
-    std::vector<Bit> syndrome = get_bitstring(H.get_NRows_mother_matrix());
+    std::vector<Bit> syndrome = get_bitstring(H.get_n_rows_mother_matrix());
 
     // test agreement with encoder that doesn't use rate adaption
-    H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix());
+    H.encode_with_ra(input, syndrome, H.get_n_rows_mother_matrix());
 
     EXPECT_EQ(hash_vector(syndrome), 2814594723);
 
     // check that invalid requests lead to exceptions
     EXPECT_ANY_THROW(H.encode_with_ra({true, false}, syndrome, -1));  // invalid input size
     EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, -1)); // invalid requested size
-    EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix() + 1)); // too big requested size
+    EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, H.get_n_rows_mother_matrix() + 1)); // too big requested size
 
-    H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix() / 2 + 1);
+    H.encode_with_ra(input, syndrome, H.get_n_rows_mother_matrix() / 2 + 1);
     EXPECT_EQ(hash_vector(syndrome), 0x4e395580);
 
-}
+    H.encode_with_ra(input, syndrome, static_cast<size_t>(H.get_n_rows_mother_matrix() * 0.7));
+    EXPECT_EQ(hash_vector(syndrome), 0x01dab680);
+    }
 
 
 TEST(rate_adaptive_code, rate_adaption) {
-    // TODO
-    FAIL();
-//    auto H = get_code_big(give rate adaption initial);
+    auto H = get_code_big_wra();
+
+    {
+        auto H_copy = H;
+        H_copy.set_rate(0);
+        EXPECT_EQ(H_copy, H);  // set_rate(0) does nothing.
+
+        constexpr std::size_t n_line_combs = 5;
+        H_copy.set_rate(n_line_combs);
+        EXPECT_EQ(H_copy.get_n_rows_after_rate_adaption(), H_copy.get_n_rows_mother_matrix() - n_line_combs);
+    }
+
     // check sizes
     // change rate adaption
     // check sizes
 
+    FAIL(); // TODO finish test
 }
