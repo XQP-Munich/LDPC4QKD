@@ -14,16 +14,24 @@
 
 // Test cases test against constants known to be correct for the LDPC-matrix defined here:
 #include "fortest_autogen_ldpc_matrix_csc.hpp"
+#include "fortest_autogen_rate_adaption.hpp"
 
 using namespace HelpersForTests;
 using namespace LDPC4QKD;
 
 namespace {
 
-    RateAdaptiveCode<Bit> get_code_big() {
+    RateAdaptiveCode<Bit> get_code_big_nora() {
         std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
         std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
         return RateAdaptiveCode<Bit>(colptr, row_idx);
+    }
+
+    RateAdaptiveCode<Bit> get_code_wra() {
+        std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
+        std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
+        std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
+        return RateAdaptiveCode<Bit>(colptr, row_idx, rows_to_combine);
     }
 
 
@@ -68,7 +76,7 @@ TEST(rate_adaptive_code, decode_test_small) {
 }
 
 TEST(rate_adaptive_code, decode_test_big) {
-    auto H = get_code_big();
+    auto H = get_code_big_nora();
 
     std::vector<Bit> x = get_bitstring(H.getNCols()); // true data to be sent
     std::vector<Bit> syndrome;
@@ -97,7 +105,7 @@ TEST(rate_adaptive_code, decode_test_big) {
 
 
 TEST(rate_adaptive_code, encode_no_ra) {
-    auto H = get_code_big();
+    auto H = get_code_big_nora();
     std::vector<Bit> in = get_bitstring(H.getNCols());
     std::vector<Bit> out(H.get_NRows_mother_matrix());
 
@@ -109,7 +117,7 @@ TEST(rate_adaptive_code, encode_no_ra) {
 
 
 TEST(rate_adaptive_code, encode_current_rate) {
-    auto H = get_code_big();
+    auto H = get_code_big_nora();
     std::vector<Bit> in = get_bitstring(H.getNCols());
     std::vector<Bit> out(H.get_NRows_mother_matrix());
 
@@ -140,7 +148,7 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 
 
 TEST(rate_adaptive_code, getters) {
-    auto H = get_code_big();
+    auto H = get_code_big_nora();
     EXPECT_EQ(H.get_NRows_mother_matrix(), 2048);
     EXPECT_EQ(H.getNCols(), 6144);
 
@@ -148,7 +156,7 @@ TEST(rate_adaptive_code, getters) {
 }
 
 TEST(rate_adaptive_code, encode_with_ra) {
-    auto H = get_code_big();
+    auto H = get_code_wra();
 
     std::vector<Bit> input = get_bitstring(H.getNCols()); // true data to be sent
 
@@ -166,7 +174,7 @@ TEST(rate_adaptive_code, encode_with_ra) {
     EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix() + 1)); // too big requested size
 
     H.encode_with_ra(input, syndrome, H.get_NRows_mother_matrix() / 2 + 1);
-    EXPECT_EQ(hash_vector(syndrome), 2814594723);
+    EXPECT_EQ(hash_vector(syndrome), 0x4e395580);
 
 }
 

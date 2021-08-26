@@ -39,7 +39,8 @@ namespace LDPC4QKD {
         RateAdaptiveCode(const std::vector<colptr_t> &colptr, const std::vector<idx_t> &rowIdx)
                 : colptr(colptr), row_idx(rowIdx),
                   n_cols(colptr.size() - 1),
-                  n_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
+                  n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
+                  n_ra_rows(n_mother_rows),
                   rows_to_combine({}) {
             constexpr std::size_t n_line_combs = 0;
 
@@ -54,7 +55,8 @@ namespace LDPC4QKD {
                          std::size_t initial_row_combs = 0)
                 : colptr(colptr), row_idx(rowIdx),
                   n_cols(colptr.size() - 1),
-                  n_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1 - rows_to_combine_rate_adapt.size() / 2),
+                  n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
+                  n_ra_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1 - initial_row_combs / 2),
                   rows_to_combine(rows_to_combine_rate_adapt) {
             if (rows_to_combine.size() % 2 != 0) {
                 throw std::domain_error("The number of rows to combine for rate adaption "
@@ -77,7 +79,7 @@ namespace LDPC4QKD {
                 DEBUG_MESSAGE("Encoder (encode_no_ra) received invalid input length.");  // TODO maybe use exception?
                 return;
             }
-            out.assign(n_rows, 0);
+            out.assign(n_mother_rows, 0);
 
             for (std::size_t col = 0; col < in.size(); col++)
                 for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
@@ -90,15 +92,15 @@ namespace LDPC4QKD {
             if (in.size() != n_cols) {
                 throw std::domain_error("Encoder (encode_with_ra) received invalid input length.");
             }
-            if (output_syndrome_length > n_rows) {
+            if (output_syndrome_length > n_mother_rows) {
                 throw std::domain_error("Requested syndrome is larger than the number of rows of the mother matrix.");
             }
-            if (output_syndrome_length < n_rows - (rows_to_combine.size() / 2)) {
+            if (output_syndrome_length < n_mother_rows - (rows_to_combine.size() / 2)) {
                 throw std::domain_error("Requested syndrome is smaller than supported by the specified rate adaption.");
             }
 
             // int8_t because value -1 is used to mark bits included into final output
-            std::vector<std::int8_t> non_ra_encoding(n_rows);
+            std::vector<std::int8_t> non_ra_encoding(n_mother_rows);
 
             // first encode without rate adaption
             for (std::size_t col = 0; col < in.size(); col++)
@@ -106,7 +108,7 @@ namespace LDPC4QKD {
                     non_ra_encoding[row_idx[j]] = xor_as_bools(non_ra_encoding[row_idx[j]], in[col]);
 
             // now use the non-rate adapted syndrome to compute the rate adapted syndrome
-            const std::size_t n_line_combinations = n_rows - output_syndrome_length;
+            const std::size_t n_line_combinations = n_mother_rows - output_syndrome_length;
             out.assign(output_syndrome_length, 0);
 
             std::size_t start_of_ra_part = output_syndrome_length - n_line_combinations;
@@ -174,7 +176,7 @@ namespace LDPC4QKD {
 
             out.resize(llrs.size());
 
-            std::vector<std::vector<double>> msg_v(n_rows);  // messages from variable nodes to check nodes
+            std::vector<std::vector<double>> msg_v(n_mother_rows);  // messages from variable nodes to check nodes
             std::vector<std::vector<double>> msg_c(n_cols);  // messages from check nodes to variable nodes
 
             // initialize msg_v
@@ -224,22 +226,24 @@ namespace LDPC4QKD {
         }
 
         // ----------------------------------------------------------------------------------------- getters and setters
+        [[nodiscard]]
         const std::vector<std::vector<idx_t>> &getPosCheckn() const {
             return pos_checkn;
         }
 
+        [[nodiscard]]
         const std::vector<std::vector<idx_t>> &getPosVarn() const {
             return pos_varn;
         }
 
         /// ignores rate adaption! Only gives number of rows in the mother matrix.
         [[nodiscard]] std::size_t get_NRows_mother_matrix() const {
-            return n_rows;
+            return n_mother_rows;
         }
 
         /// Includes rate adaption. Access to internal state!
         [[nodiscard]] std::size_t get_n_rows_after_rate_adaption() const {
-            return n_rows;
+            return n_ra_rows;
         }
 
         [[nodiscard]] std::size_t getNCols() const {
@@ -280,7 +284,7 @@ namespace LDPC4QKD {
             double msg_part{};
             std::vector<std::size_t> mc_position(n_cols);
 
-            for (std::size_t m{}; m < n_rows; ++m) {
+            for (std::size_t m{}; m < n_mother_rows; ++m) {
                 // product of incoming messages
                 double mc_prod = 1 - 2 * static_cast<double>(syndrome[m]);
                 // Note: pos_varn[m].size() = check_node_degrees[m]
@@ -356,18 +360,18 @@ namespace LDPC4QKD {
             }
         }
 
-        void recompute_pos_varn(std::size_t n_line_combs) {
+        void recompute_pos_varn(std::size_t n_line_combs) {  // TODO implement ra
             // This uses different size vectors for nodes with different degrees.
             // Alternatively, one could set the sizes to be the same using
 //            auto max_check_deg = *std::max_element(check_node_degrees.begin(), check_node_degrees.end());
-            pos_varn.assign(n_rows, std::vector<idx_t>{});
+            pos_varn.assign(n_mother_rows, std::vector<idx_t>{});
 
             for (std::size_t col = 0; col < n_cols; col++)
                 for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++)
                     pos_varn[row_idx[j]].push_back(col);
         }
 
-        void recompute_pos_checkn(std::size_t n_line_combs) {
+        void recompute_pos_checkn(std::size_t n_line_combs) {  // TODO implement ra
             // This uses different size vectors for nodes with different degrees.
             // Alternatively, one could set the sizes to be the same using
 //            auto max_var_deg = *std::max_element(variable_node_degrees.begin(), variable_node_degrees.end());
@@ -386,8 +390,9 @@ namespace LDPC4QKD {
         std::vector<std::vector<idx_t>> pos_checkn;  // Input check nodes to each variable node
         std::vector<std::vector<idx_t>> pos_varn;  // Input variable nodes to each check node
 
-        const std::size_t n_rows;
+        const std::size_t n_mother_rows;
         const std::size_t n_cols;
+        std::size_t n_ra_rows;
     };
 
 }
