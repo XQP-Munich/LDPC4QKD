@@ -126,6 +126,21 @@ namespace HelpersForTests {
         }
     }
 
+
+    template<typename T>
+    void noise_bitstring_inplace(std::mt19937_64 &rng, std::vector<T> &src, double err_prob) {
+        std::bernoulli_distribution distribution(err_prob);
+
+        for (std::size_t i = 0; i < src.size(); i++) {
+            if (distribution(rng)) {
+                src[i] = !src[i];
+            } else {
+                src[i] = src[i];
+            }
+        }
+    }
+
+
     template<typename T>
     void noise_bitstring_inplace(std::vector<T> &src, double err_prob, unsigned int seed = 0) {
         std::mt19937_64 rng{seed}; // hard-coded seed for testing purposes.

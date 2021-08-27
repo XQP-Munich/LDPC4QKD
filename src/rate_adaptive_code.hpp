@@ -130,16 +130,16 @@ namespace LDPC4QKD {
             }
         }
 
-        /// decoder infers rate from the length of the syndrome
-        /// and changes the internal decoder state to match this rate.
-        /// Note: this change may be somewhat computationally expensive TODO benchmark this
+        /// decoder infers rate from the length of the syndrome and changes the internal decoder state to match this rate.
+        /// Note: since this function modifies the code (by performing rate adaption), it is NOT CONST.
+        /// this change may be somewhat computationally expensive TODO benchmark this
         bool decode_infer_rate(const std::vector<double> &llrs,
                                const std::vector<Bit> &syndrome,
                                std::vector<Bit> &out,
                                const std::uint8_t max_num_iter = 50,
                                const double vsat = 100) {
-            if (llrs.size() != n_cols) {
-                set_rate(syndrome.size());
+            if (syndrome.size() != n_ra_rows) {
+                set_rate(get_n_rows_mother_matrix() - syndrome.size());
             }
             return decode_at_current_rate(llrs, syndrome, out, max_num_iter, vsat);
         }
@@ -169,7 +169,7 @@ namespace LDPC4QKD {
 
             if (syndrome.size() != get_n_rows_after_rate_adaption()) {
                 throw std::runtime_error(
-                        "Decoder (decode_at_current_rate) received invalid syndrome size for current rate."
+                        "Decoder (decode_at_current_rate) received invalid syndrome size for current rate. "
                         "Use decode_infer_rate to deduce rate automatically.");
             }
 
@@ -214,7 +214,7 @@ namespace LDPC4QKD {
                     for (const auto &v : m) {
                         if (std::isnan(v)) {
                             // TODO maybe use exception?
-                            DEBUG_MESSAGE("Decoder Diverged at iteration" << it_unused);
+                            DEBUG_MESSAGE("Decoder Diverged at iteration " << it_unused);
                             return false;
                         }
                     }
@@ -230,30 +230,6 @@ namespace LDPC4QKD {
             recompute_pos_vn_cn(n_line_combs);
         }
 
-        // ----------------------------------------------------------------------------------------- getters and setters
-        [[nodiscard]]
-        const std::vector<std::vector<idx_t>> &getPosCheckn() const {
-            return pos_checkn;
-        }
-
-        [[nodiscard]]
-        const std::vector<std::vector<idx_t>> &getPosVarn() const {
-            return pos_varn;
-        }
-
-        /// ignores rate adaption! Only gives number of rows in the mother matrix.
-        [[nodiscard]] std::size_t get_n_rows_mother_matrix() const {
-            return n_mother_rows;
-        }
-
-        /// Includes rate adaption. Access to internal state!
-        [[nodiscard]] std::size_t get_n_rows_after_rate_adaption() const {
-            return n_ra_rows;
-        }
-
-        [[nodiscard]] std::size_t getNCols() const {
-            return n_cols;
-        }
 
         /// TODO make private
         // TODO benchmark and compare performance to using pos_cn, as well as csc format
@@ -288,6 +264,34 @@ namespace LDPC4QKD {
             return rhs != *this;
         }
 
+        // ----------------------------------------------------------------------------------------- getters and setters
+        [[nodiscard]]
+        const std::vector<std::vector<idx_t>> &getPosCheckn() const {
+            return pos_checkn;
+        }
+
+        [[nodiscard]]
+        const std::vector<std::vector<idx_t>> &getPosVarn() const {
+            return pos_varn;
+        }
+
+        /// ignores rate adaption! Only gives number of rows in the mother matrix.
+        [[nodiscard]] std::size_t get_n_rows_mother_matrix() const {
+            return n_mother_rows;
+        }
+
+        /// Includes rate adaption. Access to internal state!
+        [[nodiscard]] std::size_t get_n_rows_after_rate_adaption() const {
+            return n_ra_rows;
+        }
+
+        [[nodiscard]] std::size_t getNCols() const {
+            return n_cols;
+        }
+
+        [[nodiscard]] std::size_t get_max_ra_steps() const {
+            return rows_to_combine.size() / 2;
+        }
     private:   // -------------------------------------------------------------------------------------- private members
 
         constexpr static bool xor_as_bools(Bit lhs, Bit rhs) {
@@ -300,7 +304,7 @@ namespace LDPC4QKD {
             double msg_part{};
             std::vector<std::size_t> mc_position(n_cols);
 
-            for (std::size_t m{}; m < n_mother_rows; ++m) {
+            for (std::size_t m{}; m < n_ra_rows; ++m) {
                 // product of incoming messages
                 double mc_prod = 1 - 2 * static_cast<double>(syndrome[m]);
                 // Note: pos_varn[m].size() = check_node_degrees[m]

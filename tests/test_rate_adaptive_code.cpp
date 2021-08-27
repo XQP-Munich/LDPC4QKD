@@ -188,7 +188,7 @@ TEST(rate_adaptive_code, encode_with_ra) {
 
     H.encode_with_ra(input, syndrome, static_cast<size_t>(H.get_n_rows_mother_matrix() * 0.7));
     EXPECT_EQ(hash_vector(syndrome), 0x01dab680);
-    }
+}
 
 
 TEST(rate_adaptive_code, ra_reported_size) {
@@ -206,7 +206,86 @@ TEST(rate_adaptive_code, ra_reported_size) {
     }
 }
 
+TEST(rate_adaptive_code, decode_infer_rate) {
+    auto H = get_code_big_wra();
+
+    std::vector<Bit> x = get_bitstring(H.getNCols()); // true data to be sent
+
+    // storage for syndrome. Initialize with arbitrary values, which must be overwritten by encoder.
+    std::vector<Bit> syndrome;
+    constexpr double rate_adapt_factor = .95;
+    H.encode_with_ra(x, syndrome, H.get_n_rows_mother_matrix() * rate_adapt_factor);
+
+    constexpr double p = 0.005;
+    std::vector<bool> x_noised = x; // copy for distorted data
+    noise_bitstring_inplace(x_noised, p);
+    ASSERT_FALSE(x_noised == x);  // actually have errors to be corrected!
+
+    double vlog = log((1 - p) / p);
+    std::vector<double> llrs(x.size());
+    for (std::size_t i{}; i < llrs.size(); ++i) {
+        llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
+    }
+
+    std::vector<bool> prediction;
+    bool success = H.decode_infer_rate(llrs, syndrome, prediction);
+
+    ASSERT_TRUE(success);
+    ASSERT_EQ(prediction, x);
+}
+
 
 TEST(rate_adaptive_code, search_rate) {
-    FAIL();
+    auto H = get_code_big_wra();
+    constexpr double p = 0.02;
+    constexpr std::size_t num_frames_to_test = 10;
+    std::mt19937_64 rng(42);
+    std::uint8_t max_num_iter = 50;
+    long update_console_every_n_frames = 100;
+    long quit_at_n_errors = 100;
+    constexpr std::size_t rate_step = 100;
+
+    FAIL(); // TODO finish
+
+    std::vector<std::size_t> rates_of_success{};
+    std::size_t current_syndrome_size = H.get_n_rows_mother_matrix();
+    std::size_t frame_idx{1};  // counts the number of iterations
+    for (; frame_idx < num_frames_to_test; ++frame_idx) {
+        for (; current_syndrome_size > H.get_max_ra_steps(); current_syndrome_size -= rate_step) {
+            std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
+            noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
+
+            std::vector<bool> syndrome;  // syndrome for error correction, which is sent over a noise-less channel.
+            H.encode_with_ra(x, syndrome, current_syndrome_size);
+
+            std::vector<bool> x_noised = x; // copy for distorted data
+            noise_bitstring_inplace(rng, x_noised, p);
+
+            // log likelihood ratio (llr) computation
+            double vlog = log((1 - p) / p);
+            std::vector<double> llrs(x.size());
+            for (std::size_t i{}; i < llrs.size(); ++i) {
+                llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
+            }
+
+            std::vector<bool> solution;
+            bool success = H.decode_infer_rate(llrs, syndrome, solution, max_num_iter);
+
+            if (success) {
+                if (solution != x)
+                    std::cerr << "\n\nDECODER CONVERGED TO WRONG CODEWORD!!!!\n" << std::endl;
+            } else {
+                if (solution == x)
+                    std::cerr << "DECODER GIVES CORRECT RESULT ALTHOUGH IT HAS NOT CONVERGED!!!!" << std::endl;
+            }
+            if (frame_idx % update_console_every_n_frames == 0) {
+                std::cout << "Current rate:" <<
+                    static_cast<double>(current_syndrome_size) / static_cast<double>(H.getNCols()) << std::endl;
+            }
+        }
+    }
+
+    std::cout << "Average rate (out of " << num_frames_to_test << " ): ";
+    std::cout << static_cast<double>(std::accumulate(rates_of_success.begin(), rates_of_success.end(), 0ul))
+                        / static_cast<double>(rates_of_success.size());
 }
