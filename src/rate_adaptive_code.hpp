@@ -169,7 +169,8 @@ namespace LDPC4QKD {
 
             if (syndrome.size() != get_n_rows_after_rate_adaption()) {
                 throw std::runtime_error(
-                        "Decoder (decode_at_current_rate) received invalid syndrome size for current rate.");
+                        "Decoder (decode_at_current_rate) received invalid syndrome size for current rate."
+                        "Use decode_infer_rate to deduce rate automatically.");
             }
 
             out.resize(llrs.size());
@@ -255,6 +256,7 @@ namespace LDPC4QKD {
         }
 
         /// TODO make private
+        // TODO benchmark and compare performance to using pos_cn, as well as csc format
         constexpr void encode_at_current_rate(
                 const std::vector<Bit> &in, std::vector<Bit> &out) const {
             if (in.size() != n_cols) {
@@ -375,6 +377,9 @@ namespace LDPC4QKD {
         }
 
         void recompute_pos_vn_cn(std::size_t n_line_combs) {
+            if (rows_to_combine.size() < 2 * n_line_combs) {
+                throw std::runtime_error("Requested rate not supported. Not enough line combinations specified.");
+            }
 
             {   // recompute pos_varn ---------------------------------------------------------------
                 // TODO check if this assumes full rank of H (should have that anyway)
@@ -437,11 +442,9 @@ namespace LDPC4QKD {
                 // These arrays contain the same information.
                 pos_checkn.assign(n_cols, std::vector<idx_t>{});
 
-                // TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                for (std::size_t col = 0; col < n_cols; col++) {
-                    for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++) {
-                        pos_checkn[col].push_back(row_idx[j]);
+                for (std::size_t i{}; i < pos_varn.size(); ++i) {
+                    for (auto &vn : pos_varn[i]) {
+                        pos_checkn[vn].push_back(i);
                     }
                 }
             }  // end recompute pos_checkn

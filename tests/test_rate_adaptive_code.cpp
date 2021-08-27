@@ -117,7 +117,7 @@ TEST(rate_adaptive_code, encode_no_ra) {
 
 
 TEST(rate_adaptive_code, encode_current_rate) {
-    auto H = get_code_big_nora();
+    auto H = get_code_big_wra();
     std::vector<Bit> in = get_bitstring(H.getNCols());
     std::vector<Bit> out(H.get_n_rows_mother_matrix());
 
@@ -125,7 +125,17 @@ TEST(rate_adaptive_code, encode_current_rate) {
 
     EXPECT_EQ(hash_vector(out), 2814594723);
 
-    // TODO change rate!!
+    const auto n_line_combs = static_cast<std::size_t>(H.get_n_rows_mother_matrix() * 0.3);
+    H.set_rate(n_line_combs);
+
+    H.encode_at_current_rate(in, out);
+    EXPECT_EQ(hash_vector(out), 0x6a8bf1e0);
+}
+
+
+TEST(rate_adaptive_code, no_ra_if_no_linecombs) {
+    auto H = get_code_big_nora();
+    EXPECT_ANY_THROW(H.set_rate(H.get_n_rows_mother_matrix() - 5));
 }
 
 
@@ -181,7 +191,7 @@ TEST(rate_adaptive_code, encode_with_ra) {
     }
 
 
-TEST(rate_adaptive_code, rate_adaption) {
+TEST(rate_adaptive_code, ra_reported_size) {
     auto H = get_code_big_wra();
 
     {
@@ -189,14 +199,14 @@ TEST(rate_adaptive_code, rate_adaption) {
         H_copy.set_rate(0);
         EXPECT_EQ(H_copy, H);  // set_rate(0) does nothing.
 
+        // rate adapting (5 steps) sets correct reported lengths
         constexpr std::size_t n_line_combs = 5;
         H_copy.set_rate(n_line_combs);
         EXPECT_EQ(H_copy.get_n_rows_after_rate_adaption(), H_copy.get_n_rows_mother_matrix() - n_line_combs);
     }
+}
 
-    // check sizes
-    // change rate adaption
-    // check sizes
 
-    FAIL(); // TODO finish test
+TEST(rate_adaptive_code, search_rate) {
+    FAIL();
 }
