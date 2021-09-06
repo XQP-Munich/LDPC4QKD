@@ -19,7 +19,7 @@ using namespace LDPC4QKD;
 
 TEST(test_read_scmat_format, read_matrix_from_cscmat) {
     // TODO fix hard-coded path
-    auto pair = read_matrix_from_cscmat("../../tests/tmp/LDPC_code_for_testing_2048x6144.cscmat");
+    auto pair = read_matrix_from_cscmat("../../tests/LDPC_code_for_testing_2048x6144.cscmat");
     auto colptr = pair.first;
     auto row_idx = pair.second;
 
@@ -28,5 +28,4 @@ TEST(test_read_scmat_format, read_matrix_from_cscmat) {
 
     EXPECT_EQ(std::vector<decltype(row_idx)::value_type>(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end()),
               row_idx);
-
 }

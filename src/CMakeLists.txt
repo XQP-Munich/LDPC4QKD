@@ -5,7 +5,7 @@ project(LDPC4QKDLibrary)
 
 if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
     message(WARNING "C++ code containing the LDPC matrix not found.
-    Use the Julia scripts to automatically generate it form an .alist file! A minimal example will be generated automatically.")
+    Use the Julia scripts to automatically generate it form a .cscmat file! A minimal example will be generated automatically.")
 
     add_custom_command(
             OUTPUT autogen_ldpc_matrix_csc.hpp

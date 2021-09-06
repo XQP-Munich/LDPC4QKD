@@ -44,6 +44,11 @@ namespace {
         return RateAdaptiveCode<Bit>(colptr, row_idx);
     }
 
+
+    double h2(double p) {
+        return -p * ::log(p) - (1 - p) * log(1 - p);
+    }
+
 }
 
 //TEST(rate_adaptive_code, TMPTMPTMPTMTPTMP) { // this test accesses private fields.
@@ -235,57 +240,54 @@ TEST(rate_adaptive_code, decode_infer_rate) {
 }
 
 
-TEST(rate_adaptive_code, search_rate) {
-    auto H = get_code_big_wra();
-    constexpr double p = 0.02;
-    constexpr std::size_t num_frames_to_test = 10;
+TEST(rate_adaptive_code, rate_adapted_fer) {
+    // assert that the rate adapted FER (at set fraction of mother syndrome) is less than a certain value.
+    // TODO performance seems pretty bad! Not consistent with AFF3CT results!
     std::mt19937_64 rng(42);
-    std::uint8_t max_num_iter = 50;
-    long update_console_every_n_frames = 100;
-    long quit_at_n_errors = 100;
-    constexpr std::size_t rate_step = 100;
+    auto H = get_code_big_wra();
 
-    FAIL(); // TODO finish
+    constexpr double p = 0.01;
+    constexpr std::size_t num_frames_to_test = 100;
+    constexpr std::uint8_t max_num_iter = 50;
+    const auto syndrome_size = static_cast<std::size_t>(H.get_n_rows_mother_matrix() - 10);
 
-    std::vector<std::size_t> rates_of_success{};
-    std::size_t current_syndrome_size = H.get_n_rows_mother_matrix();
+    std::size_t num_frame_errors{};;
     std::size_t frame_idx{1};  // counts the number of iterations
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
-        for (; current_syndrome_size > H.get_max_ra_steps(); current_syndrome_size -= rate_step) {
-            std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
-            noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
+        std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
+        noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
 
-            std::vector<bool> syndrome;  // syndrome for error correction, which is sent over a noise-less channel.
-            H.encode_with_ra(x, syndrome, current_syndrome_size);
+        std::vector<bool> syndrome;  // syndrome for error correction, which is sent over a noise-less channel.
+        H.encode_with_ra(x, syndrome, syndrome_size);
 
-            std::vector<bool> x_noised = x; // copy for distorted data
-            noise_bitstring_inplace(rng, x_noised, p);
+        std::vector<bool> x_noised = x; // copy for distorted data
+        noise_bitstring_inplace(rng, x_noised, p);
 
-            // log likelihood ratio (llr) computation
-            double vlog = log((1 - p) / p);
-            std::vector<double> llrs(x.size());
-            for (std::size_t i{}; i < llrs.size(); ++i) {
-                llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
+        // log likelihood ratio (llr) computation
+        double vlog = ::log((1 - p) / p);
+        std::vector<double> llrs(x.size());
+        for (std::size_t i{}; i < llrs.size(); ++i) {
+            llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
+        }
+
+        std::vector<bool> solution;
+        bool success = H.decode_infer_rate(llrs, syndrome, solution, max_num_iter);
+
+        if (solution == x) {
+            if (!success) {
+                std::cerr << "DECODER GIVES CORRECT RESULT ALTHOUGH IT HAS NOT CONVERGED!!!!" << std::endl;
+                FAIL();
             }
-
-            std::vector<bool> solution;
-            bool success = H.decode_infer_rate(llrs, syndrome, solution, max_num_iter);
-
+        } else {
+            num_frame_errors++;
             if (success) {
-                if (solution != x)
-                    std::cerr << "\n\nDECODER CONVERGED TO WRONG CODEWORD!!!!\n" << std::endl;
-            } else {
-                if (solution == x)
-                    std::cerr << "DECODER GIVES CORRECT RESULT ALTHOUGH IT HAS NOT CONVERGED!!!!" << std::endl;
-            }
-            if (frame_idx % update_console_every_n_frames == 0) {
-                std::cout << "Current rate:" <<
-                    static_cast<double>(current_syndrome_size) / static_cast<double>(H.getNCols()) << std::endl;
+                std::cerr << "\n\nDECODER CONVERGED TO WRONG CODEWORD!!!!\n" << std::endl;
+                FAIL();
             }
         }
     }
 
-    std::cout << "Average rate (out of " << num_frames_to_test << " ): ";
-    std::cout << static_cast<double>(std::accumulate(rates_of_success.begin(), rates_of_success.end(), 0ul))
-                        / static_cast<double>(rates_of_success.size());
+    double fer = static_cast<double>(num_frame_errors) / static_cast<double>(frame_idx);
+    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << frame_idx << " frames )" << std::endl;
+    ASSERT_TRUE(fer < 0.2);
 }
