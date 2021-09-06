@@ -27,7 +27,7 @@ TODO
 ## How to contribute
 This repository is actively maintained. Issues and pull requests will be responded to and processed.
 
-Let us know if you're having problems with the provided materials, wish to contribute new ideas or need modifications or our work for your application.
+Let us know if you're having problems with the provided materials, wish to contribute new ideas or need modifications of our work for your application.
 
 ## List of contents
 
