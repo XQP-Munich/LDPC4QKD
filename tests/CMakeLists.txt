@@ -60,3 +60,15 @@ target_include_directories(look_at_executable_size
         PRIVATE
         "${CMAKE_SOURCE_DIR}/src/"
         )
+
+
+# Copy the .cscmat file into the directory containing the tests binary.
+# This is required to test the .cscmat reader code.
+get_filename_component(CSCMAT_TEST_FILE_PATH
+        ${CMAKE_CURRENT_SOURCE_DIR}/LDPC_code_for_testing_2048x6144.cscmat
+        REALPATH
+        )
+message(STATUS "Copying file ${CSCMAT_TEST_FILE_PATH} into directory ${CMAKE_CURRENT_BINARY_DIR}.")
+file(COPY ${CSCMAT_TEST_FILE_PATH}
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        )
