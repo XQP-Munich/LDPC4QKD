@@ -25,7 +25,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: print workspace directory tree # print directory structure of tests
+      - name: print workspace directory tree (before configuration)
         working-directory: ${{runner.workspace}}
         run: tree
 
@@ -50,3 +50,8 @@ jobs:
         with:
           name: test_results_xml
           path: ${{runner.workspace}}/build/tests/test-results/**/*.xml
+
+      - name: (if failure) print workspace directory tree at very end
+        if: failure()
+        working-directory: ${{runner.workspace}}
+        run: tree
