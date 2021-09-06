@@ -1,8 +1,8 @@
 [![workflow](https://github.com/XQP-Munich/LDPC4QKD/actions/workflows/ci-cmake_tests.yml/badge.svg)](https://github.com/XQP-Munich/LDPC4QKD/actions)
 [![License](https://img.shields.io/github/license/XQP-Munich/LDPC4QKD)](./LICENSE)
-# LDPC4QKD - LDPC codes for rate adaptive distributed source coding
+# LDPC4QKD: LDPC codes for rate adaptive distributed source coding 
 
-Note: This repository is still missing some features which will be added very soon.
+Note: This repository is still missing some benchmarks and documentation, which will be added very soon.
 
 ## Overview
 

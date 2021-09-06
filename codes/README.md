@@ -1,4 +1,23 @@
-# LDPC matrices
+# LDPC matrices and Julia code
+
+## Julia code to load and pre-process LDPC codes
+Use the Julia code contained in this directory to load and manipulate the LDPC codes. Functions are provided to load and save LDPC matrices in `.alist` and `.cscmat` file formats.
+
+## CSCMAT files
+We use a custom file format (file extension `.cscmat`) to store LDPC codes. Generally, such a file can contain any sparse matrix. We use the format for two distinct scenarios:
+
+1. `QC-Format`: stores a sparse binary LDPC matrix (matrix containing only ones and zeros) directly. In this case, the file contains two arrays of integers, which store the zero-based indices of `rowidx` and `colptr`, as commonly used for compressed sparse column (CSC) storage of sparse matrices. The values array is omitted due to non-zero entries all being ones.
+2. `Binary-Format`: stores a sparse matrix containing the exponents used to create a quasi-cyclic LDPC matrix. In this case, all three arrays defining the CSC storage are used. The `values` array stores the quasi-cyclic exponents.
+   
+Which of the two formats a given `.cscmat` file follows is clear from both the number of arrays (lines of space separated integers) contained in the text-file, as well as its header. Format 2 is used by default for the LDPC matrices provided in this folder (`codes`). This is because it saves a lot of disk space and allows storing a lot of very large matrices.
+
+Use the Julia code to convert the array of quasi-cyclic components into either 
+1. a C++ header file (storing the `rowidx` and `colptr` of the full binary LDPC matrix as constexpr arrays)
+2. A `.cscmat` file in the `Binary-Format`. Such files can be imported by the C++ code from the file at program runtime and be used to initialize the decoder.
+
+
+
+# List of LDPC matrices
 
 The following is a list of LDPC matrices of size MxN that are provided in this repository. The sha256 hashes of data files are given to make clear which data files and simulations refer to which code. The alist file hash is given to connect it to [AFF3CT](https://github.com/aff3ct/aff3ct) simulation results ([AFF3CT](https://github.com/aff3ct/aff3ct) accepts alist format but not our custom format. Alist files can be quite large and are therefore not part of this repository. To reproduce the [AFF3CT](https://github.com/aff3ct/aff3ct) simulation results, Julia code is provided to convert from cscmat to alist format.)
 
