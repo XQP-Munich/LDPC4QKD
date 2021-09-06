@@ -25,6 +25,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: print workspace directory tree (before configuration)
+        working-directory: ${{runner.workspace}}
+        run: tree
+
       - name: Configure CMake
         run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
 
@@ -37,7 +41,7 @@ jobs:
         run: ./demo_error_correction
 
       - name: Test
-        working-directory: ${{runner.workspace}}/build
+        working-directory: ${{runner.workspace}}/build/tests
         run: GTEST_OUTPUT=xml:test-results/ GTEST_COLOR=1 ctest -V
 
       - name: Upload test results
@@ -46,3 +50,8 @@ jobs:
         with:
           name: test_results_xml
           path: ${{runner.workspace}}/build/tests/test-results/**/*.xml
+
+      - name: (if failure) print workspace directory tree at very end
+        if: failure()
+        working-directory: ${{runner.workspace}}
+        run: tree

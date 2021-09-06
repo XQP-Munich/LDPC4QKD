@@ -27,7 +27,7 @@ int main() {
 
     // syndrome computation using the LDPC matrix (sparse matrix-vector product modulo 2).
     std::vector<bool> syndrome;
-    H.encode(x, syndrome);
+    H.encode_no_ra(x, syndrome);
 
     std::vector<bool> x_noised{1, 1, 1, 1, 0, 0, 1}; // distorted data
     double p = 1. / 7; // channel error probability (for x_noised, we flipped 1 symbol out of 7)
@@ -41,7 +41,7 @@ int main() {
     }
 
     std::vector<bool> solution;
-    bool decoder_converged = H.decode(llrs, syndrome, solution);
+    bool decoder_converged = H.decode_at_current_rate(llrs, syndrome, solution);
 
     bool decoding_correct = (solution == x);
 

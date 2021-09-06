@@ -1,4 +1,4 @@
-# This file generates a `.cpp` code file containing
+# This script generates a `.hpp` file (C++ header) containing
 # an LDPC code stored in compressed sparse column (CSC) format.
 # See command line help for how to use it.
 
@@ -135,7 +135,7 @@ function write_cpp_constexpr_CSC(
         end
         println(f, "\n};\n\n")
 
-        println(f, "} // namespace RALDPC")
+        println(f, "} // namespace AutogenLDPC")
     end
 
 end

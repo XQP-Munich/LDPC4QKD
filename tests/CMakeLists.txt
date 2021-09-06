@@ -3,7 +3,7 @@
 # Adapted from https://github.com/pabloariasal/modern-cmake-sample/blob/master/libjsonutils/test/CMakeLists.txt
 #
 
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.19)
 
 
 include(FetchContent)
@@ -15,36 +15,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 
-if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/fortest_autogen_ldpc_matrix_csc.hpp")
-    message(WARNING "C++ code containing the LDPC matrix for unit tests not found.
-    Use the Julia scripts to automatically generate it form an .alist file! A minimal example will be generated automatically.")
-
-    add_custom_command(
-            OUTPUT fortest_autogen_ldpc_matrix_csc.hpp
-            DEPENDS "${CMAKE_SOURCE_DIR}/src/autogen_ldpc_matrix_csc_example.hpp"
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_SOURCE_DIR}/src/autogen_ldpc_matrix_csc_example.hpp"
-            "${CMAKE_CURRENT_LIST_DIR}/fortest_autogen_ldpc_matrix_csc.hpp"
-            VERBATIM
-    )
-endif(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/fortest_autogen_ldpc_matrix_csc.hpp")
-
-
-if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/fortest_autogen_rate_adaption.hpp")
-    message(WARNING "C++ code containing the rate adaption for unit tests not found.
-    Use Julia to automatically generate it form an appropriate CSV file! A minimal example will be generated automatically.")
-
-    add_custom_command(
-            OUTPUT fortest_autogen_rate_adaption.hpp
-            DEPENDS "${CMAKE_SOURCE_DIR}/src/autogen_rate_adaption_example.hpp"
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_SOURCE_DIR}/src/autogen_rate_adaption_example.hpp"
-            "${CMAKE_CURRENT_LIST_DIR}/fortest_autogen_rate_adaption.hpp"
-            VERBATIM
-    )
-endif(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/fortest_autogen_rate_adaption.hpp")
-
-
 # building unit tests. Uses Google Tests framework, which has to be installed on the target system.
 # NOTE: For the file-IO tests to work, `tests` must be the cwd of the test execution. If this fails, either adapt the
 # path variable tests_folder_path in test_main.cpp or change the cwd of the executable.
@@ -52,6 +22,7 @@ add_executable(unit_tests_error_correction test_main.cpp
         # -------- Actual Unit tests --------
         test_encoder.cpp
         test_rate_adaptive_code.cpp
+        test_read_scmat_format.cpp
 
         # Static data LDPC code used for tests:
         fortest_autogen_ldpc_matrix_csc.hpp
@@ -88,4 +59,16 @@ add_executable(look_at_executable_size look_at_executable_size.cpp)
 target_include_directories(look_at_executable_size
         PRIVATE
         "${CMAKE_SOURCE_DIR}/src/"
+        )
+
+
+# Copy the .cscmat file into the directory containing the tests binary.
+# This is required to test the .cscmat reader code.
+get_filename_component(CSCMAT_TEST_FILE_PATH
+        ${CMAKE_CURRENT_SOURCE_DIR}/LDPC_code_for_testing_2048x6144.cscmat
+        REALPATH
+        )
+message(STATUS "Copying file ${CSCMAT_TEST_FILE_PATH} into directory ${CMAKE_CURRENT_BINARY_DIR}.")
+file(COPY ${CSCMAT_TEST_FILE_PATH}
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
         )
