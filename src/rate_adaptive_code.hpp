@@ -175,7 +175,7 @@ namespace LDPC4QKD {
 
             out.resize(llrs.size());
 
-            std::vector<std::vector<double>> msg_v(n_mother_rows);  // messages from variable nodes to check nodes
+            std::vector<std::vector<double>> msg_v(n_ra_rows);  // messages from variable nodes to check nodes
             std::vector<std::vector<double>> msg_c(n_cols);  // messages from check nodes to variable nodes
 
             // initialize msg_v
