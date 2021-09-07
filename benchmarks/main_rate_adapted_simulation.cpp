@@ -13,12 +13,22 @@
 
 // Automatically generated C++ code that contains the LDPC matrix.
 #include "autogen_ldpc_matrix_csc.hpp"
+#include "autogen_rate_adaption.hpp"
+
 
 namespace {
     double h2(double p) {
         return -p * ::log(p) - (1 - p) * log(1 - p);
     }
 
+    template<typename T>
+    double avg(const std::vector<T> &in) {
+        double tmp;
+        for (auto i : in) {
+            tmp += static_cast<double>(i);
+        }
+        return tmp / in.size();
+    }
 
     template<typename T>
     void noise_bitstring_inplace(std::mt19937_64 &rng, std::vector<T> &src, double err_prob) {
@@ -34,38 +44,38 @@ namespace {
     }
 
 
-    LDPC4QKD::RateAdaptiveCode<bool> get_code_big_ra() {
+    LDPC4QKD::RateAdaptiveCode<bool> get_code_big_wra() {
         std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
         std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
-        return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx);
+        std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
+        return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx, rows_to_combine);
     }
 
 }
 
 void print_command_line_help() {
     std::cout << "Expecting exactly 5 arguments." << std::endl;
-    std::cout << "Example arguments: <executable> 0.05 5000 100 50 42 200" << std::endl;
+    std::cout << "Example arguments: <executable> 0.05 10 50 42 2" << std::endl;
     std::cout << "Specifying:\n"
                  "BSC channel parameter\n"
-                 "max. nr. of frames to test\n"
-                 "nr. of frame errors at which to quit\n"
+                 "nr. of frames to test\n"
                  "max. number of BP algorithm iterations\n"
                  "Mersenne Twister seed\n"
                  "Update console output every n frames" << std::endl;
 }
 
 
-int main(int argc, char *argv[]) {
-    std::mt19937_64 rng(42);
-    auto H = get_code_big_ra();
-
-    constexpr double p = 0.04;
-    constexpr std::size_t num_frames_to_test = 5;
-    constexpr std::uint8_t max_num_iter = 50;
-    constexpr std::size_t rate_step = 10;
-
+std::vector<std::size_t> run_simulation(LDPC4QKD::RateAdaptiveCode<bool> &H,
+                                        double p,
+                                        std::size_t num_frames_to_test,
+                                        std::mt19937_64 &rng,
+                                        std::uint8_t max_num_iter = 50,
+                                        long update_console_every_n_frames = 100,
+                                        std::size_t rate_step = 10) {
     std::vector<std::size_t> syndrome_size_success{};
-    std::size_t frame_idx{1};  // counts the number of iterations
+    std::size_t frame_idx{0};  // counts the number of iterations
+
+    std::cout << std::endl;
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
         std::size_t current_syndrome_size = H.get_n_rows_mother_matrix();
         std::size_t success_syndrome_size = H.getNCols(); // assume whole codeword leaked unless decoding success
@@ -103,7 +113,57 @@ int main(int argc, char *argv[]) {
             }
             syndrome_size_success.push_back(success_syndrome_size);
         }
+        if (frame_idx % update_console_every_n_frames == 0) {
+            std::cout << "\rcurrent average successful syndrome size: " << avg(syndrome_size_success) << std::endl;
+        }
     }
+
+    return syndrome_size_success;
+}
+
+
+int main(int argc, char *argv[]) {
+    std::cout << "Program call: " << argv[0] << std::endl;
+    std::vector<std::string> args{argv + 1, argv + argc};
+    if (args.size() != 5) {
+        std::cout << "Received " << args.size() << " arguments.\n" << std::endl;
+        print_command_line_help();
+        exit(EXIT_FAILURE);
+    }
+
+    constexpr std::size_t rate_step = 10;
+    double p{};
+    std::size_t num_frames_to_test{};
+    std::uint8_t max_bp_iter{};
+    std::size_t rng_seed{};
+    long update_console_every_n_frames{};
+
+    try {
+        p = stod(args[0]); // channel error probability
+        num_frames_to_test = stol(args[1]);
+        max_bp_iter = stoi(args[2]);
+        rng_seed = stol(args[3]);
+        update_console_every_n_frames = stol(args[4]);
+    }
+    catch (...) {
+        std::cout << "Invalid command line arguments." << std::endl;
+        print_command_line_help();
+        exit(EXIT_FAILURE);
+    }
+
+    std::mt19937_64 rng(rng_seed);
+    auto H = get_code_big_wra();
+
+    std::cout << "Code size: " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
+    std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
+    std::cout << "Max number decoder iterations: " << static_cast<int>(max_bp_iter) << '\n';
+    std::cout << "Number of frames to simulate: " << num_frames_to_test << '\n';
+    std::cout << "PRNG seed: " << rng_seed << '\n';
+    std::cout << "\n" << std::endl;
+
+    auto syndrome_size_success = run_simulation(
+            H, p, num_frames_to_test, rng,
+            max_bp_iter, update_console_every_n_frames, rate_step);
 
     std::cout << "all syndrome sizes:" << std::endl;
     for (auto s : syndrome_size_success) {
@@ -111,12 +171,11 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "\n\n";
 
-    double avg_synd_size =
-            static_cast<double>(std::accumulate(syndrome_size_success.begin(), syndrome_size_success.end(), 0ul))
-            / static_cast<double>(syndrome_size_success.size());
+    double avg_synd_size = avg(syndrome_size_success);
     std::cout << "Average syndrome size (out of " << num_frames_to_test << " ): " << avg_synd_size << std::endl;
 
     double avg_rate = avg_synd_size / static_cast<double>(H.getNCols());
     std::cout << "Average rate: " << avg_rate << " (1.4 * h2(p) = " << 1.4 * h2(p) << ")" << std::endl;
 
+    exit(EXIT_SUCCESS);
 }
