@@ -4,11 +4,10 @@
 
 using SparseArrays
 using LinearAlgebra
-using ArgParse # Must be installed (use the Pkg package manager)
 
-
-# helper methods for reading and writing LDPC matrices to files
-include("storage_utils_ldpc.jl"); using .StorageUtilsLDPC
+# Must be installed (use the Pkg package manager to instantiate the proviced manifest)
+using ArgParse
+using LDPCStorage  # custom project. Helper methods for reading and writing LDPC matrices to files
 
 
 header = raw"""
@@ -47,7 +46,9 @@ function parse_my_args(args)
         "--output_path"
             default = "autogen_ldpc_matrix_csc.hpp"
             arg_type = String
-            help = "Path to put the automatically generated C++ file containing the LDPC code."
+            help = "Path to put the automatically generated C++ file containing the LDPC code.
+            If the file extension is .cscmat, a compressed sparse column storage of the full matrix
+            (actual binary matrix, not QC-exponents) is written instead."
         "--debug_use_only_part"
             help = "If true, only a very small part of the provided matrix is processed."
             action = :store_true
@@ -143,7 +144,7 @@ end
 
 function load_cscmat_standard_or_qc_exponents(code_path; mode=:AUTO)
     if mode == :AUTO
-        header = StorageUtilsLDPC.read_file_header(code_path)
+        header = LDPCStorage.read_file_header(code_path)
         if contains(header, "Quasi cyclic exponents")
             mode = :QC_EXPONENTS
         else
@@ -167,18 +168,25 @@ end
 
 function main(args)
     code_path, output_path, only_debug_mode = parse_my_args(args)
-    if StorageUtilsLDPC.file_extension(code_path) == ".alist"
+    if LDPCStorage.file_extension(code_path) == ".alist"
         H = load_alist(code_path)
-    elseif StorageUtilsLDPC.file_extension(code_path) == ".cscmat"
+    elseif LDPCStorage.file_extension(code_path) == ".cscmat"
 
         H = load_cscmat_standard_or_qc_exponents(code_path)
     else
         @error "Unsupported input file at path $code_path. Expected file extension `.cscmat` or `.alist`."
     end
 
-    write_cpp_constexpr_CSC(H, output_path; only_debug_mode)
+    if LDPCStorage.file_extension(output_path) == ".hpp"
+        write_cpp_constexpr_CSC(H, output_path; only_debug_mode)
+    elseif LDPCStorage.file_extension(output_path) == ".cscmat"
+        save_to_cscmat(H, output_path; allow_omit_entries_if_only_stored_ones=true,)
+    else
+        @error "Unsupported input file at path $output_path. Expected file extension `.hpp` or `.cscmat`."
+    end
 
-    @info "Saved C++ file ($(Base.stat(output_path).size) bytes) at '$(output_path)'."
+
+    @info "Saved output file ($(Base.stat(output_path).size) bytes) at '$(output_path)'."
 end
 
 
