@@ -52,3 +52,18 @@ target_link_libraries(frame_error_rate_simulation
 target_include_directories(frame_error_rate_simulation
         PRIVATE
         )
+
+# ---------------------------------------------------------------------------------- Rate adapted performance simulation
+add_executable(rate_adapted_simulation main_rate_adapted_simulation.cpp
+        )
+
+target_compile_features(rate_adapted_simulation PUBLIC cxx_std_17)
+
+target_link_libraries(rate_adapted_simulation
+        PRIVATE
+        LDPC4QKD::LDPC4QKD
+        )
+
+target_include_directories(rate_adapted_simulation
+        PRIVATE
+        )
