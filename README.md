@@ -7,16 +7,27 @@ Note: This repository is still missing some benchmarks and documentation, which 
 
 ## Overview
 
-This repository aims to solve the following problem. Suppose Alice and Bob each have a bit-string of length _N_. Bobs bit-string is the result of randomly flipping each bit of Alice with probability _p_, i.e., it is the output of a binary symmetric channel with **channel parameter** _p_. (Note: the same considerations apply for soft inputs instead of bit-strings and a Gaussian channel.) The goal is for Alice to send (via a noise-less channel) to Bob a message (called syndrome), such that Bob can recover Alice's bit-string given his bit-string and the syndrome received from Alice. There are two important metrics, which we want to minimize: 
+This repository aims to solve the following problem. Suppose Alice and Bob each have a bit-string of length _N_.
+Bobs bit-string is the result of randomly flipping each bit of Alice with probability _p_, i.e., it is the output of a binary symmetric channel with **channel parameter** _p_. 
+(Note: the same considerations apply for soft inputs instead of bit-strings and a Gaussian channel.) The goal is for Alice to send (via a noise-less channel) to Bob a message (called syndrome), such that Bob can recover Alice's bit-string given his bit-string and the syndrome received from Alice. There are two important metrics, which we want to minimize: 
+
 - the probability that Bob will fail to recover Alice's bit-string, which is called the frame error rate (FER)
 - the length of the syndrome
 
-We define the syndrome to be the matrix-vector product (modulo 2) of a sparse binary matrix (LDPC matrix) and Alice's bit-string. In this case, Bob can use an inference algorithm (loopy belief propagation) to obtain a guess of Alice's bit-string. If the LDPC matrix has size _M_ x _N_, we call _M_ / _N_ the **rate** of the LDPC matrix and _N_ the **block size**. (Note: the term rate is used differently in forward error correction, where it means 1 - _M_ / _N_.) Minimizing the length of the syndrome actually means minimizing the rate for a given channel parameter. Note that, for any given channel parameter, there is a trade-off between small rate, small FER and small block size. Furthermore, there are theoretical limits as to how small the rate can be (the Slepian Wolf limit, sometimes called Shannon limit, applies to assymptotically large bloc size. Limits for finite block sizes also exists but are more complicated).
+We define the syndrome to be the matrix-vector product (modulo 2) of a sparse binary matrix (LDPC matrix) and Alice's bit-string. 
+In this case, Bob can use an inference algorithm (loopy belief propagation) to obtain a guess of Alice's bit-string. If the LDPC matrix has size _M_ x _N_, we call _M_ / _N_ the **rate** of the LDPC matrix and _N_ the **block size**. 
+(Note: the term rate is used differently in forward error correction, where it means 1 - _M_ / _N_.) Minimizing the length of the syndrome actually means minimizing the rate for a given channel parameter.
+Note that, for any given channel parameter, there is a trade-off between small rate, small FER and small block size.
+Furthermore, there are theoretical limits as to how small the rate can be (the Slepian Wolf limit, sometimes called Shannon limit, applies to assymptotically large bloc size.
+Limits for finite block sizes also exist but are more complicated).
 
 ### Contrast with forward error correction
 
-Contrary to how forward error correction works, generator matrices for the LDPC code are not used at all for distributed source coding. This repository does not provide generator matrices (calculating them from the parity check matrices is straightforward).
-Our decoder implementation operates on a bit-string (noisy version of true message) and its correct syndrome. This is slightly different from what is used for forward error correction (as in e.g. [AFF3CT](https://github.com/aff3ct/aff3ct)), where the decoder operates on only the noisy codeword. The noisy codeword is the result transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
+Contrary to how forward error correction works, generator matrices for the LDPC code are not used at all for distributed source coding. 
+This repository does not provide generator matrices (calculating them from the parity check matrices is straightforward).
+Our decoder implementation operates on a bit-string (noisy version of true message) and its correct syndrome. 
+This is slightly different from what is used for forward error correction (as in e.g. [AFF3CT](https://github.com/aff3ct/aff3ct)), where the decoder operates on only the noisy codeword. 
+The noisy codeword is the result transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
 
 
 ## How to use
