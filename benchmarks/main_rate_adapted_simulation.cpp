@@ -23,7 +23,7 @@ namespace {
 
     template<typename T>
     double avg(const std::vector<T> &in) {
-        double tmp;
+        double tmp{};
         for (auto i : in) {
             tmp += static_cast<double>(i);
         }
