@@ -9,9 +9,7 @@
 
 // Project scope
 #include "rate_adaptive_code.hpp"
-
-// Automatically generated C++ code that contains the LDPC matrix.
-#include "autogen_ldpc_matrix_csc.hpp"
+#include "read_scsmat_format.hpp"
 
 
 template<typename T>
@@ -27,16 +25,18 @@ void noise_bitstring_inplace(std::mt19937_64 &rng, std::vector<T> &src, double e
     }
 }
 
+LDPC4QKD::RateAdaptiveCode<bool, uint32_t, uint32_t> get_ldpc_code_nora(const std::string& cscmat_file_path) {
+    auto pair = LDPC4QKD::read_matrix_from_cscmat(cscmat_file_path);
+    auto colptr = pair.first;
+    auto row_idx = pair.second;
 
-LDPC4QKD::RateAdaptiveCode<bool> get_code_big_nora() {
-    std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
-    std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
-    return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx);
+    return LDPC4QKD::RateAdaptiveCode<bool, std::uint32_t, std::uint32_t>(colptr, row_idx);
 }
 
-
+template <typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
+        typename idx_t=std::uint16_t>
 std::pair<size_t, size_t> run_simulation(
-        const LDPC4QKD::RateAdaptiveCode<bool> &H,
+        const LDPC4QKD::RateAdaptiveCode<bool, colptr_t, idx_t> &H,
         double p,
         std::size_t num_frames_to_test,
         std::mt19937_64 &rng,
@@ -87,14 +87,15 @@ std::pair<size_t, size_t> run_simulation(
 
 void print_command_line_help() {
     std::cout << "Expecting exactly 5 arguments." << std::endl;
-    std::cout << "Example arguments: <executable> 0.05 5000 100 50 42 200" << std::endl;
+    std::cout << "Example arguments: <executable> 0.05 5000 100 50 42 200 ./filename.cscmat" << std::endl;
     std::cout << "Specifying:\n"
                  "BSC channel parameter\n"
                  "max. nr. of frames to test\n"
                  "nr. of frame errors at which to quit\n"
                  "max. number of BP algorithm iterations\n"
                  "Mersenne Twister seed\n"
-                 "Update console output every n frames" << std::endl;
+                 "Update console output every n frames\n"
+                 "Path to cscmat file containing LDPC code (not QC exponents!)" << std::endl;
 }
 
 
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Program call:" << argv[0] << std::endl;
 
     std::vector<std::string> args{argv + 1, argv + argc};
-    if (args.size() != 6) {
+    if (args.size() != 7) {
         std::cout << "Received " << args.size() << " arguments.\n" << std::endl;
         print_command_line_help();
         exit(EXIT_FAILURE);
@@ -114,6 +115,7 @@ int main(int argc, char *argv[]) {
     std::uint8_t max_bp_iter{};
     std::size_t rng_seed{};
     long update_console_every_n_frames{};
+    std::string cscmat_file_path;
 
     try {
         p = stod(args[0]); // channel error probability
@@ -122,6 +124,7 @@ int main(int argc, char *argv[]) {
         max_bp_iter = stoi(args[3]);
         rng_seed = stol(args[4]);
         update_console_every_n_frames = stol(args[5]);
+        cscmat_file_path = args[6];
     }
     catch (...) {
         std::cout << "Invalid command line arguments." << std::endl;
@@ -129,7 +132,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    auto H = get_code_big_nora();
+    auto H = get_ldpc_code_nora(cscmat_file_path);
 
     std::cout << "Code size: " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';

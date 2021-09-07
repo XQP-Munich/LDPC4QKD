@@ -5,6 +5,9 @@
 #ifndef LDPC4QKD_READ_SCSMAT_FORMAT_HPP
 #define LDPC4QKD_READ_SCSMAT_FORMAT_HPP
 
+#include <fstream>
+#include <sstream>
+
 namespace LDPC4QKD {
 
     namespace HelpersReadSCSMAT {
