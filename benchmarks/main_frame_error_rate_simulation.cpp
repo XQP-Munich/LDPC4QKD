@@ -136,10 +136,11 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Code size: " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
-    std::cout << "Max number decoder iterations: " << static_cast<int>(max_bp_iter) << '\n';
-    std::cout << "Number of frames to simulate: " << max_num_frames_to_test << '\n';
+    std::cout << "Max number of BP decoder iterations: " << static_cast<int>(max_bp_iter) << '\n';
+    std::cout << "Max number of frames to simulate: " << max_num_frames_to_test << '\n';
     std::cout << "Quit at n frame errors: " << quit_at_n_errors << '\n';
     std::cout << "PRNG seed: " << rng_seed << '\n';
+    std::cout << "Update console every n frames: " << update_console_every_n_frames << '\n';
     std::cout << "\n" << std::endl;
 
     std::mt19937_64 rng(rng_seed);
