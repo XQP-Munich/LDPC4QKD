@@ -15,7 +15,25 @@ Use the Julia code to convert the array of quasi-cyclic components into either
 1. a C++ header file (storing the `rowidx` and `colptr` of the full binary LDPC matrix as constexpr arrays)
 2. A `.cscmat` file in the `Binary-Format`. Such files can be imported by the C++ code from the file at program runtime and be used to initialize the decoder.
 
+## Converting CSCMAT files
 
+The Julia code provided in this repository can be called with command line options. To do so, first install Julia v1.6 or later. Then, perform these steps to install dependencies:
+
+    cd LDPC4QKD/codes
+    julia --project
+    ] instantiate
+
+After the installation is complete, use these commands to convert LDPC codes:
+
+1. Convert to a C++ header file (default name `autogen_ldpc_matrix_csc.hpp`)
+
+        cd LDPC4QKD/codes
+        julia --project ldpc_codegen.jl --input_code_path <path>.cscmat --output_path <path>.hpp
+
+2. Convert to a CSCMAT file that can be read by the C++ decoder
+
+        cd LDPC4QKD/codes
+        julia --project ldpc_codegen.jl --input_code_path <path>.cscmat --output_path <path>.cscmat
 
 # List of LDPC matrices
 
