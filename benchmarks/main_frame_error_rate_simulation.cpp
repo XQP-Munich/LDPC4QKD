@@ -9,29 +9,10 @@
 
 // Project scope
 #include "rate_adaptive_code.hpp"
-#include "read_scsmat_format.hpp"
 
+#include "code_simulation_helpers.hpp"
+using namespace LDPC4QKD::CodeSimulationHelpers;
 
-template<typename T>
-void noise_bitstring_inplace(std::mt19937_64 &rng, std::vector<T> &src, double err_prob) {
-    std::bernoulli_distribution distribution(err_prob);
-
-    for (std::size_t i = 0; i < src.size(); i++) {
-        if (distribution(rng)) {
-            src[i] = !src[i];
-        } else {
-            src[i] = src[i];
-        }
-    }
-}
-
-LDPC4QKD::RateAdaptiveCode<bool, uint32_t, uint32_t> get_ldpc_code_nora(const std::string& cscmat_file_path) {
-    auto pair = LDPC4QKD::read_matrix_from_cscmat(cscmat_file_path);
-    auto colptr = pair.first;
-    auto row_idx = pair.second;
-
-    return LDPC4QKD::RateAdaptiveCode<bool, std::uint32_t, std::uint32_t>(colptr, row_idx);
-}
 
 template <typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
         typename idx_t=std::uint16_t>
@@ -86,7 +67,7 @@ std::pair<size_t, size_t> run_simulation(
 }
 
 void print_command_line_help() {
-    std::cout << "Expecting exactly 5 arguments." << std::endl;
+    std::cout << "Expecting exactly 7 arguments." << std::endl;
     std::cout << "Example arguments: <executable> 0.05 5000 100 50 42 200 ./filename.cscmat" << std::endl;
     std::cout << "Specifying:\n"
                  "BSC channel parameter\n"
@@ -134,6 +115,8 @@ int main(int argc, char *argv[]) {
 
     auto H = get_ldpc_code_nora(cscmat_file_path);
 
+    std::cout << std::endl;
+    std::cout << "Code path: " << cscmat_file_path << '\n';
     std::cout << "Code size: " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
     std::cout << "Max number of BP decoder iterations: " << static_cast<int>(max_bp_iter) << '\n';

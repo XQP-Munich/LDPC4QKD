@@ -42,8 +42,9 @@ namespace LDPC4QKD {
     /// reads two arrays of integers from a .cscmat file.
     /// These are called `colptr` and `rowval`.
     /// They specify a binary LDPC matrx stored in compressed sparse column (CSC) format
-    template<typename idx_t=std::uint32_t>
-    std::pair <std::vector<idx_t>, std::vector<idx_t>> read_matrix_from_cscmat(const std::string &file_path) {
+    template<typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
+            typename idx_t=std::uint16_t>
+    std::pair <std::vector<colptr_t>, std::vector<idx_t>> read_matrix_from_cscmat(const std::string &file_path) {
         try {
             std::ifstream fs(file_path);
             if (!fs) {
@@ -58,7 +59,7 @@ namespace LDPC4QKD {
 
             getline(fs, current_line); // ignores another line containing meta-information
             getline(fs, current_line); // ignores empty line
-            std::vector<idx_t> colptr = HelpersReadSCSMAT::helper_parse_space_sep_ints<idx_t>(current_line);
+            std::vector<colptr_t> colptr = HelpersReadSCSMAT::helper_parse_space_sep_ints<colptr_t>(current_line);
 
             getline(fs, current_line); // ignores empty line
             getline(fs, current_line);

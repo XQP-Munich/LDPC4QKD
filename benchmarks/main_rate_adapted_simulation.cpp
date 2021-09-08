@@ -15,53 +15,21 @@
 #include "autogen_ldpc_matrix_csc.hpp"
 #include "autogen_rate_adaption.hpp"
 
+#include "code_simulation_helpers.hpp"
+using namespace LDPC4QKD::CodeSimulationHelpers;
 
-namespace {
-    double h2(double p) {
-        return -p * ::log(p) - (1 - p) * log(1 - p);
-    }
-
-    template<typename T>
-    double avg(const std::vector<T> &in) {
-        double tmp{};
-        for (auto i : in) {
-            tmp += static_cast<double>(i);
-        }
-        return tmp / in.size();
-    }
-
-    template<typename T>
-    void noise_bitstring_inplace(std::mt19937_64 &rng, std::vector<T> &src, double err_prob) {
-        std::bernoulli_distribution distribution(err_prob);
-
-        for (std::size_t i = 0; i < src.size(); i++) {
-            if (distribution(rng)) {
-                src[i] = !src[i];
-            } else {
-                src[i] = src[i];
-            }
-        }
-    }
-
-
-    LDPC4QKD::RateAdaptiveCode<bool> get_code_big_wra() {
-        std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
-        std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
-        std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
-        return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx, rows_to_combine);
-    }
-
-}
 
 void print_command_line_help() {
-    std::cout << "Expecting exactly 5 arguments." << std::endl;
-    std::cout << "Example arguments: <executable> 0.05 10 50 42 2" << std::endl;
+    std::cout << "Expecting exactly 7 arguments." << std::endl;
+    std::cout << "Example arguments: <executable> 0.05 10 50 42 2 ./ldpc_filename.cscmat ./rate_adaption_filename.csv" << std::endl;
     std::cout << "Specifying:\n"
                  "BSC channel parameter\n"
                  "nr. of frames to test\n"
                  "max. number of BP algorithm iterations\n"
                  "Mersenne Twister seed\n"
-                 "Update console output every n frames" << std::endl;
+                 "Update console output every n frames\n"
+                 "Path to cscmat file containing LDPC code (not QC exponents!)\n"
+                 "Path to csv file defining the rate adaption." << std::endl;
 }
 
 
@@ -125,7 +93,7 @@ std::vector<std::size_t> run_simulation(LDPC4QKD::RateAdaptiveCode<bool> &H,
 int main(int argc, char *argv[]) {
     std::cout << "Program call: " << argv[0] << std::endl;
     std::vector<std::string> args{argv + 1, argv + argc};
-    if (args.size() != 5) {
+    if (args.size() != 7) {
         std::cout << "Received " << args.size() << " arguments.\n" << std::endl;
         print_command_line_help();
         exit(EXIT_FAILURE);
@@ -137,6 +105,8 @@ int main(int argc, char *argv[]) {
     std::uint16_t max_bp_iter{};
     std::size_t rng_seed{};
     long update_console_every_n_frames{};
+    std::string cscmat_file_path;
+    std::string rate_adaption_file_path;
 
     try {
         p = stod(args[0]); // channel error probability
@@ -144,6 +114,8 @@ int main(int argc, char *argv[]) {
         max_bp_iter = stoi(args[2]);
         rng_seed = stol(args[3]);
         update_console_every_n_frames = stol(args[4]);
+        cscmat_file_path = args[5];
+        rate_adaption_file_path = args[6];
     }
     catch (...) {
         std::cout << "Invalid command line arguments." << std::endl;
@@ -152,8 +124,11 @@ int main(int argc, char *argv[]) {
     }
 
     std::mt19937_64 rng(rng_seed);
-    auto H = get_code_big_wra();
+    auto H = get_code_big_wra(cscmat_file_path, rate_adaption_file_path);
 
+    std::cout << std::endl;
+    std::cout << "LDPC Code loaded from file: " << cscmat_file_path << '\n';
+    std::cout << "Rate adaption loaded from file: " << rate_adaption_file_path << '\n';
     std::cout << "Code size: " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
     std::cout << "Max number decoder iterations: " << static_cast<int>(max_bp_iter) << '\n';

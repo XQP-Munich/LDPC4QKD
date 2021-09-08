@@ -40,7 +40,7 @@ target_include_directories(benchmark_decoder
 
 # ------------------------------------------------------------------------------------------ Frame error rate simulation
 add_executable(frame_error_rate_simulation main_frame_error_rate_simulation.cpp
-        )
+        code_simulation_helpers.hpp)
 
 target_compile_features(frame_error_rate_simulation PUBLIC cxx_std_17)
 
@@ -55,7 +55,7 @@ target_include_directories(frame_error_rate_simulation
 
 # ---------------------------------------------------------------------------------- Rate adapted performance simulation
 add_executable(rate_adapted_simulation main_rate_adapted_simulation.cpp
-        )
+        code_simulation_helpers.hpp)
 
 target_compile_features(rate_adapted_simulation PUBLIC cxx_std_17)
 
