@@ -371,7 +371,7 @@ namespace LDPC4QKD {
         }
 
         template<typename T>
-        static void saturate(std::vector<std::vector<T>> mv, const double vsat) {
+        static void saturate(std::vector<std::vector<T>> &mv, const double vsat) {
             for (auto &v : mv) {
                 for (auto &a : v) {
                     if (a > vsat) { a = vsat; }
