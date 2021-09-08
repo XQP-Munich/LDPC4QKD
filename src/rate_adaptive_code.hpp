@@ -292,6 +292,7 @@ namespace LDPC4QKD {
         [[nodiscard]] std::size_t get_max_ra_steps() const {
             return rows_to_combine.size() / 2;
         }
+
     private:   // -------------------------------------------------------------------------------------- private members
 
         constexpr static bool xor_as_bools(Bit lhs, Bit rhs) {
@@ -316,7 +317,7 @@ namespace LDPC4QKD {
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
                     // computing message from
                     if (msg_v[m][k] == 0.) {  // TODO test this bit more carefully.
-                        std::cerr << "Decoder went into the 'untested bit'!!" << std::endl;
+                        DEBUG_MESSAGE("Decoder went into the 'untested bit'!!");
                         msg_part = 1;
                         for (std::size_t non_k{}; non_k < curr_check_node_degree; ++non_k) {
                             if (non_k != k) {
