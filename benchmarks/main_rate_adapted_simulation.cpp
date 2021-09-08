@@ -69,7 +69,7 @@ std::vector<std::size_t> run_simulation(LDPC4QKD::RateAdaptiveCode<bool> &H,
                                         double p,
                                         std::size_t num_frames_to_test,
                                         std::mt19937_64 &rng,
-                                        std::uint8_t max_num_iter = 50,
+                                        std::uint16_t max_num_iter = 50,
                                         long update_console_every_n_frames = 100,
                                         std::size_t rate_step = 10) {
     std::vector<std::size_t> syndrome_size_success{};
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
     constexpr std::size_t rate_step = 10;
     double p{};
     std::size_t num_frames_to_test{};
-    std::uint8_t max_bp_iter{};
+    std::uint16_t max_bp_iter{};
     std::size_t rng_seed{};
     long update_console_every_n_frames{};
 

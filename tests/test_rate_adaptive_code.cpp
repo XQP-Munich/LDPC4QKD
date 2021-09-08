@@ -248,7 +248,7 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
 
     constexpr double p = 0.01;
     constexpr std::size_t num_frames_to_test = 100;
-    constexpr std::uint8_t max_num_iter = 50;
+    constexpr std::uint16_t max_num_iter = 50;
     const auto syndrome_size = static_cast<std::size_t>(H.get_n_rows_mother_matrix() - 10);
 
     std::size_t num_frame_errors{};;

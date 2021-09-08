@@ -40,7 +40,7 @@ std::pair<size_t, size_t> run_simulation(
         double p,
         std::size_t num_frames_to_test,
         std::mt19937_64 &rng,
-        std::uint8_t max_num_iter = 50,
+        std::uint16_t max_num_iter = 50,
         long update_console_every_n_frames = 100,
         long quit_at_n_errors = 100) {
     std::size_t num_frame_errors{};
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     double p{};
     std::size_t max_num_frames_to_test{};
     long quit_at_n_errors{};
-    std::uint8_t max_bp_iter{};
+    std::uint16_t max_bp_iter{};
     std::size_t rng_seed{};
     long update_console_every_n_frames{};
     std::string cscmat_file_path;
