@@ -58,7 +58,7 @@ std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
             std::vector<bool> x_noised = x; // copy for distorted data
             noise_bitstring_inplace(rng, x_noised, p);
 
-// log likelihood ratio (llr) computation
+            // log likelihood ratio (llr) computation
             double vlog = ::log((1 - p) / p);
             std::vector<double> llrs(x.size());
             for (std::size_t i{}; i < llrs.size(); ++i) {
@@ -123,7 +123,6 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    std::mt19937_64 rng(rng_seed);
     auto H = get_code_big_wra(cscmat_file_path, rate_adaption_file_path);
 
     std::cout << std::endl;
@@ -136,9 +135,17 @@ int main(int argc, char *argv[]) {
     std::cout << "PRNG seed: " << rng_seed << '\n';
     std::cout << "\n" << std::endl;
 
+    std::mt19937_64 rng(rng_seed);
+    auto begin = std::chrono::steady_clock::now();
+
     auto syndrome_size_success = run_simulation(
             H, p, num_frames_to_test, rng,
             max_bp_iter, update_console_every_n_frames, rate_step);
+
+    auto now = std::chrono::steady_clock::now();
+    std::cout << "\n\nDONE! Simulation time: " <<
+              std::chrono::duration_cast<std::chrono::seconds>(now - begin).count() << " seconds." << '\n';
+
 
     std::cout << "all syndrome sizes:" << std::endl;
     for (auto s : syndrome_size_success) {
