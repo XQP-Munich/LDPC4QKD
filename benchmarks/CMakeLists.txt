@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.19)
 
 project(ErrorCorrectionDemoForQKD)
 
+# google benchmark library. Only required for the targets called "benchmark", i.e., for runtime speed benchmarking.
 find_package(benchmark REQUIRED)
 
 # --------------------------------------------------------------------------------------------------- Encoder Benchmarks
@@ -65,5 +66,20 @@ target_link_libraries(rate_adapted_simulation
         )
 
 target_include_directories(rate_adapted_simulation
+        PRIVATE
+        )
+
+# ------------------------------------------------------------------------------------------ Rate adapted fer simulation
+add_executable(rate_adapted_fer main_rate_adapted_fer.cpp
+        code_simulation_helpers.hpp)
+
+target_compile_features(rate_adapted_fer PUBLIC cxx_std_17)
+
+target_link_libraries(rate_adapted_fer
+        PRIVATE
+        LDPC4QKD::LDPC4QKD
+        )
+
+target_include_directories(rate_adapted_fer
         PRIVATE
         )
