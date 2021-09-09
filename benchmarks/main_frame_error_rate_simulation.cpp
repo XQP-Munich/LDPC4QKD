@@ -14,6 +14,20 @@
 using namespace LDPC4QKD::CodeSimulationHelpers;
 
 
+void print_command_line_help() {
+    std::cout << "Expecting exactly 7 arguments." << std::endl;
+    std::cout << "Example arguments: <executable> 0.05 5000 100 50 42 200 ./filename.cscmat" << std::endl;
+    std::cout << "Specifying:\n"
+                 "BSC channel parameter\n"
+                 "max. nr. of frames to test\n"
+                 "nr. of frame errors at which to quit\n"
+                 "max. number of BP algorithm iterations\n"
+                 "Mersenne Twister seed\n"
+                 "Update console output every n frames\n"
+                 "Path to cscmat file containing LDPC code (not QC exponents!)" << std::endl;
+}
+
+
 template <typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
         typename idx_t=std::uint16_t>
 std::pair<size_t, size_t> run_simulation(
@@ -64,19 +78,6 @@ std::pair<size_t, size_t> run_simulation(
     }
 
     return std::make_pair(num_frame_errors, it);
-}
-
-void print_command_line_help() {
-    std::cout << "Expecting exactly 7 arguments." << std::endl;
-    std::cout << "Example arguments: <executable> 0.05 5000 100 50 42 200 ./filename.cscmat" << std::endl;
-    std::cout << "Specifying:\n"
-                 "BSC channel parameter\n"
-                 "max. nr. of frames to test\n"
-                 "nr. of frame errors at which to quit\n"
-                 "max. number of BP algorithm iterations\n"
-                 "Mersenne Twister seed\n"
-                 "Update console output every n frames\n"
-                 "Path to cscmat file containing LDPC code (not QC exponents!)" << std::endl;
 }
 
 
