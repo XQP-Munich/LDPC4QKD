@@ -81,7 +81,7 @@ namespace LDPC4QKD {
                 // Do nothing. Ignores comments at the beginning of the file.
             }
 
-            getline(fs, current_line); // ignores empty line
+            getline(fs, current_line); // ignores metadata
             getline(fs, current_line);
             std::vector<colptr_t> colptr = HelpersReadSCSMAT::helper_parse_space_sep_ints<colptr_t>(current_line);
 
@@ -114,10 +114,6 @@ namespace LDPC4QKD {
             }
 
             std::string current_line;
-
-            while (getline(fs, current_line) && current_line[0] == '#') {
-                // Do nothing. Ignores comments at the beginning of the file.
-            }
 
             std::vector<rowidx> rows_to_combine{};
 
