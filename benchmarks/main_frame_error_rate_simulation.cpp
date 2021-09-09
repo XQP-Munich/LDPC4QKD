@@ -60,8 +60,10 @@ std::pair<size_t, size_t> run_simulation(
         bool success = H.decode_at_current_rate(llrs, syndrome, solution, max_num_iter);
 
         if (success) {
-            if (solution != x)
+            if (solution != x) {
                 std::cerr << "\n\nDECODER CONVERGED TO WRONG CODEWORD!!!!\n" << std::endl;
+                num_frame_errors++;
+            }
         } else {
             num_frame_errors++;
             if (solution == x)
