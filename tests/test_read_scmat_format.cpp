@@ -18,7 +18,8 @@ using namespace LDPC4QKD;
 
 
 TEST(test_read_scmat_format, read_matrix_from_cscmat) {
-    auto pair = read_matrix_from_cscmat("./LDPC_code_for_testing_2048x6144.cscmat");
+    auto pair = read_matrix_from_cscmat<std::uint32_t, std::uint16_t>(
+            "./LDPC_code_for_testing_2048x6144.cscmat");
     auto colptr = pair.first;
     auto row_idx = pair.second;
 

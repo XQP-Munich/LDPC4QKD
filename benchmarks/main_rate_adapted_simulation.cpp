@@ -32,8 +32,8 @@ void print_command_line_help() {
                  "Path to csv file defining the rate adaption." << std::endl;
 }
 
-
-std::vector<std::size_t> run_simulation(LDPC4QKD::RateAdaptiveCode<bool> &H,
+template<typename RateAdaptiveCodeTemplate>
+std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
                                         double p,
                                         std::size_t num_frames_to_test,
                                         std::mt19937_64 &rng,
