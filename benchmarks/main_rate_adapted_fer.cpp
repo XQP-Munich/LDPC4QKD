@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << std::endl;
     std::cout << "Code path: " << cscmat_file_path << '\n';
-    std::cout << "Rate adaption path: " << update_console_every_n_frames << '\n';
+    std::cout << "Rate adaption path: " << rate_adaption_file_path << '\n';
     std::cout << "Code size (before rate adaption): " << H.get_n_rows_mother_matrix() << " x " << H.getNCols() << '\n';
     std::cout << "Code size (after rate adaption): " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
