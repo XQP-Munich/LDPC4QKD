@@ -225,7 +225,6 @@ namespace LDPC4QKD {
         }
 
         /// manually trigger rate adaption. In normal circumstances, the user does not need this function
-        // TODO maybe make private?
         void set_rate(std::size_t n_line_combs) {
             recompute_pos_vn_cn(n_line_combs);
         }
