@@ -6,7 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
-
+#include <set>
 
 #ifdef DEBUG_MESSAGES_ENABLED
 
@@ -48,10 +48,13 @@ namespace LDPC4QKD {
         }
 
         /// constructor for using the code with rate adaption
+        /// note: if you for some reason find yourself creating a lot of such objects and you know that there are no
+        /// variable node eliminations, disable the elimination check to speed up this constructor.
         RateAdaptiveCode(const std::vector<colptr_t> &colptr,
                          const std::vector<idx_t> &rowIdx,
                          const std::vector<idx_t> &rows_to_combine_rate_adapt,
-                         std::size_t initial_row_combs = 0)
+                         std::size_t initial_row_combs = 0,
+                         bool do_elimination_check = true)
                 : colptr(colptr), row_idx(rowIdx),
                   n_cols(colptr.size() - 1),
                   n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
@@ -68,6 +71,12 @@ namespace LDPC4QKD {
             }
 
             recompute_pos_vn_cn(initial_row_combs);
+            if (do_elimination_check) {
+                if (has_var_node_eliminations()) {
+                    throw std::domain_error("Given rate adaption implies variable node eliminations. "
+                                            "Rate adaption with eliminations degrades performance. Do not use!");
+                }
+            }
         }
 
 
@@ -380,6 +389,10 @@ namespace LDPC4QKD {
             }
         }
 
+
+        /// Recompute inner representation of rate adapted LDPC code (pos_varn and pos_cn).
+        /// Note: this function "deals incorrectly" with variable node elimination during rate adaption.
+        /// variable node elimination should not happen in the first place (this is checked by the constructor)
         void recompute_pos_vn_cn(std::size_t n_line_combs) {
             if (rows_to_combine.size() < 2 * n_line_combs) {
                 throw std::runtime_error("Requested rate not supported. Not enough line combinations specified.");
@@ -454,11 +467,37 @@ namespace LDPC4QKD {
             }  // end recompute pos_checkn
         }
 
+        [[nodiscard]]
+        bool has_var_node_eliminations() {
+            // basically, this is just a check that, after maximum rate adaption,
+            // all vectors inside `pos_checkn` and `pos_varn` still have no duplicates.
+
+            const std::size_t current_ra_rows = n_ra_rows;
+            const std::size_t max_rate_adaptions = rows_to_combine.size() / 2;
+            set_rate(max_rate_adaptions);  // to check if variable nodes are eliminated, do all the rate adaption.
+
+            // check for duplicates in pos_varn. These are variable node eliminations.
+            for (const auto &cn : pos_varn) {
+                // very crude: convert to a set and check length.
+                std::set<typename decltype(pos_varn)::value_type::value_type> set_copy(cn.begin(), cn.end());
+                if (set_copy.size() != cn.size()) {
+                    return true;
+                }
+            }
+
+            // go back to the rate we started with.
+            set_rate(n_mother_rows - current_ra_rows);
+
+            return false;
+        }
+
         // ---------------------------------------------------------------------------------------------- private fields
+        // colptr and row_idx define the mother matrix, which each rate adaption starts from.
         const std::vector<colptr_t> colptr;
         const std::vector<idx_t> row_idx;
-        const std::vector<idx_t> rows_to_combine;
+        const std::vector<idx_t> rows_to_combine;  // stores specification of rate adaption
 
+        // these two (pos_checkn and pos_varn) store the current rate adapted code.
         std::vector<std::vector<idx_t>> pos_checkn;  // Input check nodes to each variable node
         std::vector<std::vector<idx_t>> pos_varn;  // Input variable nodes to each check node
 
