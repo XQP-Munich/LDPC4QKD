@@ -294,7 +294,7 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
         }
     }
 
-    double fer = static_cast<double>(num_frame_errors) / static_cast<double>(frame_idx);
-    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << frame_idx << " frames )" << std::endl;
+    double fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_to_test);
+    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << num_frames_to_test << " frames )" << std::endl;
     ASSERT_TRUE(fer < 0.2);
 }

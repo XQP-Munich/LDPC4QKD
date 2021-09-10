@@ -40,7 +40,7 @@ std::pair<size_t, size_t> run_simulation(
         long quit_at_n_errors = 100) {
     std::size_t num_frame_errors{};
     std::size_t it{1};  // counts the number of iterations
-    for (; it < num_frames_to_test; ++it) {
+    for (; it < num_frames_to_test + 1; ++it) {
         std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
         noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
 
@@ -71,7 +71,8 @@ std::pair<size_t, size_t> run_simulation(
         }
         if (it % update_console_every_n_frames == 0) {
             std::cout << "current: " << num_frame_errors << " frame errors out of " << it
-                      << " (FER~" << static_cast<double>(num_frame_errors) / it << ")..." << std::endl;
+                      << " (FER~" << static_cast<double>(num_frame_errors) / static_cast<double>(it)
+                      << ")..." << std::endl;
         }
         if (num_frame_errors >= quit_at_n_errors) {
             std::cout << "Quit simulation as max number of frame errors was reached." << std::endl;
@@ -79,7 +80,8 @@ std::pair<size_t, size_t> run_simulation(
         }
     }
 
-    return std::make_pair(num_frame_errors, it);
+    // minus 1 because the loop increments one more than it simulates.
+    return std::make_pair(num_frame_errors, it - 1);
 }
 
 
