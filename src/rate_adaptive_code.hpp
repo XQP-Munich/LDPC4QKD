@@ -136,7 +136,7 @@ namespace LDPC4QKD {
         bool decode_infer_rate(const std::vector<double> &llrs,
                                const std::vector<Bit> &syndrome,
                                std::vector<Bit> &out,
-                               const std::uint8_t max_num_iter = 50,
+                               const std::uint16_t max_num_iter = 50,
                                const double vsat = 100) {
             if (syndrome.size() != n_ra_rows) {
                 set_rate(get_n_rows_mother_matrix() - syndrome.size());
@@ -160,7 +160,7 @@ namespace LDPC4QKD {
         bool decode_at_current_rate(const std::vector<double> &llrs,
                                     const std::vector<Bit> &syndrome,
                                     std::vector<Bit> &out,
-                                    const std::uint8_t max_num_iter = 50,
+                                    const std::uint16_t max_num_iter = 50,
                                     const double vsat = 100) const {
             // check inputs.
             if (llrs.size() != n_cols) {
