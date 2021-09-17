@@ -44,6 +44,11 @@ add_library(LDPC4QKD INTERFACE
 
 target_compile_features(LDPC4QKD INTERFACE cxx_std_17)
 
+target_link_libraries(LDPC4QKD
+        INTERFACE
+        project_options
+        )
+
 target_include_directories(LDPC4QKD
         INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}
