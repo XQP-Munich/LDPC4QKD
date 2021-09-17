@@ -438,6 +438,9 @@ namespace LDPC4QKD {
 
                         pos_varn_nora[rows_to_combine[2 * i]].clear();
                         pos_varn_nora[rows_to_combine[2 * i + 1]].clear();
+
+                        // TODO speed up this part by producing the rate adaption as already sorted
+                        std::sort(pos_varn[start_of_ra_part + i].begin(), pos_varn[start_of_ra_part + i].end());
                     }
 
                     std::size_t j{};
