@@ -49,6 +49,13 @@ if (DEBUG_MESSAGES_ENABLED)
 endif ()
 
 
+
+# Interface library (without sources) that carries compiler/build flags.
+add_library(project_options INTERFACE)
+
+include(BuildConfig)  # custom CMake module (see folder `cmake/Modules`)
+enable_sanitizers(project_options) # adds coverage if specified by flag ENABLE_COVERAGE
+
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------- MISCELLANEOUS ---------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
