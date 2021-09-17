@@ -144,7 +144,8 @@ int main(int argc, char *argv[]) {
     auto begin = std::chrono::steady_clock::now();
 
     std::pair<std::size_t, std::size_t> result = run_simulation(H, p, max_num_frames_to_test, rng,
-                                                                max_bp_iter, update_console_every_n_frames);
+                                                                max_bp_iter,
+                                                                update_console_every_n_frames, quit_at_n_errors);
     std::size_t num_frame_errors = result.first;
     std::size_t num_frames_tested = result.second;
 
