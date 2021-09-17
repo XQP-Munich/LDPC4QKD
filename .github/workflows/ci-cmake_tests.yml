@@ -12,6 +12,13 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+  
+env:
+  BUILD_TYPE: Debug
+
+defaults:
+  run:
+    shell: bash
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -30,28 +37,45 @@ jobs:
         run: tree
 
       - name: Configure CMake
-        run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+        run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DENABLE_COVERAGE:BOOL=ON
 
       - name: Build
         working-directory: ${{runner.workspace}}/build
-        run: cmake --build .
+        run: cmake --build . --config $BUILD_TYPE
 
       - name: Run demo
         working-directory: ${{runner.workspace}}/build/examples
         run: ./demo_error_correction
 
-      - name: Test
-        working-directory: ${{runner.workspace}}/build/tests
-        run: GTEST_OUTPUT=xml:test-results/ GTEST_COLOR=1 ctest -V
-
+      - name: Run unit tests with coverage
+        working-directory: ${{runner.workspace}}/build/
+        run: |
+          set -x  # enable debugging in bash
+          sudo apt-get -qq -y install lcov gcovr
+          lcov --zerocounters --directory .
+          GTEST_OUTPUT=xml:test-results/ GTEST_COLOR=1 ctest -V -C $BUILD_TYPE
+          gcovr -v --root ../ --xml-pretty --xml coverage.xml
+          echo
+          cat ./coverage.xml # pring coverage information
+      
+      - name: Publish to codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: ${{runner.workspace}}/build/coverage.xml
+          fail_ci_if_error: true
+      
       - name: Upload test results
         uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: test_results_xml
-          path: ${{runner.workspace}}/build/tests/test-results/**/*.xml
+          path: |
+            ${{runner.workspace}}/build/tests/test-results/**/*.xml
+            ${{runner.workspace}}/build/coverage.xml
 
       - name: (if failure) print workspace directory tree at very end
         if: failure()
         working-directory: ${{runner.workspace}}
         run: tree
+        
+    
