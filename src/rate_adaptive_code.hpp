@@ -35,7 +35,11 @@ namespace LDPC4QKD {
         using MatrixEntry = Bit;
 
         // ------------------------------------------------------------------------------------------------ constructors
-        /// constructor for using the code without rate adaption.
+        //! constructor for using the code without rate adaption.
+        //! The parity check matrix matrix is stored using Compressed Sparse Column (CSC) format.
+        //!
+        //! \param colptr column pointer array for specifying mother parity check matrix.
+        //! \param rowIdx row index array for specifying mother parity check matrix.
         RateAdaptiveCode(const std::vector<colptr_t> &colptr, const std::vector<idx_t> &rowIdx)
                 : colptr(colptr), row_idx(rowIdx),
                   n_cols(colptr.size() - 1),
@@ -47,14 +51,28 @@ namespace LDPC4QKD {
             recompute_pos_vn_cn(n_line_combs);
         }
 
-        /// constructor for using the code with rate adaption
-        /// note: if you for some reason find yourself creating a lot of such objects and you know that there are no
-        /// variable node eliminations, disable the elimination check to speed up this constructor.
+        //! Constructor for using the code with rate adaption
+        //! The mother parity check matrix is stored using Compressed Sparse Column (CSC) format.
+        //! The rate adaption is stored as an array of matrix row indices, which are combined for rate adaption.
+        //!
+        //! note: if you for some reason find yourself creating a lot of such objects and you know that there are no
+        //! variable node eliminations, disable the elimination check to speed up this constructor.
+        //! note: invalid `rows_to_combine_rate_adapt`, for example non-zero based, may lead to a segmentation fault.
+        //! TODO add extra checks for validity of `rows_to_combine_rate_adapt`
+        //!
+        //! \param colptr column pointer array for specifying mother parity check matrix.
+        //! \param rowIdx row index array for specifying mother parity check matrix.
+        //! \param rows_to_combine_rate_adapt array of marix line indices to be combined for rate adaption
+        //! \param initial_row_combs number of line indices to combine initially
+        //! \param do_elimination_check TODO does nothing right now.
+        //                    this is due to repeated node indices removed during `recompute_pos_vn_cn`.
+        //                    Consequentially, node elliminations are allowed.
+        //                    TODO reconsider this and maybe remove `has_var_node_eliminations`
         RateAdaptiveCode(const std::vector<colptr_t> &colptr,
                          const std::vector<idx_t> &rowIdx,
                          const std::vector<idx_t> &rows_to_combine_rate_adapt,
                          std::size_t initial_row_combs = 0,
-                         bool do_elimination_check = true)
+                         bool do_elimination_check = false)
                 : colptr(colptr), row_idx(rowIdx),
                   n_cols(colptr.size() - 1),
                   n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
@@ -72,10 +90,10 @@ namespace LDPC4QKD {
 
             recompute_pos_vn_cn(initial_row_combs);
             if (do_elimination_check) {
-                if (has_var_node_eliminations()) {
-                    throw std::domain_error("Given rate adaption implies variable node eliminations. "
-                                            "Rate adaption with eliminations degrades performance. Do not use!");
-                }
+//                if (has_var_node_eliminations()) {
+//                    throw std::domain_error("Given rate adaption implies variable node eliminations. "
+//                                            "Rate adaption with eliminations degrades performance. Do not use!");
+//                }
             }
         }
 
@@ -429,18 +447,21 @@ namespace LDPC4QKD {
                     const std::size_t start_of_ra_part = n_mother_rows - 2 * n_line_combs;
 
                     for (std::size_t i{}; i < n_line_combs; ++i) {
-                        pos_varn[start_of_ra_part + i].insert(pos_varn[start_of_ra_part + i].end(),
-                                                              pos_varn_nora[rows_to_combine[2 * i]].begin(),
-                                                              pos_varn_nora[rows_to_combine[2 * i]].end());
-                        pos_varn[start_of_ra_part + i].insert(pos_varn[start_of_ra_part + i].end(),
-                                                              pos_varn_nora[rows_to_combine[2 * i + 1]].begin(),
-                                                              pos_varn_nora[rows_to_combine[2 * i + 1]].end());
+                        auto &curr_varn_vec = pos_varn[start_of_ra_part + i];
+                        curr_varn_vec.insert(curr_varn_vec.end(),
+                                             pos_varn_nora[rows_to_combine[2 * i]].begin(),
+                                             pos_varn_nora[rows_to_combine[2 * i]].end());
+                        curr_varn_vec.insert(curr_varn_vec.end(),
+                                             pos_varn_nora[rows_to_combine[2 * i + 1]].begin(),
+                                             pos_varn_nora[rows_to_combine[2 * i + 1]].end());
 
                         pos_varn_nora[rows_to_combine[2 * i]].clear();
                         pos_varn_nora[rows_to_combine[2 * i + 1]].clear();
 
-                        // TODO speed up this part by producing the rate adaption as already sorted
-                        std::sort(pos_varn[start_of_ra_part + i].begin(), pos_varn[start_of_ra_part + i].end());
+                        // TODO speed up this part by producing the rate adaption as unique positions and already sorted
+                        std::sort(curr_varn_vec.begin(), curr_varn_vec.end());
+                        curr_varn_vec.erase(std::unique(curr_varn_vec.begin(), curr_varn_vec.end()),
+                                            curr_varn_vec.end());
                     }
 
                     std::size_t j{};
@@ -470,11 +491,12 @@ namespace LDPC4QKD {
             }  // end recompute pos_checkn
         }
 
-        [[nodiscard]]
-        bool has_var_node_eliminations() {
-            // basically, this is just a check that, after maximum rate adaption,
-            // all vectors inside `pos_checkn` and `pos_varn` still have no duplicates.
 
+        /// Check that after maximum rate adaption all vectors inside `pos_checkn` and `pos_varn` have no duplicates.
+        /// This is done 1. to ensure correct functioning of the BP algorith and 2. to check
+        /// if variable node eliminations happened. TODO decide if we want to allow such eliminations or not
+        [[maybe_unused, nodiscard]]
+        bool has_var_node_eliminations() {
             const std::size_t current_ra_rows = n_ra_rows;
             const std::size_t max_rate_adaptions = rows_to_combine.size() / 2;
             set_rate(max_rate_adaptions);  // to check if variable nodes are eliminated, do all the rate adaption.

@@ -162,11 +162,12 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 }
 
 
-TEST(rate_adaptive_code, dont_allow_vn_elimination) {
-    std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
-    std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
-    EXPECT_ANY_THROW(RateAdaptiveCode<Bit>(colptr, row_idx, {0,1}));
-}
+// vn eliminations are allowed now! TODO reconsider this.
+//TEST(rate_adaptive_code, dont_allow_vn_elimination) {
+//    std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
+//    std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
+//    EXPECT_ANY_THROW(RateAdaptiveCode<Bit>(colptr, row_idx, {0,1}));
+//}
 
 
 TEST(rate_adaptive_code, getters) {
