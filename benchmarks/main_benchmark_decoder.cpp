@@ -43,17 +43,17 @@ static void BM_decode_benchmark_no_rate_adaption(benchmark::State& state) {
     constexpr double bsc_err_p = 0.03; // channel error probability
 
     // Perform setup here
-    auto H = get_code_big();
+    auto H = get_code_big_nora();
 
     std::vector<bool> true_codeword(H.getNCols());
     std::vector<bool> predicted_codeword(H.getNCols());
-    std::vector<bool> syndrome(H.getNRows());
+    std::vector<bool> syndrome(H.get_n_rows_mother_matrix());
 
     for (auto _ : state) {
         state.PauseTiming();
 
         noise_bitstring_inplace(true_codeword, 0.5, state.range(0));
-        H.encode(true_codeword, syndrome);
+        H.encode_no_ra(true_codeword, syndrome);
         std::vector<bool> x_noised = true_codeword; // distorted data
         noise_bitstring_inplace(x_noised, bsc_err_p);
 
@@ -72,7 +72,7 @@ static void BM_decode_benchmark_no_rate_adaption(benchmark::State& state) {
         benchmark::DoNotOptimize(success);
 
         // This code gets timed
-        success = H.decode(llrs, syndrome, predicted_codeword);
+        success = H.decode_at_current_rate(llrs, syndrome, predicted_codeword);
         if (!success) {
             std::cout << "DECODER FAILED!!!!";
         }
@@ -80,7 +80,8 @@ static void BM_decode_benchmark_no_rate_adaption(benchmark::State& state) {
         benchmark::ClobberMemory();
     }
 }
-BENCHMARK(BM_decode_benchmark_no_rate_adaption)->Unit(benchmark::kMicrosecond)->Range(8, 8<<10);
+BENCHMARK(BM_decode_benchmark_no_rate_adaption)->Unit(benchmark::kMicrosecond)->Range(0, 1<<16);
+
 
 // Run the benchmark
 BENCHMARK_MAIN();

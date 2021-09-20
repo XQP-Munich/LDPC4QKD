@@ -39,6 +39,22 @@ target_include_directories(benchmark_decoder
         PRIVATE
         )
 
+# --------------------------------------------------------------------------------------------- Rate Adaption Benchmarks
+add_executable(benchmark_ra main_benchmark_ra.cpp
+        )
+
+target_compile_features(benchmark_ra PUBLIC cxx_std_17)
+
+target_link_libraries(benchmark_ra
+        PRIVATE
+        LDPC4QKD::LDPC4QKD
+        benchmark::benchmark
+        )
+
+target_include_directories(benchmark_ra
+        PRIVATE
+        )
+
 # ------------------------------------------------------------------------------------------ Frame error rate simulation
 add_executable(frame_error_rate_simulation main_frame_error_rate_simulation.cpp
         code_simulation_helpers.hpp)
