@@ -27,13 +27,27 @@ Contrary to how forward error correction works, generator matrices for the LDPC 
 This repository does not provide generator matrices (calculating them from the parity check matrices is straightforward).
 Our decoder implementation operates on a bit-string (noisy version of true message) and its correct syndrome. 
 This is slightly different from what is used for forward error correction (as in e.g. [AFF3CT](https://github.com/aff3ct/aff3ct)), where the decoder operates on only the noisy codeword. 
-The noisy codeword is the result transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
+The noisy codeword is the result of transmitting the codeword (true message encoded using a generator matrix) via a noisy channel.
 
 
 ## How to use
+In order to use all the functionality provided in this repository, install
+- CMake (at least version 3.19)
+- C++ compiler (supporting C++17)
+- Julia (at least version 1.6)
 
-Start from the `examples` directory, which shows a basic example of how to use the C++ header containing the decoder. 
-TODO
+For how to use the provided Julia code, see directory `codes`. No familiarity with the Julia programming language is required.
+
+To build the C++ executables (except for unit tests) using CMake (Julia not required), execute
+
+        git clone <github url>
+        cd LDPC4QKD
+        cmake -S . -B build -DBUILD_UNIT_TESTS=OFF
+        cmake --build build --config Release
+        
+All executables will be built inside the `build` folder.
+
+For a demo of how to use the C++ header-only library, see the `examples` directory, which shows a basic example ("demo_error_correction") of how to use the C++ header containing the decoder. This example is built by CMake (executable `build/examples/demo_error_correction`. Note: the executable produces no output; look at the C++ source code to see how the header can be used).
 
 ## How to contribute
 This repository is actively maintained. Issues and pull requests will be responded to and processed.
