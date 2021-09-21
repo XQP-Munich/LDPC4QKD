@@ -69,7 +69,7 @@ std::pair<size_t, size_t> run_simulation(
             if (solution == x)
                 std::cerr << "DECODER GIVES CORRECT RESULT ALTHOUGH IT HAS NOT CONVERGED!!!!" << std::endl;
         }
-        if (it % update_console_every_n_frames == 0) {
+        if (update_console_every_n_frames && it % update_console_every_n_frames == 0) {
             std::cout << "current: " << num_frame_errors << " frame errors out of " << it
                       << " (FER~" << static_cast<double>(num_frame_errors) / static_cast<double>(it)
                       << ")..." << std::endl;

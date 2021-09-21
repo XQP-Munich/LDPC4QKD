@@ -81,7 +81,7 @@ std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
             }
             syndrome_size_success.push_back(success_syndrome_size);
         }
-        if (frame_idx % update_console_every_n_frames == 0) {
+        if (update_console_every_n_frames && frame_idx % update_console_every_n_frames == 0) {
             std::cout << "\rcurrent average successful syndrome size: " << avg(syndrome_size_success) << std::endl;
         }
     }
