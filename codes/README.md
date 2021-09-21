@@ -9,9 +9,11 @@ We use a custom file format (file extension `.cscmat`) to store LDPC codes. Gene
 1. `QC-Format`: stores a sparse binary LDPC matrix (matrix containing only ones and zeros) directly. In this case, the file contains two arrays of integers, which store the zero-based indices of `rowidx` and `colptr`, as commonly used for compressed sparse column (CSC) storage of sparse matrices. The values array is omitted due to non-zero entries all being ones.
 2. `Binary-Format`: stores a sparse matrix containing the exponents used to create a quasi-cyclic LDPC matrix. In this case, all three arrays defining the CSC storage are used. The `values` array stores the quasi-cyclic exponents.
    
-Which of the two formats a given `.cscmat` file follows is clear from both the number of arrays (lines of space separated integers) contained in the text-file, as well as its header. Format 2 is used by default for the LDPC matrices provided in this folder (`codes`). This is because it saves a lot of disk space and allows storing a lot of very large matrices.
+Which of the two formats a given `.cscmat` file follows is clear from both the number of arrays (lines of space separated integers) contained in the text-file, as well as its header. 
+Format 1 is used by default for the LDPC matrices provided in this folder (`codes`).This is because it saves a lot of disk space and allows storing a lot of very large matrices.
+Some of the tools only support the binary `CSCMAT` (format 2), in which case the `.cscmat` files can be converted to that format using Julia code in `codes/ldpc_codegen.jl`. This also has a command line interface. Knowledge of Julia is not required to use it.
 
-Use the Julia code to convert the array of quasi-cyclic components into either 
+The command line interface allows converting the array of quasi-cyclic components into either 
 1. a C++ header file (storing the `rowidx` and `colptr` of the full binary LDPC matrix as constexpr arrays)
 2. A `.cscmat` file in the `Binary-Format`. Such files can be imported by the C++ code from the file at program runtime and be used to initialize the decoder.
 
