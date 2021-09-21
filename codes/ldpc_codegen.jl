@@ -166,6 +166,34 @@ function load_cscmat_standard_or_qc_exponents(code_path; mode=:AUTO)
 end
 
 
+"""
+Converts all `.cscmat` files in the folder given by `input_folder_path` to same name `.cscmat`
+files in the `output_folder_path`. Each input file is assumed to contain QC exponents.
+The output files store the full binary LDPC matrix, which can be used as input to the C++ programs.
+
+Warning: this may overwrite pre-existing files in the output folder.
+"""
+function convert_all_to_loadable_cscmat(
+    input_folder_path::AbstractString, output_folder_path::AbstractString;
+    verbose=false
+    )
+    isdir(input_folder_path) || error("`$input_folder_path` is not a valid folder path.")
+    isdir(output_folder_path) || mkdir(output_folder_path)
+
+    file_paths = readdir(input_folder_path; join=true)
+    filter!(p -> LDPCStorage.file_extension(p) == ".cscmat", file_paths)
+
+    for p in file_paths
+        H = load_cscmat_standard_or_qc_exponents(p)
+        save_to_cscmat(H, joinpath(output_folder_path, basename(p)); 
+            allow_omit_entries_if_only_stored_ones=true,)
+    end
+
+    verbose && @info "Converted $(size(file_paths)) files."
+    return nothing
+end
+
+
 function main(args)
     code_path, output_path, only_debug_mode = parse_my_args(args)
     if LDPCStorage.file_extension(code_path) == ".alist"
