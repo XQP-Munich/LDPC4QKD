@@ -22,9 +22,10 @@ namespace LDPC4QKD::CodeSimulationHelpers {
     }
 
 
+    // Shannon binary entropy
     template<typename T>
     double h2(T p) {
-        return -p * ::log(p) - (1 - p) * log(1 - p);
+        return -p * ::log2(p) - (1 - p) * ::log2(1 - p);
     }
 
     template<typename T>

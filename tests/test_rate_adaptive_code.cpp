@@ -44,11 +44,6 @@ namespace {
         return RateAdaptiveCode<Bit>(colptr, row_idx);
     }
 
-
-    double h2(double p) {
-        return -p * ::log(p) - (1 - p) * log(1 - p);
-    }
-
 }
 
 //TEST(rate_adaptive_code, TMPTMPTMPTMTPTMP) { // this test accesses private fields.

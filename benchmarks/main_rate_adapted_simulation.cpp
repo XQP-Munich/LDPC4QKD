@@ -16,12 +16,14 @@
 #include "autogen_rate_adaption.hpp"
 
 #include "code_simulation_helpers.hpp"
+
 using namespace LDPC4QKD::CodeSimulationHelpers;
 
 
 void print_command_line_help() {
     std::cout << "Expecting exactly 7 arguments." << std::endl;
-    std::cout << "Example arguments: <executable> 0.05 10 50 42 2 ./ldpc_filename.cscmat ./rate_adaption_filename.csv" << std::endl;
+    std::cout << "Example arguments: <executable> 0.05 10 50 42 2 ./ldpc_filename.cscmat ./rate_adaption_filename.csv"
+              << std::endl;
     std::cout << "Specifying:\n"
                  "BSC channel parameter\n"
                  "nr. of frames to test\n"
@@ -39,20 +41,23 @@ std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
                                         std::mt19937_64 &rng,
                                         std::uint16_t max_num_iter = 50,
                                         long update_console_every_n_frames = 100,
-                                        std::size_t rate_step = 10) {
-    std::vector<std::size_t> syndrome_size_success{};
-    std::size_t frame_idx{0};  // counts the number of iterations
+                                        const int ra_step_accuracy = 1) {
+    // assume whole codeword leaked unless decoding success
+    std::vector<std::size_t> succesful_syndrome_sizes(num_frames_to_test, H.getNCols());
 
-    std::cout << std::endl;
+    std::size_t frame_idx{0};  // counts the number of iterations
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
-        std::size_t current_syndrome_size = H.get_n_rows_mother_matrix();
         std::size_t success_syndrome_size = H.getNCols(); // assume whole codeword leaked unless decoding success
 
-        for (; current_syndrome_size > H.get_max_ra_steps(); current_syndrome_size -= rate_step) {
-            std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
+        std::size_t min_syndrome_size = H.get_n_rows_mother_matrix() - H.get_max_ra_steps();;
+        std::size_t max_syndrome_size = H.get_n_rows_mother_matrix();
+        // bisection
+        while ((max_syndrome_size - min_syndrome_size) > ra_step_accuracy) {
+                        std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
             noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
 
             std::vector<bool> syndrome;  // syndrome for error correction, which is sent over a noise-less channel.
+            const std::size_t current_syndrome_size = (max_syndrome_size + min_syndrome_size) / 2;
             H.encode_with_ra(x, syndrome, current_syndrome_size);
 
             std::vector<bool> x_noised = x; // copy for distorted data
@@ -68,25 +73,23 @@ std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
             std::vector<bool> solution;
             bool success = H.decode_infer_rate(llrs, syndrome, solution, max_num_iter);
 
-            if (solution == x) {
-                if (success) {
-                    success_syndrome_size = syndrome.size();
-                } else {
-                    std::cerr << "DECODER GIVES CORRECT RESULT ALTHOUGH IT HAS NOT CONVERGED!!!!" << std::endl;
-                }
+            if (success && solution == x) {
+                succesful_syndrome_sizes.at(frame_idx) = syndrome.size();
+                max_syndrome_size = syndrome.size();
             } else {
                 if (success) {
                     std::cerr << "\n\nDECODER CONVERGED TO WRONG CODEWORD!!!!\n" << std::endl;
                 }
+                min_syndrome_size = syndrome.size();
             }
-            syndrome_size_success.push_back(success_syndrome_size);
         }
         if (update_console_every_n_frames && frame_idx % update_console_every_n_frames == 0) {
-            std::cout << "\rcurrent average successful syndrome size: " << avg(syndrome_size_success) << std::endl;
+            std::cout << "\rcurrent average successful syndrome size: " << avg(succesful_syndrome_sizes);
         }
     }
+    std::cout << std::endl;
 
-    return syndrome_size_success;
+    return succesful_syndrome_sizes;
 }
 
 
@@ -157,7 +160,6 @@ int main(int argc, char *argv[]) {
     std::cout << "Average syndrome size (out of " << num_frames_to_test << " ): " << avg_synd_size << std::endl;
 
     double avg_rate = avg_synd_size / static_cast<double>(H.getNCols());
-    std::cout << "Average rate: " << avg_rate << " (1.4 * h2(p) = " << 1.4 * h2(p) << ")" << std::endl;
-
+    std::cout << "Average rate: " << avg_rate << " (inefficiency f = " << avg_rate / h2(p) << ")" << std::endl;
     exit(EXIT_SUCCESS);
 }
