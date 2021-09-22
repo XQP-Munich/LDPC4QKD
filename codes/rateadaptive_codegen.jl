@@ -94,7 +94,7 @@ function write_cpp_constexpr_rate_adaption(
         constexpr std::array<$row_idx_type, num_combined_rows> rows = {""")
 
         for (i, idx) in enumerate(transpose(rate_adaption_rows))
-            print(f, "0x$(string(idx - 1, base=16))")  # Convert index to base zero
+            print(f, "0x$(string(idx, base=16))")
             if i != length(rate_adaption_rows)
                 print(f, ",")
             end

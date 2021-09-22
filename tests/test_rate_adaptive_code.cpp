@@ -44,11 +44,6 @@ namespace {
         return RateAdaptiveCode<Bit>(colptr, row_idx);
     }
 
-
-    double h2(double p) {
-        return -p * ::log(p) - (1 - p) * log(1 - p);
-    }
-
 }
 
 //TEST(rate_adaptive_code, TMPTMPTMPTMTPTMP) { // this test accesses private fields.
@@ -162,6 +157,14 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 }
 
 
+// vn eliminations are allowed now! TODO reconsider this.
+//TEST(rate_adaptive_code, dont_allow_vn_elimination) {
+//    std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
+//    std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
+//    EXPECT_ANY_THROW(RateAdaptiveCode<Bit>(colptr, row_idx, {0,1}));
+//}
+
+
 TEST(rate_adaptive_code, getters) {
     auto H = get_code_big_nora();
     EXPECT_EQ(H.get_n_rows_mother_matrix(), 2048);
@@ -248,7 +251,7 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
 
     constexpr double p = 0.01;
     constexpr std::size_t num_frames_to_test = 100;
-    constexpr std::uint8_t max_num_iter = 50;
+    constexpr std::uint16_t max_num_iter = 50;
     const auto syndrome_size = static_cast<std::size_t>(H.get_n_rows_mother_matrix() - 10);
 
     std::size_t num_frame_errors{};;
@@ -287,7 +290,7 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
         }
     }
 
-    double fer = static_cast<double>(num_frame_errors) / static_cast<double>(frame_idx);
-    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << frame_idx << " frames )" << std::endl;
+    double fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_to_test);
+    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << num_frames_to_test << " frames )" << std::endl;
     ASSERT_TRUE(fer < 0.2);
 }
