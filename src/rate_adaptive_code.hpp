@@ -157,6 +157,16 @@ namespace LDPC4QKD {
             }
         }
 
+        /// compute log-likelihood-ratios for a given keye and channel parameter
+        static std::vector<double> llrs_bsc(const std::vector<Bit> &bitstring, const double bsc_channel_parameter) {
+            double vlog = log((1 - bsc_channel_parameter) / bsc_channel_parameter);
+            std::vector<double> llrs(bitstring.size());
+            for (std::size_t i{}; i < llrs.size(); ++i) {
+                llrs[i] = vlog * (1 - 2 * bitstring[i]); // log likelihood ratios
+            }
+            return llrs;
+        }
+
         /// decoder infers rate from the length of the syndrome and changes the internal decoder state to match this rate.
         /// Note: since this function modifies the code (by performing rate adaption), it is NOT CONST.
         /// this change may be somewhat computationally expensive TODO benchmark this
