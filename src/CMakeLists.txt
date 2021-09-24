@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.19)
 
 project(LDPC4QKDLibrary)
 
-get_filename_component(LDPC4QKD_PROJ_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
-get_filename_component(LDPC4QKD_TESTS_DIR "${LDPC4QKD_PROJ_DIR}/tests" ABSOLUTE)
+get_filename_component(LDPC4QKD_SRC_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
+get_filename_component(LDPC4QKD_TESTS_DIR "${LDPC4QKD_SRC_DIR}/tests" ABSOLUTE)
 
 if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
     message(WARNING "C++ code containing the LDPC matrix not found.
