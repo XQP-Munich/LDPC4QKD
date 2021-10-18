@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    auto H = get_code_big_wra(cscmat_file_path, rate_adaption_file_path);
+    auto H = get_code_big_optional_ra(cscmat_file_path, rate_adaption_file_path);
 
     std::cout << std::endl;
     std::cout << "LDPC Code loaded from file: " << cscmat_file_path << '\n';

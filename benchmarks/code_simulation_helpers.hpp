@@ -42,7 +42,9 @@ namespace LDPC4QKD::CodeSimulationHelpers {
     template<typename Bit=bool, // type of matrix entires (only values zero and one are used, default to bool)
             typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
             typename idx_t=std::uint32_t>
-    LDPC4QKD::RateAdaptiveCode<Bit, colptr_t, idx_t> get_ldpc_code_nora(const std::string &cscmat_file_path) {
+    [[deprecated("Use get_code_big_optional_ra")]]
+    LDPC4QKD::RateAdaptiveCode<Bit, colptr_t, idx_t>
+    get_ldpc_code_nora(const std::string &cscmat_file_path)  {
         auto pair = LDPC4QKD::read_matrix_from_cscmat<colptr_t, idx_t>(cscmat_file_path);
         auto colptr = pair.first;
         auto row_idx = pair.second;
@@ -54,16 +56,19 @@ namespace LDPC4QKD::CodeSimulationHelpers {
     template<typename Bit=bool, // type of matrix entires (only values zero and one are used, default to bool)
             typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
             typename idx_t=std::uint32_t>
-    LDPC4QKD::RateAdaptiveCode<Bit, colptr_t, idx_t> get_code_big_wra(
+    LDPC4QKD::RateAdaptiveCode<Bit, colptr_t, idx_t> get_code_big_optional_ra(
             const std::string &cscmat_file_path, const std::string &rate_adaption_file_path
     ) {
         auto pair = LDPC4QKD::read_matrix_from_cscmat<colptr_t, idx_t>(cscmat_file_path);
         auto colptr = pair.first;
         auto row_idx = pair.second;
 
-        std::vector<idx_t> rows_to_combine = read_rate_adaption_from_csv<idx_t>(rate_adaption_file_path);
-
-        return LDPC4QKD::RateAdaptiveCode<Bit, colptr_t, idx_t>(colptr, row_idx, rows_to_combine);
+        if(rate_adaption_file_path.empty()) {
+            return LDPC4QKD::RateAdaptiveCode<Bit, colptr_t, idx_t>(colptr, row_idx);
+        } else {
+            std::vector<idx_t> rows_to_combine = read_rate_adaption_from_csv<idx_t>(rate_adaption_file_path);
+            return LDPC4QKD::RateAdaptiveCode<Bit, colptr_t, idx_t>(colptr, row_idx, rows_to_combine);
+        }
     }
 }
 
