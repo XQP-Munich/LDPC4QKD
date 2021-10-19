@@ -290,6 +290,22 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
     }
 
     double fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_to_test);
-    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << num_frames_to_test << " frames )" << std::endl;
+    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << num_frames_to_test << " frames )"
+              << std::endl;
     ASSERT_EQ(fer, 0.);
+}
+
+TEST(rate_adaptive_code, llrs_bsc) {
+    std::vector<bool> x{1, 1, 1, 1, 0, 0, 0};
+    double p = 0.01;
+
+    double vlog = log((1 - p) / p);
+    std::vector<double> llrs(x.size());
+    for (std::size_t i{}; i < llrs.size(); ++i) {
+        llrs[i] = vlog * (1 - 2 * x[i]); // log likelihood ratios
+    }
+
+    std::vector<double> llrs_convenience = LDPC4QKD::RateAdaptiveCode<bool>::llrs_bsc(x, p);
+
+    EXPECT_EQ(llrs_convenience, llrs);
 }
