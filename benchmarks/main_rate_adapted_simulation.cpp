@@ -1,5 +1,7 @@
 //
 // Created by alice on 07.09.21.
+// In a Slepian-Wolf coding setting, for a given codeword and noised codeword, there is a minimum coding rate at which
+// the syndrome decoding succeeds. This program determines the average minimum coding rate across many noised codewords.
 //
 
 
@@ -8,42 +10,27 @@
 #include <random>
 #include <chrono>
 
+// Command line argument parser library
+#include "CmdParser-1.1.0/cmdparser.hpp"
+
 // Project scope
 #include "rate_adaptive_code.hpp"
-
-// Automatically generated C++ code that contains the LDPC matrix.
-#include "autogen_ldpc_matrix_csc.hpp"
-#include "autogen_rate_adaption.hpp"
 
 #include "code_simulation_helpers.hpp"
 
 using namespace LDPC4QKD::CodeSimulationHelpers;
 
 
-void print_command_line_help() {
-    std::cout << "Expecting exactly 7 arguments." << std::endl;
-    std::cout << "Example arguments: <executable> 0.05 10 50 42 2 ./ldpc_filename.cscmat ./rate_adaption_filename.csv"
-              << std::endl;
-    std::cout << "Specifying:\n"
-                 "BSC channel parameter\n"
-                 "nr. of frames to test\n"
-                 "max. number of BP algorithm iterations\n"
-                 "Mersenne Twister seed\n"
-                 "Update console output every n frames\n"
-                 "Path to cscmat file containing LDPC code (not QC exponents!)\n"
-                 "Path to csv file defining the rate adaption." << std::endl;
-}
-
 template<typename RateAdaptiveCodeTemplate>
 std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
                                         double p,
                                         std::size_t num_frames_to_test,
                                         std::mt19937_64 &rng,
-                                        std::uint16_t max_num_iter = 50,
-                                        long update_console_every_n_frames = 100,
-                                        const int ra_step_accuracy = 1) {
+                                        std::size_t max_num_iter = 50,
+                                        std::size_t update_console_every_n_frames = 100) {
     // assume whole codeword leaked unless decoding success
     std::vector<std::size_t> succesful_syndrome_sizes(num_frames_to_test, H.getNCols());
+    constexpr int ra_step_accuracy = 1;
 
     std::size_t frame_idx{0};  // counts the number of iterations
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
@@ -93,38 +80,54 @@ std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
 }
 
 
+void configure_parser(cli::Parser &parser) {
+    parser.set_optional<std::size_t>(
+            "s", "seed", 42,
+            "Mersenne Twister seed. Used to generate random bit-strings and simulate the noise channel.");
+
+    parser.set_optional<std::size_t>(
+            "upn", "update-console-n-frames", 100,
+            "Update console output every n frames");
+
+    parser.set_optional<std::size_t>(
+            "nf", "num-frames-to-test", 1,
+            "Number of frames to test (find optimal rate for).");
+
+    parser.set_optional<std::size_t>(
+            "i", "iter-bp", 50,
+            "Maximum number of belief propagation (BP) algorithm iterations.");
+
+    parser.set_optional<std::size_t>(
+            "me", "max-frame-errors", 50,
+            "Number of frame errors at which to quit the simulation. Specify zero for 'no condition'.");
+
+    parser.set_optional<double>(
+            "p", "channel-parameter", 0.02,
+            "Binary Symmetric Channel (BSC) channel parameter. I.e., probability of a bit to be flipped.");
+
+    parser.set_required<std::string>(
+            "cp", "code-path",
+            "Path to file containing LDPC code (`.cscmat` format. Note: does not accept QC exponents!)");
+
+    parser.set_required<std::string>(
+            "rp", "rate-adaption-path",
+            "Path to file containing rate adaption for the LDPC code (`csv` format. Two columns of indices).");
+}
+
+
 int main(int argc, char *argv[]) {
-    std::cout << "Program call: " << argv[0] << std::endl;
-    std::vector<std::string> args{argv + 1, argv + argc};
-    if (args.size() != 7) {
-        std::cout << "Received " << args.size() << " arguments.\n" << std::endl;
-        print_command_line_help();
-        exit(EXIT_FAILURE);
-    }
+    // parse command line arguments
+    cli::Parser parser(argc, argv);
+    configure_parser(parser);
+    parser.run_and_exit_if_error();
 
-    constexpr std::size_t rate_step = 10;
-    double p{};
-    std::size_t num_frames_to_test{};
-    std::uint16_t max_bp_iter{};
-    std::size_t rng_seed{};
-    long update_console_every_n_frames{};
-    std::string cscmat_file_path;
-    std::string rate_adaption_file_path;
-
-    try {
-        p = stod(args[0]); // channel error probability
-        num_frames_to_test = stol(args[1]);
-        max_bp_iter = stoi(args[2]);
-        rng_seed = stol(args[3]);
-        update_console_every_n_frames = stol(args[4]);
-        cscmat_file_path = args[5];
-        rate_adaption_file_path = args[6];
-    }
-    catch (...) {
-        std::cout << "Invalid command line arguments." << std::endl;
-        print_command_line_help();
-        exit(EXIT_FAILURE);
-    }
+    auto p = parser.get<double>("p");
+    auto num_frames_to_test = parser.get<std::size_t>("nf");
+    auto max_bp_iter = parser.get<std::size_t>("i");
+    auto rng_seed = parser.get<std::size_t>("s");
+    auto update_console_every_n_frames = parser.get<std::size_t>("upn");
+    auto cscmat_file_path = parser.get<std::string>("cp");;
+    auto rate_adaption_file_path = parser.get<std::string>("rp");;
 
     auto H = load_ldpc(cscmat_file_path, rate_adaption_file_path);
 
@@ -143,7 +146,7 @@ int main(int argc, char *argv[]) {
 
     auto syndrome_size_success = run_simulation(
             H, p, num_frames_to_test, rng,
-            max_bp_iter, update_console_every_n_frames, rate_step);
+            max_bp_iter, update_console_every_n_frames);
 
     auto now = std::chrono::steady_clock::now();
     std::cout << "\n\nDONE! Simulation time: " <<
@@ -157,7 +160,7 @@ int main(int argc, char *argv[]) {
     std::cout << "\n\n";
 
     double avg_synd_size = avg(syndrome_size_success);
-    std::cout << "Average syndrome size (out of " << num_frames_to_test << " ): " << avg_synd_size << std::endl;
+    std::cout << "Average syndrome size (out of " << num_frames_to_test << " codewords tried): " << avg_synd_size << std::endl;
 
     double avg_rate = avg_synd_size / static_cast<double>(H.getNCols());
     std::cout << "Average rate: " << avg_rate << " (inefficiency f = " << avg_rate / h2(p) << ")" << std::endl;
