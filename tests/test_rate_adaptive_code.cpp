@@ -244,12 +244,11 @@ TEST(rate_adaptive_code, decode_infer_rate) {
 
 
 TEST(rate_adaptive_code, rate_adapted_fer) {
-    // assert that the rate adapted FER (at set fraction of mother syndrome) is less than a certain value.
-    // TODO performance seems pretty bad! Not consistent with AFF3CT results!
+    // assert that the rate adapted FER (at set fraction of mother syndrome) is small.
     std::mt19937_64 rng(42);
     auto H = get_code_big_wra();
 
-    constexpr double p = 0.01;
+    constexpr double p = 0.03;
     constexpr std::size_t num_frames_to_test = 100;
     constexpr std::uint16_t max_num_iter = 50;
     const auto syndrome_size = static_cast<std::size_t>(H.get_n_rows_mother_matrix() - 10);
@@ -292,5 +291,5 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
 
     double fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_to_test);
     std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << num_frames_to_test << " frames )" << std::endl;
-    ASSERT_TRUE(fer < 0.2);
+    ASSERT_EQ(fer, 0.);
 }
