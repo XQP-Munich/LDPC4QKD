@@ -1,5 +1,8 @@
 //
 // Created by alice on 09.06.21.
+// Simulation script to determine frame error rate (FER) uppon belief propagation (BP) decoding of an LDPC code.
+// The LDPC code may be rate adapted before the simulation.
+// For more information on simulation settings, see the command line help.
 //
 
 // Standard library
@@ -16,24 +19,6 @@
 #include "code_simulation_helpers.hpp"
 
 using namespace LDPC4QKD::CodeSimulationHelpers;
-
-
-void print_command_line_help() {
-    std::cout << "Expecting exactly 9 arguments." << std::endl;
-    std::cout
-            << "Example arguments: <executable> 0.05 5000 100 50 42 200 ./filename.cscmat ./rate_adaption_filename.csv 1000"
-            << std::endl;
-    std::cout << "Specifying:\n"
-                 "BSC channel parameter\n"
-                 "max. nr. of frames to test\n"
-                 "nr. of frame errors at which to quit\n"
-                 "max. number of BP algorithm iterations\n"
-                 "Mersenne Twister seed\n"
-                 "Update console output every n frames\n"
-                 "Path to cscmat file containing LDPC code (not QC exponents!)\n"
-                 "Path to csv file defining the rate adaption.\n"
-                 "Amount of rate adaption (number of row combinations)" << std::endl;
-}
 
 
 template<typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
@@ -151,7 +136,7 @@ int main(int argc, char *argv[]) {
     auto n_line_combs = parser.get<std::size_t>("rn");
 
     // create LDPC code, with rate adaption if specified.
-    auto H = get_code_big_optional_ra(cscmat_file_path, rate_adaption_file_path);
+    auto H = load_ldpc(cscmat_file_path, rate_adaption_file_path);
     // set rate adaption. Only works if rate adaption was specified!
     H.set_rate(n_line_combs);
 
