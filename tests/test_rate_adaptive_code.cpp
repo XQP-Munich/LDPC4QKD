@@ -170,7 +170,7 @@ TEST(rate_adaptive_code, getters) {
     EXPECT_EQ(H.get_n_rows_mother_matrix(), 2048);
     EXPECT_EQ(H.getNCols(), 6144);
 
-//    H.get_current_n_rate_adapted_rows();
+    EXPECT_EQ(H.get_n_rows_after_rate_adaption(), H.get_n_rows_mother_matrix());
 }
 
 TEST(rate_adaptive_code, encode_with_ra) {
