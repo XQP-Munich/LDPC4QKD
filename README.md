@@ -85,15 +85,30 @@ Let us know if you're having problems with the provided materials, wish to contr
 
 
 ## Planned features and improvements
-- Code to automatically generate reports on quality of all LDPC codes and rate adapted performance (work in progress)
-- More and better LDPC codes with more sizes and rates
-- The BP implementation is not state-of-the-art or heavily optimized. 
-  We may improve it in the future.
-- Using compressed sparse row format may have advantages over the current compressed sparse column format. This needs to be tested.
-- the quasi-cyclic structure of LDPC matrices can be exploited to store the matrices more efficiently. 
-  For the encoder, this may be combinable with storing individual bits as integers rather than booleans, again saving some memory. 
-  The encoding in this case would consist of adding bit-shifted integers.
+
+If you need some feature for your applications, let us know, e.g. by creating an issue.
+
+- [ ] Reports and benchmarks on LDPC code quality and decoding performance
+  + [x] Simulation programs with command line interfaces
+  + [x] Frame error rate simulations for rate adapted codes (including special case of no rate adaption)
+  + [x] Critical rate (codeword-averaged minimum leak rate for successful decoding) computation for rate adapted codes  
+  + [ ] Automatic running of simulations
+  + [ ] Automatic reports with plots
+  + [ ] Simulations on multiple threads and/or multiprocessing
+- [ ] LDPC codes
+  + [x] 3 LDPC codes each (different block sizes) for leak rates 1/2 and 1/3
+  + [ ] More sizes, more rates
+  + [ ] Very high leak rate codes (for very low signal-to-noise ratios)
+- [ ] Decoding and decoding algorithms
+  + [x] Basic belief propagation (BP) decoder for Slepian-Wolf setting
+  + [ ] Decoder performance improvements (look at [AFF3CT](https://github.com/aff3ct/aff3ct) for inspiration), plausibly achieve 2x runtime speedup at same decoding accuracy
+  + [ ] Decoding on GPU
+  + [x] Encoder that can be used separately from encoder (e.g. for embedded applications)
+  + [ ] Using compressed sparse row format may have advantages over the current compressed sparse column (CSC) format. This needs to be tested.
+  + [ ] Save memory by storing QC-exponents of structured codes, rather than CSC storage
+  + [ ] Encoder speedup may be possible using QC-exponents by densely packed bits and using bit-shifts (not a priority, as syndrome computation, i.e., sparse matrix-vector multiplication, is fast anyway)
+  
 
 ## Attributions
 
-- Some of the simulation/benchmarking programs use [CmdParser](https://github.com/FlorianRappl/CmdParser), a simple command line parser (MIT license, sources included in this repository at `benchmarks/CmdParser-1.1.0`).
+- Some of the simulation/benchmarking programs use [CmdParser](https://github.com/FlorianRappl/CmdParser), a simple command line argument parser (MIT license, the sources are included in this repository at `benchmarks/CmdParser-1.1.0`).
