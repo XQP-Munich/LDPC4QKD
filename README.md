@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/github/license/XQP-Munich/LDPC4QKD)](./LICENSE)
 # LDPC4QKD: LDPC codes for rate adaptive distributed source coding 
 
-Note: This repository is still missing some benchmarks and documentation, which will be added very soon.
+Note: This repository is still missing some documentation, which will be added very soon.
 
 ## Overview
 
@@ -47,36 +47,53 @@ To build the C++ executables (except for unit tests) using CMake (Julia not requ
         
 All executables will be built inside the `build` folder.
 
-For a demo of how to use the C++ header-only library, see the `examples` directory, which shows a basic example ("demo_error_correction") of how to use the C++ header containing the decoder. This example is built by CMake (executable `build/examples/demo_error_correction`. Note: the executable produces no output; look at the C++ source code to see how the header can be used).
+For a demo of how to use the C++ header-only library, see the `examples` directory, which shows a basic example ("demo_error_correction") of how to use the C++ header containing the decoder.
+This example is built by CMake (executable `build/examples/demo_error_correction`.
+Note: the executable produces no output; look at the C++ source code to see how the header can be used).
 
 ## How to contribute
-This repository is actively maintained. Issues and pull requests will be responded to and processed.
+This repository is actively maintained. 
+Issues and pull requests will be responded to and processed.
 
 Let us know if you're having problems with the provided materials, wish to contribute new ideas or need modifications of our work for your application.
 
 ## List of contents
 
 ### Data files
-- A number of LDPC codes (a list and the actual LDPC matrices are in the folder `codes`). Their parity check matrices are stored in a custom file format (called `CSCMAT`).
+- A number of LDPC codes (a list and the actual LDPC matrices are in the folder `codes`). 
+  Their parity check matrices are stored in a custom file format (called `CSCMAT`).
 - Simulations results done using [AFF3CT](https://github.com/aff3ct/aff3ct), showing FER of the LDPC matrices at various channel parameters.
 - Simulation results done using the decoder in this repository, showing FER of LDPC matrices, their rate adapted versions, and average rate under rate adaption (Work in progress!).
-- For each LDPC matrix, a specification of rate adaption. This is a list of pairs of row indices of the matrix that are combined (added mod 2) in each rate adaption step.
+- For each LDPC matrix, a specification of rate adaption. 
+  This is a list of pairs of row indices of the matrix that are combined (added mod 2) in each rate adaption step.
 
 ### Julia code
 - Contained in the folder `codes`.
-- Enables loading the LDPC matrices from `CSCMAT` files
+- Enables loading the LDPC matrices from `CSCMAT` files (using our custom Julia library ``)
 - Enables saving the compressed sparse column (CSC) representation and also exporting to other standard formats, such as `alist`.
 
 ### C++ code
-- Basic LDPC decoder using belief propagation (BP). Contained in a single header file (`src/rate_adaptive_code.hpp`) and easy to use. Can perform syndrome computation as well. The LDPC code can be embedded into the executable or loaded from a file at program runtime.
-- Utility functions for reading LDPC matrices (from `.cscmat` files) and rate adaption (from `.csv` files). These functions are contained in `src/read_cscmat_format.hpp`. Note that these functions require the fully explicit binary form of the LDPC matrix. The LDPC codes given inside `codes/ldpc` use an even more memory-efficient storage 
-- For applications that only require syndrome computation but no decoding, we provide a separate implementation for multiplication of a sparse binary matrix and a dense binary vector (LDPC syndrome computation). This is also contained in a single header file (`src/encoder.hpp`). This is a very specific application, which you probably don't care about initially.
-- A LDPC matrix can be stored within the executable. It is included as a header file defining constant data (for example `tests/fortest_autogen_ldpc_matrix_csc.hpp`). Julia code (see folder `codes`) is provided to generate such a C++ header file for any LDPC matrix.
+- Basic LDPC decoder using belief propagation (BP). Contained in a single header file (`src/rate_adaptive_code.hpp`) and easy to use. Can perform syndrome computation as well. 
+  The LDPC code can be embedded into the executable or loaded from a file at program runtime.
+- Utility functions for reading LDPC matrices (from `.cscmat` files) and rate adaption (from `.csv` files). These functions are contained in `src/read_cscmat_format.hpp`.
+  Note that these functions require the fully explicit binary form of the LDPC matrix. The LDPC codes given inside `codes/ldpc` use an even more memory-efficient storage 
+- For applications that only require syndrome computation but no decoding, we provide a separate implementation for multiplication of a sparse binary matrix and a dense binary vector (LDPC syndrome computation). This is also contained in a single header file (`src/encoder.hpp`). 
+  This is a very specific application, which you probably don't care about initially.
+- A LDPC matrix can be stored within the executable. 
+  It is included as a header file defining constant data (for example `tests/fortest_autogen_ldpc_matrix_csc.hpp`). 
+  Julia code (see folder `codes`) is provided to generate such a C++ header file for any LDPC matrix.
 
 
 ## Planned features and improvements
 - Code to automatically generate reports on quality of all LDPC codes and rate adapted performance (work in progress)
 - More and better LDPC codes with more sizes and rates
-- The BP implementation is not state-of-the-art or heavily optimized. We may improve it in the future.
+- The BP implementation is not state-of-the-art or heavily optimized. 
+  We may improve it in the future.
 - Using compressed sparse row format may have advantages over the current compressed sparse column format. This needs to be tested.
-- the quasi-cyclic structure of LDPC matrices can be exploited to store the matrices more efficiently. For the encoder, this may be combinable with storing individual bits as integers rather than booleans, again saving some memory. The encoding in this case would consist of adding bit-shifted integers.
+- the quasi-cyclic structure of LDPC matrices can be exploited to store the matrices more efficiently. 
+  For the encoder, this may be combinable with storing individual bits as integers rather than booleans, again saving some memory. 
+  The encoding in this case would consist of adding bit-shifted integers.
+
+## Attributions
+
+- Some of the simulation/benchmarking programs use [CmdParser](https://github.com/FlorianRappl/CmdParser), a simple command line parser (MIT license, sources included in this repository at `benchmarks/CmdParser-1.1.0`).
