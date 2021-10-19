@@ -1,5 +1,8 @@
 //
 // Created by alice on 09.06.21.
+// Simulation script to determine frame error rate (FER) uppon belief propagation (BP) decoding of an LDPC code.
+// The LDPC code may be rate adapted before the simulation.
+// For more information on simulation settings, see the command line help.
 //
 
 // Standard library
@@ -7,30 +10,18 @@
 #include <random>
 #include <chrono>
 
+// Command line argument parser library
+#include "CmdParser-1.1.0/cmdparser.hpp"
+
 // Project scope
 #include "rate_adaptive_code.hpp"
 
 #include "code_simulation_helpers.hpp"
+
 using namespace LDPC4QKD::CodeSimulationHelpers;
 
 
-void print_command_line_help() {
-    std::cout << "Expecting exactly 9 arguments." << std::endl;
-    std::cout << "Example arguments: <executable> 0.05 5000 100 50 42 200 ./filename.cscmat ./rate_adaption_filename.csv 1000" << std::endl;
-    std::cout << "Specifying:\n"
-                 "BSC channel parameter\n"
-                 "max. nr. of frames to test\n"
-                 "nr. of frame errors at which to quit\n"
-                 "max. number of BP algorithm iterations\n"
-                 "Mersenne Twister seed\n"
-                 "Update console output every n frames\n"
-                 "Path to cscmat file containing LDPC code (not QC exponents!)\n"
-                 "Path to csv file defining the rate adaption.\n"
-                 "Amount of rate adaption (number of row combinations)" << std::endl;
-}
-
-
-template <typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
+template<typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
         typename idx_t=std::uint16_t>
 std::pair<size_t, size_t> run_simulation(
         const LDPC4QKD::RateAdaptiveCode<bool, colptr_t, idx_t> &H,
@@ -38,11 +29,11 @@ std::pair<size_t, size_t> run_simulation(
         std::size_t num_frames_to_test,
         std::mt19937_64 &rng,
         std::uint16_t max_num_iter = 50,
-        long update_console_every_n_frames = 100,
-        long quit_at_n_errors = 100) {
+        std::size_t update_console_every_n_frames = 100,
+        std::size_t quit_at_n_errors = 100) {
     std::size_t num_frame_errors{};
     std::size_t it{1};  // counts the number of iterations
-    for (; it < num_frames_to_test + 1; ++it) {
+    for (; num_frames_to_test == 0 || it < num_frames_to_test + 1; ++it) {
         std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
         noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
 
@@ -76,7 +67,7 @@ std::pair<size_t, size_t> run_simulation(
                       << " (FER~" << static_cast<double>(num_frame_errors) / static_cast<double>(it)
                       << ")..." << std::endl;
         }
-        if (num_frame_errors >= quit_at_n_errors) {
+        if (quit_at_n_errors != 0 && num_frame_errors >= quit_at_n_errors) {
             std::cout << "Quit simulation as max number of frame errors was reached." << std::endl;
             return std::make_pair(num_frame_errors, it);
         }
@@ -87,74 +78,99 @@ std::pair<size_t, size_t> run_simulation(
 }
 
 
+void configure_parser(cli::Parser &parser) {
+    parser.set_optional<std::size_t>(
+            "s", "seed", 42,
+            "Mersenne Twister seed. Used to generate random bit-strings and simulate the noise channel.");
+
+    parser.set_optional<std::size_t>(
+            "upn", "update-console-n-frames", 100,
+            "Update console output every n frames");
+
+    parser.set_optional<std::size_t>(
+            "mf", "max-frames", 0,
+            "Maximum number of frames to test. Other conditions may terminate the simulation.");
+
+    parser.set_optional<std::size_t>(
+            "i", "iter-bp", 50,
+            "Maximum number of belief propagation (BP) algorithm iterations.");
+
+    parser.set_optional<std::size_t>(
+            "me", "max-frame-errors", 50,
+            "Number of frame errors at which to quit the simulation. Specify zero for 'no condition'.");
+
+    parser.set_optional<double>(
+            "p", "channel-parameter", 0.02,
+            "Binary Symmetric Channel (BSC) channel parameter. I.e., probability of a bit to be flipped.");
+
+    parser.set_required<std::string>(
+            "cp", "code-path",
+            "Path to file containing LDPC code (`.cscmat` format. Note: does not accept QC exponents!)");
+
+    parser.set_optional<std::string>(
+            "rp", "rate-adaption-path", "",
+            "Path to file containing rate adaption for the LDPC code (`csv` format. Two columns of indices). "
+            "If unspecified, no rate adaption is available.");
+
+    parser.set_optional<std::size_t>(
+            "rn", "rate-adaption-steps", 0,
+            "Amount of rate adaption (number of row combinations) used for the simulation."
+            "Can only be non-zero if a rate adaption file is also given.");
+}
+
+
 int main(int argc, char *argv[]) {
-    std::cout << "Program call:" << argv[0] << std::endl;
+    // parse command line arguments
+    cli::Parser parser(argc, argv);
+    configure_parser(parser);
+    parser.run_and_exit_if_error();
 
-    std::vector<std::string> args{argv + 1, argv + argc};
-    if (args.size() != 9) {
-        std::cout << "Received " << args.size() << " arguments.\n" << std::endl;
-        print_command_line_help();
-        exit(EXIT_FAILURE);
-    }
+    auto p = parser.get<double>("p");
+    auto max_num_frames_to_test = parser.get<std::size_t>("mf");
+    auto quit_at_n_errors = parser.get<std::size_t>("me");
+    auto max_bp_iter = parser.get<std::size_t>("i");
+    auto rng_seed = parser.get<std::size_t>("s");
+    auto update_console_every_n_frames = parser.get<std::size_t>("upn");
+    auto cscmat_file_path = parser.get<std::string>("cp");
+    auto rate_adaption_file_path = parser.get<std::string>("rp");
+    auto n_line_combs = parser.get<std::size_t>("rn");
 
-    double p{};
-    std::size_t max_num_frames_to_test{};
-    long quit_at_n_errors{};
-    std::uint16_t max_bp_iter{};
-    std::size_t rng_seed{};
-    long update_console_every_n_frames{};
-    std::string cscmat_file_path;
-    std::string rate_adaption_file_path;
-    std::size_t n_line_combs{};
-
-    try {
-        p = stod(args[0]); // channel error probability
-        max_num_frames_to_test = stol(args[1]);
-        quit_at_n_errors = stol(args[2]);
-        max_bp_iter = stoi(args[3]);
-        rng_seed = stol(args[4]);
-        update_console_every_n_frames = stol(args[5]);
-        cscmat_file_path = args[6];
-        rate_adaption_file_path = args[7];
-        n_line_combs = stol(args[8]);
-    }
-    catch (...) {
-        std::cout << "Invalid command line arguments." << std::endl;
-        print_command_line_help();
-        exit(EXIT_FAILURE);
-    }
-
-    auto H = get_code_big_wra(cscmat_file_path, rate_adaption_file_path);
+    // create LDPC code, with rate adaption if specified.
+    auto H = load_ldpc(cscmat_file_path, rate_adaption_file_path);
+    // set rate adaption. Only works if rate adaption was specified!
     H.set_rate(n_line_combs);
 
+    // print received arguments (simulation parameters)
     std::cout << std::endl;
-    std::cout << "Code path: " << cscmat_file_path << '\n';
-    std::cout << "Rate adaption path: " << rate_adaption_file_path << '\n';
-    std::cout << "Code size (before rate adaption): " << H.get_n_rows_mother_matrix() << " x " << H.getNCols() << '\n';
-    std::cout << "Code size (after rate adaption): " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
+    std::cout << "Code path: '" << cscmat_file_path << "'\n";
+    std::cout << "Rate adaption path: '" << rate_adaption_file_path << "'\n";
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
     std::cout << "Max number of BP decoder iterations: " << static_cast<int>(max_bp_iter) << '\n';
     std::cout << "Max number of frames to simulate: " << max_num_frames_to_test << '\n';
     std::cout << "Quit at n frame errors: " << quit_at_n_errors << '\n';
     std::cout << "PRNG seed: " << rng_seed << '\n';
     std::cout << "Update console every n frames: " << update_console_every_n_frames << '\n';
-    std::cout << "\n" << std::endl;
+    std::cout << "Code size before rate adaption: " << H.get_n_rows_mother_matrix() << " x " << H.getNCols() << '\n';
+    std::cout << "Code size after rate adaption (if applicable): "
+              << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << "\n\n" << std::endl;
 
     std::mt19937_64 rng(rng_seed);
     auto begin = std::chrono::steady_clock::now();
 
+    // perform frame error rate simulation.
     std::pair<std::size_t, std::size_t> result = run_simulation(H, p, max_num_frames_to_test, rng,
                                                                 max_bp_iter,
                                                                 update_console_every_n_frames, quit_at_n_errors);
     std::size_t num_frame_errors = result.first;
     std::size_t num_frames_tested = result.second;
+    double naive_fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_tested);
 
     auto now = std::chrono::steady_clock::now();
-
     std::cout << "\n\nDONE! Simulation time: " <<
               std::chrono::duration_cast<std::chrono::seconds>(now - begin).count() << " seconds." << '\n';
+
     std::cout << "Recorded " << num_frame_errors << " frame errors out of " << num_frames_tested
-              << " (FER~" << static_cast<double>(num_frame_errors) / num_frames_tested << ")..." << std::endl;
+              << " (FER~" << naive_fer << ")..." << std::endl;
 
     exit(EXIT_SUCCESS);
 }

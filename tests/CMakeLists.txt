@@ -53,14 +53,15 @@ include(GoogleTest)
 gtest_discover_tests(unit_tests_error_correction)
 
 
+get_filename_component(LDPC4QKD_TESTS_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
+get_filename_component(LDPC4QKD_SRC_DIR "${LDPC4QKD_TESTS_DIR}/src" ABSOLUTE)
 # Another executable that is only used to see what size the compiled binary has for a given LDPC code,
 # when embedding the code into the binary.
 add_executable(look_at_executable_size look_at_executable_size.cpp)
 target_include_directories(look_at_executable_size
         PRIVATE
-        "${CMAKE_SOURCE_DIR}/src/"
+        "${LDPC4QKD_SRC_DIR}/"
         )
-
 
 # Copy the .cscmat file into the directory containing the tests binary.
 # This is required to test the .cscmat reader code.

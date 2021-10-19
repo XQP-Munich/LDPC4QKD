@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.19)
 
 project(LDPC4QKDLibrary)
 
+get_filename_component(LDPC4QKD_SRC_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
+get_filename_component(LDPC4QKD_TESTS_DIR "${LDPC4QKD_SRC_DIR}/tests" ABSOLUTE)
 
 if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
     message(WARNING "C++ code containing the LDPC matrix not found.
@@ -9,9 +11,9 @@ if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp")
 
     add_custom_command(
             OUTPUT autogen_ldpc_matrix_csc.hpp
-            DEPENDS "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_ldpc_matrix_csc.hpp"
+            DEPENDS "${LDPC4QKD_TESTS_DIR}/fortest_autogen_ldpc_matrix_csc.hpp"
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_ldpc_matrix_csc.hpp"
+            "${LDPC4QKD_TESTS_DIR}/fortest_autogen_ldpc_matrix_csc.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/autogen_ldpc_matrix_csc.hpp"
             VERBATIM
     )
@@ -24,9 +26,9 @@ if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp")
 
     add_custom_command(
             OUTPUT autogen_rate_adaption.hpp
-            DEPENDS "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_rate_adaption.hpp"
+            DEPENDS "${LDPC4QKD_TESTS_DIR}/fortest_autogen_rate_adaption.hpp"
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_SOURCE_DIR}/tests/fortest_autogen_rate_adaption.hpp"
+            "${LDPC4QKD_TESTS_DIR}/fortest_autogen_rate_adaption.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/autogen_rate_adaption.hpp"
             VERBATIM
     )

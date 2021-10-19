@@ -55,21 +55,6 @@ target_include_directories(benchmark_ra
         PRIVATE
         )
 
-# ------------------------------------------------------------------------------------------ Frame error rate simulation
-add_executable(frame_error_rate_simulation main_frame_error_rate_simulation.cpp
-        code_simulation_helpers.hpp)
-
-target_compile_features(frame_error_rate_simulation PUBLIC cxx_std_17)
-
-target_link_libraries(frame_error_rate_simulation
-        PRIVATE
-        LDPC4QKD::LDPC4QKD
-        )
-
-target_include_directories(frame_error_rate_simulation
-        PRIVATE
-        )
-
 # ---------------------------------------------------------------------------------- Rate adapted performance simulation
 add_executable(rate_adapted_simulation main_rate_adapted_simulation.cpp
         code_simulation_helpers.hpp)
@@ -85,7 +70,7 @@ target_include_directories(rate_adapted_simulation
         PRIVATE
         )
 
-# ------------------------------------------------------------------------------------------ Rate adapted fer simulation
+# ------------------------------------------------------------- frame error rate (FER) simulation (allows rate adaption)
 add_executable(rate_adapted_fer main_rate_adapted_fer.cpp
         code_simulation_helpers.hpp)
 
