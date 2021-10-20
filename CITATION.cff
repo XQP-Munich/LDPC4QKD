@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "LDPC4QKD: LDPC Codes for Rate Adaptive Distributed Source Coding"
+doi: 10.5281/zenodo.5579246
+publisher: Zenodo
+url: https://doi.org/10.5281/zenodo.5579246
+authors:
+  - family-names: Baliuka
+    given-names: Adomas
+    orcid: "https://orcid.org/0000-0002-7064-8502"
+  - family-names: Dupraz
+    given-names: Elsa
+license: MIT
