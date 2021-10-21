@@ -1,9 +1,11 @@
 //
 // Created by alice on 07.09.21.
-// In a Slepian-Wolf coding setting, for a given codeword and noised codeword, there is a minimum coding rate at which
-// the syndrome decoding succeeds. This program determines the average minimum coding rate across many noised codewords.
 //
-
+constexpr auto help_text =
+        "Slepian-Wolf Critical Code Rate Simulator for Rate Adapted LDPC Codes\n"
+        "\n"
+        "In a Slepian-Wolf coding setting, for a given codeword and noised codeword, there is a minimum coding rate at which the syndrome decoding succeeds.\n"
+        "This program determines the average minimum coding rate across many noised codewords.";
 
 // Standard library
 #include <iostream>
@@ -11,7 +13,7 @@
 #include <chrono>
 
 // Command line argument parser library
-#include "CmdParser-1.1.0/cmdparser.hpp"
+#include "CmdParser-91aaa61e/cmdparser.hpp"
 
 // Project scope
 #include "rate_adaptive_code.hpp"
@@ -34,13 +36,12 @@ std::vector<std::size_t> run_simulation(RateAdaptiveCodeTemplate &H,
 
     std::size_t frame_idx{0};  // counts the number of iterations
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
-        std::size_t success_syndrome_size = H.getNCols(); // assume whole codeword leaked unless decoding success
 
         std::size_t min_syndrome_size = H.get_n_rows_mother_matrix() - H.get_max_ra_steps();;
         std::size_t max_syndrome_size = H.get_n_rows_mother_matrix();
         // bisection
         while ((max_syndrome_size - min_syndrome_size) > ra_step_accuracy) {
-                        std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
+            std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
             noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
 
             std::vector<bool> syndrome;  // syndrome for error correction, which is sent over a noise-less channel.
@@ -117,7 +118,7 @@ void configure_parser(cli::Parser &parser) {
 
 int main(int argc, char *argv[]) {
     // parse command line arguments
-    cli::Parser parser(argc, argv);
+    cli::Parser parser(argc, argv, help_text);
     configure_parser(parser);
     parser.run_and_exit_if_error();
 
@@ -160,7 +161,8 @@ int main(int argc, char *argv[]) {
     std::cout << "\n\n";
 
     double avg_synd_size = avg(syndrome_size_success);
-    std::cout << "Average syndrome size (out of " << num_frames_to_test << " codewords tried): " << avg_synd_size << std::endl;
+    std::cout << "Average syndrome size (out of " << num_frames_to_test << " codewords tried): " << avg_synd_size
+              << std::endl;
 
     double avg_rate = avg_synd_size / static_cast<double>(H.getNCols());
     std::cout << "Average rate: " << avg_rate << " (inefficiency f = " << avg_rate / h2(p) << ")" << std::endl;

@@ -1,9 +1,15 @@
 //
 // Created by alice on 09.06.21.
-// Simulation script to determine frame error rate (FER) uppon belief propagation (BP) decoding of an LDPC code.
-// The LDPC code may be rate adapted before the simulation.
-// For more information on simulation settings, see the command line help.
+// Note: Names and meaning of command line parameters are defined below.
 //
+constexpr auto help_text =
+        "Frame Error Rate (FER) Simulator for Rate Adapted LDPC Codes\n"
+        "\n"
+        "This software is used to \n"
+        "- load an LDPC code (from a .cscmat file storing the full binary LDPC matrix in compressed sparse column (CSC) format, no QC exponents allowed!)\n"
+        "- load rate adaption (from a csv file, list of pairs of row indices combined at each rate adaption step) "
+        "(this is optional; without rate adatpion only FER of the LDPC code can be simulated)\n"
+        "- Simulate the FER of the given LDPC code at specified amount of rate adaption.";
 
 // Standard library
 #include <iostream>
@@ -11,7 +17,7 @@
 #include <chrono>
 
 // Command line argument parser library
-#include "CmdParser-1.1.0/cmdparser.hpp"
+#include "CmdParser-91aaa61e/cmdparser.hpp"
 
 // Project scope
 #include "rate_adaptive_code.hpp"
@@ -121,7 +127,7 @@ void configure_parser(cli::Parser &parser) {
 
 int main(int argc, char *argv[]) {
     // parse command line arguments
-    cli::Parser parser(argc, argv);
+    cli::Parser parser(argc, argv, help_text);
     configure_parser(parser);
     parser.run_and_exit_if_error();
 
