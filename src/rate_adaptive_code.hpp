@@ -316,7 +316,7 @@ namespace LDPC4QKD {
         }
 
         bool operator!=(const RateAdaptiveCode &rhs) const {
-            return rhs != *this;
+            return !(rhs == *this); // Note: do not "simplify". The call to == is required.
         }
 
         // ----------------------------------------------------------------------------------------- getters and setters
