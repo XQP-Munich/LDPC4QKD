@@ -253,7 +253,7 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
     constexpr std::uint16_t max_num_iter = 50;
     const auto syndrome_size = static_cast<std::size_t>(H.get_n_rows_mother_matrix() - 10);
 
-    std::size_t num_frame_errors{};;
+    std::size_t num_frame_errors{};
     std::size_t frame_idx{1};  // counts the number of iterations
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
         std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
@@ -308,4 +308,14 @@ TEST(rate_adaptive_code, llrs_bsc) {
     std::vector<double> llrs_convenience = LDPC4QKD::RateAdaptiveCode<bool>::llrs_bsc(x, p);
 
     EXPECT_EQ(llrs_convenience, llrs);
+}
+
+TEST(rate_adaptive_code, equals_not_equals_operators) {
+    auto H1 = get_code_big_wra();
+    auto H2 = get_code_big_wra();
+    EXPECT_FALSE(H1 != H2);
+    EXPECT_TRUE(H1 == H2);
+    H1.set_rate(1);
+    EXPECT_FALSE(H1 == H2);
+    EXPECT_TRUE(H1 != H2);
 }
