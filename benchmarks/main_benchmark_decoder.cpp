@@ -52,7 +52,7 @@ static void BM_decode_benchmark_no_rate_adaption(benchmark::State& state) {
     for (auto _ : state) {
         state.PauseTiming();
 
-        noise_bitstring_inplace(true_codeword, 0.5, state.range(0));
+        noise_bitstring_inplace(true_codeword, 0.5, static_cast<unsigned int>(state.range(0)));
         H.encode_no_ra(true_codeword, syndrome);
         std::vector<bool> x_noised = true_codeword; // distorted data
         noise_bitstring_inplace(x_noised, bsc_err_p);

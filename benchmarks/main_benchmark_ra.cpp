@@ -31,7 +31,7 @@ static void BM_decode_benchmark_set_rate(benchmark::State& state) {
         state.ResumeTiming();
 
         benchmark::DoNotOptimize(H.getPosVarn());
-        H.set_rate(state.range(0));
+        H.set_rate(static_cast<size_t>(state.range(0)));
         benchmark::ClobberMemory();
     }
 }
