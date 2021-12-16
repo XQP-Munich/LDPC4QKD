@@ -50,6 +50,12 @@ namespace LDPC4QKD {
         using ColumnPointer = colptr_t;
         using MatrixEntry = Bit;
 
+        static_assert(!std::numeric_limits<NodeDegree>::is_signed, "Expecting unsigned integer types");
+        static_assert(!std::numeric_limits<MatrixIndex>::is_signed, "Expecting unsigned integer types");
+        static_assert(!std::numeric_limits<ColumnPointer>::is_signed, "Expecting unsigned integer types");
+        static_assert(std::numeric_limits<MatrixEntry>::is_integer,
+                "Expecting integer type (e.g. bool or uint8) for the bit values. Will use only 'true' and 'false'.");
+
         // ------------------------------------------------------------------------------------------------ constructors
         /*!
          * Constructor for using the code without rate adaption.
@@ -59,11 +65,10 @@ namespace LDPC4QKD {
          * @param rowIdx row index array for specifying mother parity check matrix.
          */
         RateAdaptiveCode(const std::vector<colptr_t> &colptr, const std::vector<idx_t> &rowIdx)
-                : colptr(colptr), row_idx(rowIdx),
+                : colptr(colptr), row_idx(rowIdx), rows_to_combine({}),
+                  n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
-                  n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
-                  n_ra_rows(n_mother_rows),
-                  rows_to_combine({}) {
+                  n_ra_rows(n_mother_rows) {
             constexpr std::size_t n_line_combs = 0;
 
             recompute_pos_vn_cn(n_line_combs);
@@ -94,11 +99,10 @@ namespace LDPC4QKD {
                          const std::vector<idx_t> &rowIdx,
                          const std::vector<idx_t> &rows_to_combine_rate_adapt,
                          std::size_t initial_row_combs = 0)
-                : colptr(colptr), row_idx(rowIdx),
+                : colptr(colptr), row_idx(rowIdx), rows_to_combine(rows_to_combine_rate_adapt),
+                  n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
-                  n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1),
-                  n_ra_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1 - initial_row_combs / 2),
-                  rows_to_combine(rows_to_combine_rate_adapt) {
+                  n_ra_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u - initial_row_combs / 2) {
             if (rows_to_combine.size() % 2 != 0) {
                 throw std::domain_error("The number of rows to combine for rate adaption "
                                         "(size of argument array) is an odd number (expected even).");
@@ -192,7 +196,7 @@ namespace LDPC4QKD {
         bool decode_infer_rate(const std::vector<double> &llrs,
                                const std::vector<Bit> &syndrome,
                                std::vector<Bit> &out,
-                               const std::uint16_t max_num_iter = 50,
+                               const std::size_t max_num_iter = 50,
                                const double vsat = 100) {
             if (syndrome.size() != n_ra_rows) {
                 set_rate(get_n_rows_mother_matrix() - syndrome.size());
@@ -216,7 +220,7 @@ namespace LDPC4QKD {
         bool decode_at_current_rate(const std::vector<double> &llrs,
                                     const std::vector<Bit> &syndrome,
                                     std::vector<Bit> &out,
-                                    const std::uint16_t max_num_iter = 50,
+                                    const std::size_t max_num_iter = 50,
                                     const double vsat = 100) const {
             // check inputs.
             if (llrs.size() != n_cols) {
@@ -460,8 +464,8 @@ namespace LDPC4QKD {
                 std::vector<std::vector<idx_t>> pos_varn_nora{};
 
                 if (n_line_combs == 0) {
-                    for (std::size_t col = 0; col < n_cols; col++) {
-                        for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++) {
+                    for (idx_t col = 0; col < n_cols; col++) {
+                        for (std::size_t j = colptr[col]; j < colptr[col + 1u]; j++) {
                             pos_varn[row_idx[j]].push_back(col);
                         }
                     }
@@ -469,8 +473,8 @@ namespace LDPC4QKD {
                     // first compute non-rate adapted variable nodes and store in temporary vector
                     pos_varn_nora.resize(n_mother_rows);
 
-                    for (std::size_t col = 0; col < n_cols; col++) {
-                        for (std::size_t j = colptr[col]; j < colptr[col + 1]; j++) {
+                    for (idx_t col = 0; col < n_cols; col++) {
+                        for (std::size_t j = colptr[col]; j < colptr[col + 1u]; j++) {
                             pos_varn_nora[row_idx[j]].push_back(col);
                         }
                     }
@@ -515,7 +519,7 @@ namespace LDPC4QKD {
                 // These arrays contain the same information.
                 pos_checkn.assign(n_cols, std::vector<idx_t>{});
 
-                for (std::size_t i{}; i < pos_varn.size(); ++i) {
+                for (idx_t i{}; i < pos_varn.size(); ++i) {
                     for (auto &vn : pos_varn[i]) {
                         pos_checkn[vn].push_back(i);
                     }
@@ -523,31 +527,6 @@ namespace LDPC4QKD {
             }  // end recompute pos_checkn
         }
 
-
-        // TODO delete this code if it's not going to be used!
-//        /// Check that after maximum rate adaption all vectors inside `pos_checkn` and `pos_varn` have no duplicates.
-//        /// This is done 1. to ensure correct functioning of the BP algorith and 2. to check
-//        /// if variable node eliminations happened. TODO decide if we want to allow such eliminations or not
-//        [[nodiscard]]
-//        bool has_var_node_eliminations() {
-//            const std::size_t current_ra_rows = n_ra_rows;
-//            const std::size_t max_rate_adaptions = rows_to_combine.size() / 2;
-//            set_rate(max_rate_adaptions);  // to check if variable nodes are eliminated, do all the rate adaption.
-//
-//            // check for duplicates in pos_varn. These are variable node eliminations.
-//            for (const auto &cn : pos_varn) {
-//                // very crude: convert to a set and check length.
-//                std::set<typename decltype(pos_varn)::value_type::value_type> set_copy(cn.begin(), cn.end());
-//                if (set_copy.size() != cn.size()) {
-//                    return true;
-//                }
-//            }
-//
-//            // go back to the rate we started with.
-//            set_rate(n_mother_rows - current_ra_rows);
-//
-//            return false;
-//        }
 
         // ---------------------------------------------------------------------------------------------- private fields
         // colptr and row_idx define the mother matrix, which each rate adaption starts from.
