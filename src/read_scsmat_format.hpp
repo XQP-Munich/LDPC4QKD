@@ -118,7 +118,7 @@ namespace LDPC4QKD {
             std::vector<rowidx> rows_to_combine{};
 
             while(getline(fs, current_line)) {
-                const auto vec_of_two = HelpersReadSCSMAT::helper_parse_sep_ints(current_line, ',');
+                const auto vec_of_two = HelpersReadSCSMAT::helper_parse_sep_ints<rowidx>(current_line, ',');
                 rows_to_combine.push_back(vec_of_two.at(0));
                 rows_to_combine.push_back(vec_of_two.at(1));
             }
