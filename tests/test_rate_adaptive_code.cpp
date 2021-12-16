@@ -125,7 +125,7 @@ TEST(rate_adaptive_code, encode_current_rate) {
 
     EXPECT_EQ(hash_vector(out), 2814594723);
 
-    const auto n_line_combs = static_cast<std::size_t>(H.get_n_rows_mother_matrix() * 0.3);
+    const auto n_line_combs = static_cast<std::size_t>(static_cast<double>(H.get_n_rows_mother_matrix()) * 0.3);
     H.set_rate(n_line_combs);
 
     H.encode_at_current_rate(in, out);
@@ -187,14 +187,15 @@ TEST(rate_adaptive_code, encode_with_ra) {
     EXPECT_EQ(hash_vector(syndrome), 2814594723);
 
     // check that invalid requests lead to exceptions
-    EXPECT_ANY_THROW(H.encode_with_ra({true, false}, syndrome, -1));  // invalid input size
-    EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, -1)); // invalid requested size
+    EXPECT_ANY_THROW(H.encode_with_ra({true, false}, syndrome, 0xbadb'eeff'ffff'aaaa));  // invalid input size
+    EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, 0xbadb'eeff'ffff'ffff)); // invalid requested size
     EXPECT_ANY_THROW(H.encode_with_ra(input, syndrome, H.get_n_rows_mother_matrix() + 1)); // too big requested size
 
     H.encode_with_ra(input, syndrome, H.get_n_rows_mother_matrix() / 2 + 1);
     EXPECT_EQ(hash_vector(syndrome), 0x4e395580);
 
-    H.encode_with_ra(input, syndrome, static_cast<size_t>(H.get_n_rows_mother_matrix() * 0.7));
+    H.encode_with_ra(input, syndrome,
+                     static_cast<size_t>(static_cast<double>(H.get_n_rows_mother_matrix()) * 0.7));
     EXPECT_EQ(hash_vector(syndrome), 0x01dab680);
 }
 
@@ -222,7 +223,9 @@ TEST(rate_adaptive_code, decode_infer_rate) {
     // storage for syndrome. Initialize with arbitrary values, which must be overwritten by encoder.
     std::vector<Bit> syndrome;
     constexpr double rate_adapt_factor = .95;
-    H.encode_with_ra(x, syndrome, H.get_n_rows_mother_matrix() * rate_adapt_factor);
+    const auto output_syndr_len = static_cast<size_t>(
+            static_cast<double>(H.get_n_rows_mother_matrix()) * rate_adapt_factor);
+    H.encode_with_ra(x, syndrome, output_syndr_len);
 
     constexpr double p = 0.005;
     std::vector<bool> x_noised = x; // copy for distorted data
@@ -250,8 +253,8 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
 
     constexpr double p = 0.03;
     constexpr std::size_t num_frames_to_test = 100;
-    constexpr std::uint16_t max_num_iter = 50;
-    const auto syndrome_size = static_cast<std::size_t>(H.get_n_rows_mother_matrix() - 10);
+    constexpr std::size_t max_num_iter = 50;
+    const std::size_t syndrome_size = H.get_n_rows_mother_matrix() - 10;
 
     std::size_t num_frame_errors{};
     std::size_t frame_idx{1};  // counts the number of iterations
