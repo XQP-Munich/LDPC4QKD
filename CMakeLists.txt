@@ -52,9 +52,13 @@ endif ()
 
 # Interface library (without sources) that carries compiler/build flags.
 add_library(project_options INTERFACE)
+add_library(compiler_warnings INTERFACE)
 
 include(BuildConfig)  # custom CMake module (see folder `cmake/Modules`)
 enable_sanitizers(project_options) # adds coverage if specified by flag ENABLE_COVERAGE
+
+include(CompilerWarnings)
+set_project_warnings(compiler_warnings)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------- MISCELLANEOUS ---------------------------------------------------

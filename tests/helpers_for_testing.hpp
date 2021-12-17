@@ -179,7 +179,7 @@ namespace HelpersForTests {
     template<typename T, std::size_t N>
     void vec_to_arr(std::vector<T> const &in, std::array<T, N> &out) {
         if (out.size() == in.size()) {
-            for (int i = 0; i < in.size(); ++i) {
+            for (std::size_t i = 0; i < in.size(); ++i) {
                 out[i] = in[i];
             }
         } else {

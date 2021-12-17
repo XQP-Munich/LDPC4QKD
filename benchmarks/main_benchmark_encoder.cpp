@@ -38,7 +38,7 @@ static void BM_encode_benchmark_no_rate_adaption(benchmark::State& state) {
 
     for (auto _ : state) {
         state.PauseTiming();
-        noise_bitstring_inplace(input, 0.5, state.range(0));
+        noise_bitstring_inplace(input, 0.5, static_cast<unsigned int>(state.range(0)));
         state.ResumeTiming();
 
         benchmark::DoNotOptimize(input);
@@ -58,7 +58,7 @@ static void BM_encode_benchmark_with_rate_adaption(benchmark::State& state) {
 
     for (auto _ : state) {
         state.PauseTiming();
-        noise_bitstring_inplace(input, 0.5, state.range(0));
+        noise_bitstring_inplace(input, 0.5, static_cast<unsigned int>(state.range(0)));
         state.ResumeTiming();
 
         benchmark::DoNotOptimize(input);
@@ -79,7 +79,7 @@ static void BM_only_rate_adaption(benchmark::State& state) {
 
     for (auto _ : state) {
         state.PauseTiming();
-        noise_bitstring_inplace(output, 0.5, state.range(0));
+        noise_bitstring_inplace(output, 0.5, static_cast<unsigned int>(state.range(0)));
         state.ResumeTiming();
 
         benchmark::DoNotOptimize(output);

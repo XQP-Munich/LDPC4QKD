@@ -40,6 +40,11 @@ target_include_directories(unit_tests_error_correction
 
 target_link_libraries(unit_tests_error_correction
         PRIVATE
+        # build options
+        compiler_warnings
+        project_options
+
+        # libraries
         gtest_main
         pthread
 

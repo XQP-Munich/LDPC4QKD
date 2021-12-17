@@ -35,7 +35,7 @@ namespace LDPC4QKD::CodeSimulationHelpers {
         for (auto i : in) {
             tmp += static_cast<double>(i);
         }
-        return tmp / in.size();
+        return tmp / static_cast<double>(in.size());
     }
 
 

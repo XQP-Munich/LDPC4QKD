@@ -15,6 +15,11 @@ target_compile_features(benchmark_encoder PUBLIC cxx_std_17)
 
 target_link_libraries(benchmark_encoder
         PRIVATE
+        # build options
+        compiler_warnings
+        project_options
+
+        # libraries
         LDPC4QKD::LDPC4QKD
         benchmark::benchmark
         )
@@ -31,6 +36,11 @@ target_compile_features(benchmark_decoder PUBLIC cxx_std_17)
 
 target_link_libraries(benchmark_decoder
         PRIVATE
+        # build options
+        compiler_warnings
+        project_options
+
+        # libraries
         LDPC4QKD::LDPC4QKD
         benchmark::benchmark
         )
@@ -47,6 +57,11 @@ target_compile_features(benchmark_ra PUBLIC cxx_std_17)
 
 target_link_libraries(benchmark_ra
         PRIVATE
+        # build options
+        compiler_warnings
+        project_options
+
+        # libraries
         LDPC4QKD::LDPC4QKD
         benchmark::benchmark
         )
@@ -63,6 +78,11 @@ target_compile_features(rate_adapted_simulation PUBLIC cxx_std_17)
 
 target_link_libraries(rate_adapted_simulation
         PRIVATE
+        # build options
+        compiler_warnings
+        project_options
+
+        # libraries
         LDPC4QKD::LDPC4QKD
         )
 
@@ -78,6 +98,11 @@ target_compile_features(rate_adapted_fer PUBLIC cxx_std_17)
 
 target_link_libraries(rate_adapted_fer
         PRIVATE
+        # build options
+        compiler_warnings
+        project_options
+
+        # libraries
         LDPC4QKD::LDPC4QKD
         )
 

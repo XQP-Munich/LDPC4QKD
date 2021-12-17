@@ -52,7 +52,6 @@ namespace LDPC4QKD {
     }
 
 
-    /// TODO this has terrible performance!!!
     /// TODO reorder rows?
     // This is just for testing and seeing the difference in performance
     // The rate adaptive matrix can be defined in Julia as
@@ -74,7 +73,11 @@ namespace LDPC4QKD {
         // Depending on the rate adaption requested, only part of the `rows` array will be used.
         using AutogenRateAdapt::rows;
 
-        auto syndrome_copy = syndrome; // have to modify values to mark which bits are used during rate adaption
+        // have to modify values to mark which bits are used during rate adaption
+        // Also need -1 as a value, which has special purpose below.
+        std::array<short, syndrome.size()> syndrome_copy;
+        std::copy(syndrome.begin(), syndrome.end(), syndrome_copy.begin());
+
         static_assert(reduced_syndrome.size() < syndrome_copy.size(),
                 "Requested rate adapted syndrome size must be less than the original syndrome size.");
 
