@@ -16,7 +16,7 @@ LDPC4QKD::RateAdaptiveCode<bool> get_code_small() {
     ///			0 1 1 0 0 1 1
     ///			0 0 0 1 1 1 1]
     ///
-    /// To use it, we must convert H to compressed sparse column (CSAC) storage:
+    /// To use it, we must convert H to compressed sparse column (CSC) storage:
     std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
     std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
     return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx);
