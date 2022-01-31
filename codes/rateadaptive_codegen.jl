@@ -90,8 +90,8 @@ function write_cpp_constexpr_rate_adaption(
         print(f, header)
 
         println(f, """
-        constexpr std::size_t num_combined_rows = $(length(rate_adaption_rows));\n
-        constexpr std::array<$row_idx_type, num_combined_rows> rows = {""")
+        constexpr inline std::size_t num_combined_rows = $(length(rate_adaption_rows));\n
+        constexpr inline std::array<$row_idx_type, num_combined_rows> rows = {""")
 
         for (i, idx) in enumerate(transpose(rate_adaption_rows))
             print(f, "0x$(string(idx, base=16))")

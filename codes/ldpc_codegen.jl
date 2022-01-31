@@ -105,11 +105,11 @@ function write_cpp_constexpr_CSC(
         N = size(H, 2)
 
         println(f, """
-        constexpr std::size_t M = $(size(H, 1));
-        constexpr std::size_t N = $(size(H, 2));
-        constexpr std::size_t num_nz = $num_nonzero;
+        constexpr inline std::size_t M = $(size(H, 1));
+        constexpr inline std::size_t N = $(size(H, 2));
+        constexpr inline std::size_t num_nz = $num_nonzero;
 
-        constexpr std::array<$colptr_cpp_type, N + 1> colptr = {""")
+        constexpr inline std::array<$colptr_cpp_type, N + 1> colptr = {""")
 
         for (i, idx) in enumerate(H.colptr)
             print(f, "0x$(string(idx - 1, base=16))")  # Convert index to base zero
@@ -123,7 +123,7 @@ function write_cpp_constexpr_CSC(
         println(f, "\n};\n")
 
         println(f, "// ------------------------------------------------------- \n")
-        println(f, "constexpr std::array<$row_idx_type, num_nz> row_idx = {")
+        println(f, "constexpr inline std::array<$row_idx_type, num_nz> row_idx = {")
 
         for (i, idx) in enumerate(H.rowval)
             print(f, "0x$(string(idx - 1, base=16))")  # Convert index to base zero
