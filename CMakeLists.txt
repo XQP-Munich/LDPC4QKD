@@ -8,6 +8,10 @@ project(LDPC4QKD
         DESCRIPTION "Rate adaptive distributed source coding using LDPC codes."
         )
 
+# Enable testing. This is not necessary for using GTest,
+# only provides integration with CTest (CMake test suite)
+enable_testing()
+
 # Allows `include`'ing custom CMake modules from this directory.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 
@@ -103,13 +107,9 @@ add_subdirectory(src)
 
 add_subdirectory(examples)
 
-if (BUILD_UNIT_TESTS)
-    # Enable testing. This is not necessary for using GTest,
-    # only provides integration with CTest (CMake test suite)
-    # Note that this line has to be located before adding the sub-directory with the tests.
-    # Having this line in the test/CMakeLists.txt file doesn't work (I don't know why).
-    enable_testing()
+add_subdirectory(benchmarks_error_rate)
 
+if (BUILD_UNIT_TESTS)
     add_subdirectory(tests)
 else (BUILD_UNIT_TESTS)
     message(STATUS "Unit tests are not built, as specified by user.")
@@ -117,7 +117,7 @@ endif (BUILD_UNIT_TESTS)
 
 
 if (BUILD_RUNTIME_BENCHMARKS)
-    add_subdirectory(benchmarks)
+    add_subdirectory(benchmarks_runtime)
 else (BUILD_RUNTIME_BENCHMARKS)
-    message(STATUS "Performance benchmarks are not built, as specified by user.")
+    message(STATUS "Runtime performance benchmarks are not built, as specified by user.")
 endif (BUILD_RUNTIME_BENCHMARKS)

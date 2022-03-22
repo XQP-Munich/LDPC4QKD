@@ -67,6 +67,9 @@ target_include_directories(look_at_executable_size
         PRIVATE
         "${LDPC4QKD_SRC_DIR}/"
         )
+target_compile_features(look_at_executable_size
+        PUBLIC cxx_std_17
+        )
 
 # Copy the .cscmat file into the directory containing the tests binary.
 # This is required to test the .cscmat reader code.

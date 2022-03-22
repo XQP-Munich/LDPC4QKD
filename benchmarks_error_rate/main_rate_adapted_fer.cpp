@@ -34,7 +34,7 @@ std::pair<size_t, size_t> run_simulation(
         double p,
         std::size_t num_frames_to_test,
         std::mt19937_64 &rng,
-        std::uint16_t max_num_iter = 50,
+        std::size_t max_num_iter = 50,
         std::size_t update_console_every_n_frames = 100,
         std::size_t quit_at_n_errors = 100) {
     std::size_t num_frame_errors{};
