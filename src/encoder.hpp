@@ -75,13 +75,13 @@ namespace LDPC4QKD {
 
         // have to modify values to mark which bits are used during rate adaption
         // Also need -1 as a value, which has special purpose below.
-        std::array<short, syndrome.size()> syndrome_copy;
+        std::array<signed short, AutogenLDPC::M> syndrome_copy;  // uninitialized because filled via copy right below
         std::copy(syndrome.begin(), syndrome.end(), syndrome_copy.begin());
 
-        static_assert(reduced_syndrome.size() < syndrome_copy.size(),
+        static_assert(reduced_size < AutogenLDPC::M,
                 "Requested rate adapted syndrome size must be less than the original syndrome size.");
 
-        constexpr std::size_t n_row_combinations = syndrome_copy.size() - reduced_syndrome.size();
+        constexpr std::size_t n_row_combinations = AutogenLDPC::M - reduced_size;
         static_assert(rows.size() / 2 >= n_row_combinations,
                 "The specified rate adaption does not support such a high amount of line combinations.");
 
