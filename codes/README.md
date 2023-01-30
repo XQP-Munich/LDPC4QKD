@@ -35,12 +35,17 @@ The sha256 hashes of json files connect the table items to files in this reporit
 Alist files can be quite large and are therefore not part of this repository. 
 To reproduce the [AFF3CT](https://github.com/aff3ct/aff3ct) FER results, use the command line interface or [LDPCStorage.jl](https://github.com/XQP-Munich/LDPCStorage.jl) to create alist files.)
 
+| Rate |    rows / columns    |   Code Structure   | Protograph or Degree Distribution |                       sha256 of alist file                       |                       sha256 of json file                        |
+|:----:|:--------------------:|:------------------:|:---------------------------------:|:----------------------------------------------------------------:|:----------------------------------------------------------------:|
+| 1/2  |    2,048 / 4,096     | Protograph QCE=32  |       `[1 2 1 3; 1 0 2 5]`        | 1fbeda66bd135033250aa88ef526f0bb5bb0a5dc9b61e7a960db1f03cb1dd935 | 098de6e117e43a408603758a3cb1985d9c18c188d08598485b22ab3b2235e8a5 |
+| 1/2  |    8,192 / 16,384    | Protograph QCE=64  |       `[1 2 1 3; 1 0 2 5]`        | 5bfa71c25ddb19f88a791fc15da9ecbe09dbe3bd49ebba87ecb596f5e1a6ea4f | 44dead953402ebe461f6c3895cc66b7f24366c6bd27ec84bb11de206778117a6 |
+| 1/2  | 524,288 / 1,048,576  | Protograph QCE=512 |       `[1 2 1 3; 1 0 2 5]`        | 6f1747ed60f2956a03250282395baba2437d1684588cec7b58e63b395fe133ca | 9f8c301f67b663c673a6feec52c8cc8b122bef97fe9aa06208f634be2f652c6f |
+| 1/3  |    2,048 / 6,144     | Protograph QCE=32  |   `[3 1 3 4 2 2; 4 1 0 4 0 1]`    | 54adc87fd548a4aa8c61efaf54194beca750afd72124ff52846bee4ee2cf482a | 608f5ab52838bf1c1660412824de51237879e2bc5a2b073369852a2d7c8a0c24 |
+| 1/3  |    8,192 / 24,576    | Protograph QCE=64  |   `[3 1 3 4 2 2; 4 1 0 4 0 1]`    | dd32e139f2ab999ec18d8c4933dcb112fbfa4a26b511f29f57cd71590c8440dc | 9b053763c2092802c02791da2d145b13bec8af11646d44bcb9f2db3284961606 |
+| 1/3  | 524,288  / 1,572,864 | Protograph QCE=512 |   `[3 1 3 4 2 2; 4 1 0 4 0 1]`    | d839b0af96478e8d1e6c80ce52236aa284fcffcdc6ef7ed1603598a5eb22f184 | 7f8df4cb9e4ef53d12f99813634e93e9d447ed7393d69e25dbd6e290ee601e43 |
 
-| Rate  |    rows / columns    | Code Structure |                       sha256 of alist file                       |                       sha256 of json file                        |
-|:-----:|:--------------------:|:--------------:|:----------------------------------------------------------------:|:----------------------------------------------------------------:|
-|  1/2  |    2,048 / 4,096     | Protograph-QC  | 1fbeda66bd135033250aa88ef526f0bb5bb0a5dc9b61e7a960db1f03cb1dd935 | 098de6e117e43a408603758a3cb1985d9c18c188d08598485b22ab3b2235e8a5 |
-|  1/2  |    8,192 / 16,384    | Protograph-QC  | 5bfa71c25ddb19f88a791fc15da9ecbe09dbe3bd49ebba87ecb596f5e1a6ea4f | 44dead953402ebe461f6c3895cc66b7f24366c6bd27ec84bb11de206778117a6 |
-|  1/2  | 524,288 / 1,048,576  | Protograph-QC  | 6f1747ed60f2956a03250282395baba2437d1684588cec7b58e63b395fe133ca | 9f8c301f67b663c673a6feec52c8cc8b122bef97fe9aa06208f634be2f652c6f |
-|  1/3  |    2,048 / 6,144     | Protograph-QC  | 54adc87fd548a4aa8c61efaf54194beca750afd72124ff52846bee4ee2cf482a | 608f5ab52838bf1c1660412824de51237879e2bc5a2b073369852a2d7c8a0c24 |
-|  1/3  |    8,192 / 24,576    | Protograph-QC  | dd32e139f2ab999ec18d8c4933dcb112fbfa4a26b511f29f57cd71590c8440dc | 9b053763c2092802c02791da2d145b13bec8af11646d44bcb9f2db3284961606 |
-|  1/3  | 524,288  / 1,572,864 | Protograph-QC  | d839b0af96478e8d1e6c80ce52236aa284fcffcdc6ef7ed1603598a5eb22f184 | 7f8df4cb9e4ef53d12f99813634e93e9d447ed7393d69e25dbd6e290ee601e43 |
+### Notes:
+
+For Protograph-based LDPC codes, the table gives the protograph as `[first row; second row; third row etc.]`. 
+
+For quasi-cyclic (QC) codes, the quasi-cyclic exponent is given as QCE.
