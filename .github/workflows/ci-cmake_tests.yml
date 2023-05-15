@@ -47,6 +47,11 @@ jobs:
         working-directory: ${{runner.workspace}}/build/examples
         run: ./demo_error_correction
 
+      - name: Run error rate benchmark (just to test it, this is not included in code coverage)
+        working-directory: ${{runner.workspace}}/build/benchmarks_error_rate
+        run: |
+          ./rate_adapted_fer -cp "../tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json" -mf 3
+          ./critical_rate_simulation -cp "../tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json" -rp "../tests/rate_adaption_2x6_block_6144_for_testing.csv" -nf 3
       - name: Install lcov and gcov (tools to get C++ coverage information)
         working-directory: ${{runner.workspace}}/build/
         run: |
