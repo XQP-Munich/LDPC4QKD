@@ -81,3 +81,14 @@ message(STATUS "Copying file ${CSCMAT_TEST_FILE_PATH} into directory ${CMAKE_CUR
 file(COPY ${CSCMAT_TEST_FILE_PATH}
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
         )
+
+# Copy the rate adaption .csv file into the directory containing the tests binary.
+# This is required to test the .cscmat reader code.
+get_filename_component(CSV_RATE_ADAPTION_TEST_FILE_PATH
+        ${CMAKE_CURRENT_SOURCE_DIR}/rate_adaption_2x6_block_6144_for_testing.csv
+        REALPATH
+        )
+message(STATUS "Copying file ${CSV_RATE_ADAPTION_TEST_FILE_PATH} into directory ${CMAKE_CURRENT_BINARY_DIR}.")
+file(COPY ${CSV_RATE_ADAPTION_TEST_FILE_PATH}
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        )
