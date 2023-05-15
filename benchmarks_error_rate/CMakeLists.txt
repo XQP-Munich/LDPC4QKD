@@ -6,7 +6,7 @@ project(ErrorCorrectionDemoForQKD)
 
 
 # ---------------------------------------------------------------------------------- Rate adapted performance simulation
-add_executable(rate_adapted_simulation main_rate_adapted_simulation.cpp
+add_executable(rate_adapted_simulation main_critical_rate_simulation.cpp
         code_simulation_helpers.hpp)
 
 target_compile_features(rate_adapted_simulation PUBLIC cxx_std_17)
@@ -23,6 +23,7 @@ target_link_libraries(rate_adapted_simulation
 
 target_include_directories(rate_adapted_simulation
         PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../"
         )
 
 # ------------------------------------------------------------- frame error rate (FER) simulation (allows rate adaption)
@@ -43,4 +44,5 @@ target_link_libraries(rate_adapted_fer
 
 target_include_directories(rate_adapted_fer
         PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../"
         )

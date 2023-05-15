@@ -6,9 +6,9 @@ constexpr auto help_text =
         "Frame Error Rate (FER) Simulator for Rate Adapted LDPC Codes\n"
         "\n"
         "This software is used to \n"
-        "- load an LDPC code (from a .cscmat file storing the full binary LDPC matrix in compressed sparse column (CSC) format, no QC exponents allowed!)\n"
+        "- load an LDPC code (from a .cscmat or bincsc.json file storing the full binary LDPC matrix in compressed sparse column (CSC) format, no QC exponents allowed!)\n"
         "- load rate adaption (from a csv file, list of pairs of row indices combined at each rate adaption step) "
-        "(this is optional; without rate adatpion only FER of the LDPC code can be simulated)\n"
+        "   (this is optional; without rate adaption, only FER of the LDPC code can be simulated)\n"
         "- Simulate the FER of the given LDPC code at specified amount of rate adaption.";
 
 // Standard library
@@ -17,11 +17,10 @@ constexpr auto help_text =
 #include <chrono>
 
 // Command line argument parser library
-#include "CmdParser-91aaa61e/cmdparser.hpp"
+#include "external/CmdParser-91aaa61e/cmdparser.hpp"
 
 // Project scope
 #include "rate_adaptive_code.hpp"
-
 #include "code_simulation_helpers.hpp"
 
 using namespace LDPC4QKD::CodeSimulationHelpers;
@@ -111,7 +110,7 @@ void configure_parser(cli::Parser &parser) {
 
     parser.set_required<std::string>(
             "cp", "code-path",
-            "Path to file containing LDPC code (`.cscmat` format. Note: does not accept QC exponents!)");
+            "Path to file containing LDPC code (`.cscmat` or `bincsc.json` format. Note: does not accept QC exponents!)");
 
     parser.set_optional<std::string>(
             "rp", "rate-adaption-path", "",
@@ -137,18 +136,18 @@ int main(int argc, char *argv[]) {
     auto max_bp_iter = parser.get<std::size_t>("i");
     auto rng_seed = parser.get<std::size_t>("s");
     auto update_console_every_n_frames = parser.get<std::size_t>("upn");
-    auto cscmat_file_path = parser.get<std::string>("cp");
+    auto code_file_path = parser.get<std::string>("cp");
     auto rate_adaption_file_path = parser.get<std::string>("rp");
     auto n_line_combs = parser.get<std::size_t>("rn");
 
     // create LDPC code, with rate adaption if specified.
-    auto H = load_ldpc(cscmat_file_path, rate_adaption_file_path);
+    auto H = load_ldpc(code_file_path, rate_adaption_file_path);
     // set rate adaption. Only works if rate adaption was specified!
     H.set_rate(n_line_combs);
 
     // print received arguments (simulation parameters)
     std::cout << std::endl;
-    std::cout << "Code path: '" << cscmat_file_path << "'\n";
+    std::cout << "Code path: '" << code_file_path << "'\n";
     std::cout << "Rate adaption path: '" << rate_adaption_file_path << "'\n";
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
     std::cout << "Max number of BP decoder iterations: " << static_cast<int>(max_bp_iter) << '\n';

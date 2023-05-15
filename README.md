@@ -112,4 +112,6 @@ If you need some feature for your applications, let us know, e.g. by creating an
 
 ## Attributions
 
-- Some of the simulation/benchmarking programs use [CmdParser](https://github.com/FlorianRappl/CmdParser), a simple command line argument parser (MIT license, the sources are included in this repository at `benchmarks/CmdParser-1.1.0`).
+Some of the simulation/benchmarking programs use
+- [CmdParser](https://github.com/FlorianRappl/CmdParser), a simple command line argument parser (MIT license, the sources are included in this repository at `external/CmdParser-91aaa61e`). Copyright (c) 2015 - 2016 Florian Rappl
+- [json](https://github.com/nlohmann/json), a JSON parser (MIT License and others, see header `external/json-6af826d/json.hpp`). © 2013-2022 Niels Lohmann.
