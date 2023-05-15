@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
   
 env:
-  BUILD_TYPE: RelWithDebInfo
+  BUILD_TYPE: Debug
 
 defaults:
   run:
@@ -65,7 +65,7 @@ jobs:
           ./benchmarks_error_rate/rate_adapted_fer -cp "./tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json" -mf 3
           ./benchmarks_error_rate/critical_rate_simulation -cp "./tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json" -rp "./tests/rate_adaption_2x6_block_6144_for_testing.csv" -nf 3
           # collect coverage, etc.
-          gcovr -v --root ../ --xml-pretty --xml coverage.xml --exclude "external/*"
+          gcovr -v --root ../ --xml-pretty --xml coverage.xml --exclude "*/external/*"
           echo
           cat ./coverage.xml # pring coverage information
       
