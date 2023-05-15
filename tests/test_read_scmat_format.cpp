@@ -29,3 +29,10 @@ TEST(test_read_scmat_format, read_matrix_from_cscmat) {
     EXPECT_EQ(std::vector<decltype(row_idx)::value_type>(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end()),
               row_idx);
 }
+
+TEST(test_read_scmat_format, read_rate_adaption_from_csv_) {
+    auto rows_to_combine = read_rate_adaption_from_csv<std::size_t>(
+            "./rate_adaption_2x6_block_6144_for_testing.csv");
+    auto hash = hash_vector(rows_to_combine);
+    EXPECT_EQ(hash, 453016743);
+}
