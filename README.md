@@ -62,7 +62,7 @@ Let us know if you're having problems with the provided materials, wish to contr
 
 ### Data files
 - A number of LDPC codes (a list and the actual LDPC matrices are in the folder `codes`). 
-  Their parity check matrices are stored in a custom file format (called `CSCMAT`).
+  Their parity check matrices are stored in a custom file format (called `qccsc.json`).
 - Simulations results done using [AFF3CT](https://github.com/aff3ct/aff3ct), showing FER of the LDPC matrices at various channel parameters.
 - Simulation results done using the decoder in this repository, showing FER of LDPC matrices, their rate adapted versions, and average rate under rate adaption (Work in progress!).
 - For each LDPC matrix, a specification of rate adaption. 

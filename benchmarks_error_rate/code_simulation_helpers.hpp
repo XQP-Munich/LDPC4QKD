@@ -84,7 +84,7 @@ namespace LDPC4QKD::CodeSimulationHelpers {
      * @tparam Bit type of matrix entires (only values zero and one are used, default to bool)
      * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
      * @tparam idx_t unsigned integer type fitting number of columns N (thus also number of rows M)
-     * @param cscmat_file_path path to CSCMAT file, where the LDPC code is loaded from.
+     * @param json_file_path path to json file, where the LDPC code is loaded from.
      *      (no QC-exponents allowed, just binary compressed sparse column (CSC) representation!)
      * @param rate_adaption_file_path Path to load rate adaption from.
      * (csv file of line index pairs, which are combined at each rate adaption step)
@@ -145,7 +145,7 @@ namespace LDPC4QKD::CodeSimulationHelpers {
      * @tparam Bit type of matrix entires (only values zero and one are used, default to bool)
      * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
      * @tparam idx_t unsigned integer type fitting number of columns N (thus also number of rows M)
-     * @param cscmat_file_path path to CSCMAT file, where the LDPC code is loaded from.
+     * @param file_path path to file, where the LDPC code is loaded from.
      *      (no QC-exponents allowed, just binary compressed sparse column (CSC) representation!)
      * @param rate_adaption_file_path Path to load rate adaption from.
      * (csv file of line index pairs, which are combined at each rate adaption step)

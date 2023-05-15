@@ -4,12 +4,18 @@ We use two custom formats to store LDPC codes as JSON files.
 1. `.bincsc.json` files store a sparse binary LDPC matrix (matrix containing only ones and zeros) directly. 
 The file contains two arrays (`rowidx` and `colptr`) of integers, which store the zero-based indices as used for compressed sparse column (CSC) storage of sparse matrices. 
 The values array (used in CSC) is omitted due to all non-zero entries being ones.
-2. `.qccsc.json` files store a sparse matrix containing the exponents used to create a quasi-cyclic LDPC matrix. 
+For large matrices, this format leads to big files (about half the size of `.alist` files).
+2. `.qccsc.json` files store a sparse matrix containing the exponents used to create a quasi-cyclic LDPC matrix.
+This way of storing the matrix leads to much smaller files.
 In this case, all three arrays defining the CSC storage are used. 
-The values array (called `nzval`) stores the quasi-cyclic exponents. 
-The quasi-cyclic expansion factor is stored as `qc_expansion_factor`. The numbers of rows and columns refer to the shape of the matrix of exponents.
+The values array (called `nzval`) stores the quasi-cyclic exponents.
+The quasi-cyclic expansion factor is stored as `qc_expansion_factor`.
+The numbers of rows and columns refer to the shape of the matrix of exponents.
+Note that the C++ code does not yet support loading `.qccsc.json` directly.
+Convert them to a c++ header file (for normal use) or to the `.bincsc.json` format (for simulations).
 
-Our custom Julia package [LDPCStorage.jl](https://github.com/XQP-Munich/LDPCStorage.jl) contains functions to read and write such files. They also support the deprecated `CSCMAT` format which is still used by parts of the project (C++ simulator). (TODO update simulator, remove comment) 
+Our custom Julia package [LDPCStorage.jl](https://github.com/XQP-Munich/LDPCStorage.jl) contains functions to read and write such files.
+They also support the `.alist` format and our deprecated `CSCMAT` format which was used by older versions of the project. 
 
 # Storing LDPC matrix in C++ header
 For use in the LDPC encoder/decoder, we store the LDPC matrices as static data in C++ header files and embed them into the executable.
@@ -48,4 +54,5 @@ To reproduce the [AFF3CT](https://github.com/aff3ct/aff3ct) FER results, use the
 
 For Protograph-based LDPC codes, the table gives the protograph as `[first row; second row; third row etc.]`. 
 
-For quasi-cyclic (QC) codes, the quasi-cyclic exponent is given as QCE.
+For quasi-cyclic (QC) codes, the quasi-cyclic expansion factor (or lifting degree) is given as QCE.
+The QCE is the size of the block-sub-matrices constituting the full LDPC matrix defined by the quasi-cyclic exponents.
