@@ -22,7 +22,7 @@ add_executable(unit_tests_error_correction test_main.cpp
         # -------- Actual Unit tests --------
         test_encoder.cpp
         test_rate_adaptive_code.cpp
-        test_read_scmat_format.cpp
+        test_read_ldpc_from_files.cpp
 
         # Static data LDPC code used for tests:
         fortest_autogen_ldpc_matrix_csc.hpp
@@ -36,6 +36,7 @@ target_compile_features(unit_tests_error_correction
 target_include_directories(unit_tests_error_correction
         PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/.."
         )
 
 target_link_libraries(unit_tests_error_correction
@@ -67,6 +68,9 @@ target_include_directories(look_at_executable_size
         PRIVATE
         "${LDPC4QKD_SRC_DIR}/"
         )
+target_compile_features(look_at_executable_size
+        PUBLIC cxx_std_17
+        )
 
 # Copy the .cscmat file into the directory containing the tests binary.
 # This is required to test the .cscmat reader code.
@@ -76,5 +80,27 @@ get_filename_component(CSCMAT_TEST_FILE_PATH
         )
 message(STATUS "Copying file ${CSCMAT_TEST_FILE_PATH} into directory ${CMAKE_CURRENT_BINARY_DIR}.")
 file(COPY ${CSCMAT_TEST_FILE_PATH}
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        )
+
+# Copy the rate adaption .csv file into the directory containing the tests binary.
+# This is required to test the .cscmat reader code.
+get_filename_component(CSV_RATE_ADAPTION_TEST_FILE_PATH
+        ${CMAKE_CURRENT_SOURCE_DIR}/rate_adaption_2x6_block_6144_for_testing.csv
+        REALPATH
+        )
+message(STATUS "Copying file ${CSV_RATE_ADAPTION_TEST_FILE_PATH} into directory ${CMAKE_CURRENT_BINARY_DIR}.")
+file(COPY ${CSV_RATE_ADAPTION_TEST_FILE_PATH}
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        )
+
+# Copy the bincsc.json file into the directory containing the tests binary.
+# This is required to test the json reader code.
+get_filename_component(CSV_RATE_ADAPTION_TEST_FILE_PATH
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json
+        REALPATH
+        )
+message(STATUS "Copying file ${CSV_RATE_ADAPTION_TEST_FILE_PATH} into directory ${CMAKE_CURRENT_BINARY_DIR}.")
+file(COPY ${CSV_RATE_ADAPTION_TEST_FILE_PATH}
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
         )

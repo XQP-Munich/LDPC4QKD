@@ -62,7 +62,7 @@ Let us know if you're having problems with the provided materials, wish to contr
 
 ### Data files
 - A number of LDPC codes (a list and the actual LDPC matrices are in the folder `codes`). 
-  Their parity check matrices are stored in a custom file format (called `CSCMAT`).
+  Their parity check matrices are stored in a custom file format (called `qccsc.json`).
 - Simulations results done using [AFF3CT](https://github.com/aff3ct/aff3ct), showing FER of the LDPC matrices at various channel parameters.
 - Simulation results done using the decoder in this repository, showing FER of LDPC matrices, their rate adapted versions, and average rate under rate adaption (Work in progress!).
 - For each LDPC matrix, a specification of rate adaption. 
@@ -112,4 +112,6 @@ If you need some feature for your applications, let us know, e.g. by creating an
 
 ## Attributions
 
-- Some of the simulation/benchmarking programs use [CmdParser](https://github.com/FlorianRappl/CmdParser), a simple command line argument parser (MIT license, the sources are included in this repository at `benchmarks/CmdParser-1.1.0`).
+Some of the simulation/benchmarking programs use
+- [CmdParser](https://github.com/FlorianRappl/CmdParser), a simple command line argument parser (MIT license, the sources are included in this repository at `external/CmdParser-91aaa61e`). Copyright (c) 2015 - 2016 Florian Rappl
+- [json](https://github.com/nlohmann/json), a JSON parser (MIT License and others, see header `external/json-6af826d/json.hpp`). © 2013-2022 Niels Lohmann.

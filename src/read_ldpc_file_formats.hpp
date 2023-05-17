@@ -2,15 +2,16 @@
 // Created by alice on 02.08.21.
 //
 
-#ifndef LDPC4QKD_READ_SCSMAT_FORMAT_HPP
-#define LDPC4QKD_READ_SCSMAT_FORMAT_HPP
+#ifndef LDPC4QKD_READ_LDPC_FILE_FORMATS_HPP
+#define LDPC4QKD_READ_LDPC_FILE_FORMATS_HPP
 
 #include <fstream>
 #include <sstream>
+#include "external/json-6af826d/json.hpp"
 
 namespace LDPC4QKD {
 
-    namespace HelpersReadSCSMAT {
+    namespace HelpersReadFilesLDPC {
 
         /// Helper method to split a single-line string consisting of space-separated integers into a vector of integers.
         /// CHANGES INPUT STRING!!
@@ -83,11 +84,11 @@ namespace LDPC4QKD {
 
             getline(fs, current_line); // ignores metadata
             getline(fs, current_line);
-            std::vector<colptr_t> colptr = HelpersReadSCSMAT::helper_parse_space_sep_ints<colptr_t>(current_line);
+            std::vector<colptr_t> colptr = HelpersReadFilesLDPC::helper_parse_space_sep_ints<colptr_t>(current_line);
 
             getline(fs, current_line); // ignores empty line
             getline(fs, current_line);
-            std::vector<idx_t> rowval = HelpersReadSCSMAT::helper_parse_space_sep_ints<idx_t>(current_line);
+            std::vector<idx_t> rowval = HelpersReadFilesLDPC::helper_parse_space_sep_ints<idx_t>(current_line);
 
             return std::make_pair(colptr, rowval);
         }
@@ -118,7 +119,7 @@ namespace LDPC4QKD {
             std::vector<rowidx> rows_to_combine{};
 
             while(getline(fs, current_line)) {
-                const auto vec_of_two = HelpersReadSCSMAT::helper_parse_sep_ints<rowidx>(current_line, ',');
+                const auto vec_of_two = HelpersReadFilesLDPC::helper_parse_sep_ints<rowidx>(current_line, ',');
                 rows_to_combine.push_back(vec_of_two.at(0));
                 rows_to_combine.push_back(vec_of_two.at(1));
             }
@@ -138,4 +139,4 @@ namespace LDPC4QKD {
     }
 }
 
-#endif //LDPC4QKD_READ_SCSMAT_FORMAT_HPP
+#endif //LDPC4QKD_READ_LDPC_FILE_FORMATS_HPP

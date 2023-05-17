@@ -174,6 +174,83 @@ d839b0af96478e8d1e6c80ce52236aa284fcffcdc6ef7ed1603598a5eb22f184  ../MATRICES/QC
 #    ** Type                      = BFER
 #    ** Type of bits              = int32
 #    ** Type of reals             = float32
+#    ** Date (UTC)                = 2022-03-18 16:54:53
+#    ** Git version               = v2.3.5-387-g4fdaa13
+#    ** Code type (C)             = LDPC
+#    ** Noise range               = 0.0548 -> 0.0548 dB
+#    ** Noise type (E)            = EP
+#    ** Seed                      = 0
+#    ** Statistics                = off
+#    ** Debug mode                = off
+#    ** Multi-threading (t)       = 14 thread(s)
+#    ** Coset approach (c)        = no
+#    ** Coded monitoring          = no
+#    ** Bad frames tracking       = off
+#    ** Bad frames replay         = off
+#    ** Clone allocations         = on
+#    ** Sequence multithreading   = on
+#    ** Bit rate                  = 0.666667 (2/3)
+#    ** Inter frame level         = 1
+# * Source ----------------------------------------
+#    ** Type                      = AZCW
+#    ** Implementation            = STD
+#    ** Info. bits (K_info)       = 1048576
+# * Codec -----------------------------------------
+#    ** Type                      = LDPC
+#    ** Info. bits (K)            = 1048576
+#    ** Codeword size (N_cw)      = 1572864
+#    ** Frame size (N)            = 1572864
+#    ** Code rate                 = 0.666667 (2/3)
+# * Encoder ---------------------------------------
+#    ** Type                      = AZCW
+#    ** Systematic                = yes
+# * Decoder ---------------------------------------
+#    ** Type (D)                  = BP_FLOODING
+#    ** Implementation            = SPA
+#    ** Systematic                = yes
+#    ** H matrix path             = ../MATRICES/QCrypt21/L1=512_L2=512_s=2x6.jld.alist
+#    ** H matrix reordering       = NONE
+#    ** Num. of iterations (i)    = 1000
+#    ** Stop criterion (syndrome) = on
+#    ** Stop criterion depth      = 1
+# * Modem -----------------------------------------
+#    ** Type                      = OOK
+#    ** Implementation            = STD
+#    ** Bits per symbol           = 1
+#    ** Sigma square              = on
+# * Channel ---------------------------------------
+#    ** Type                      = BSC
+#    ** Implementation            = STD
+#    ** Complex                   = off
+#    ** Add users                 = off
+# * Monitor ---------------------------------------
+#    ** Lazy reduction            = off
+#    ** Frame error count (e)     = 500
+#    ** Compute mutual info       = no
+# * Terminal --------------------------------------
+#    ** Enabled                   = yes
+#    ** Frequency (ms)            = 500
+#
+# The simulation is running...
+# -----------------||------------------------------------------------------||---------------------
+# Event Probability||   Bit Error Rate (BER) and Frame Error Rate (FER)    ||  Global throughput
+#       (EP)       ||                                                      ||  and elapsed time
+# -----------------||------------------------------------------------------||---------------------
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+#               EP ||      FRA |       BE |       FE |      BER |      FER ||  SIM_THR |    ET/RT
+#                  ||          |          |          |          |          ||   (Mb/s) | (hhmmss)
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+            0.0548 ||    73929 |  4670659 |      181 | 6.03e-05 | 2.45e-03 ||    0.310 |122h23'10  *
+
+
+# ----------------------------------------------------
+# ---- A FAST FORWARD ERROR CORRECTION TOOLBOX >> ----
+# ----------------------------------------------------
+# Parameters:
+# * Simulation ------------------------------------
+#    ** Type                      = BFER
+#    ** Type of bits              = int32
+#    ** Type of reals             = float32
 #    ** Date (UTC)                = 2021-08-13 07:31:37
 #    ** Git version               = v2.3.5-387-g4fdaa13
 #    ** Code type (C)             = LDPC

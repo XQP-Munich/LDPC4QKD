@@ -1,53 +1,58 @@
-# LDPC matrices and Julia code
+# Custom file formats
+We use two custom formats to store LDPC codes as JSON files.
 
-## Julia code to load and pre-process LDPC codes
-Use the Julia code contained in this directory to load and manipulate the LDPC codes. Functions are provided to load and save LDPC matrices in `.alist` and `.cscmat` file formats.
+1. `.bincsc.json` files store a sparse binary LDPC matrix (matrix containing only ones and zeros) directly. 
+The file contains two arrays (`rowidx` and `colptr`) of integers, which store the zero-based indices as used for compressed sparse column (CSC) storage of sparse matrices. 
+The values array (used in CSC) is omitted due to all non-zero entries being ones.
+For large matrices, this format leads to big files (about half the size of `.alist` files).
+2. `.qccsc.json` files store a sparse matrix containing the exponents used to create a quasi-cyclic LDPC matrix.
+This way of storing the matrix leads to much smaller files.
+In this case, all three arrays defining the CSC storage are used. 
+The values array (called `nzval`) stores the quasi-cyclic exponents.
+The quasi-cyclic expansion factor is stored as `qc_expansion_factor`.
+The numbers of rows and columns refer to the shape of the matrix of exponents.
+Note that the C++ code does not yet support loading `.qccsc.json` directly.
+Convert them to a c++ header file (for normal use) or to the `.bincsc.json` format (for simulations).
 
-## CSCMAT files
-We use a custom file format (file extension `.cscmat`) to store LDPC codes. Generally, such a file can contain any sparse matrix. We use the format for two distinct scenarios:
+Our custom Julia package [LDPCStorage.jl](https://github.com/XQP-Munich/LDPCStorage.jl) contains functions to read and write such files.
+They also support the `.alist` format and our deprecated `CSCMAT` format which was used by older versions of the project. 
 
-1. `QC-Format`: stores a sparse binary LDPC matrix (matrix containing only ones and zeros) directly. In this case, the file contains two arrays of integers, which store the zero-based indices of `rowidx` and `colptr`, as commonly used for compressed sparse column (CSC) storage of sparse matrices. The values array is omitted due to non-zero entries all being ones.
-2. `Binary-Format`: stores a sparse matrix containing the exponents used to create a quasi-cyclic LDPC matrix. In this case, all three arrays defining the CSC storage are used. The `values` array stores the quasi-cyclic exponents.
-   
-Which of the two formats a given `.cscmat` file follows is clear from both the number of arrays (lines of space separated integers) contained in the text-file, as well as its header. 
-Format 1 is used by default for the LDPC matrices provided in this folder (`codes`).This is because it saves a lot of disk space and allows storing a lot of very large matrices.
-Some of the tools only support the binary `CSCMAT` (format 2), in which case the `.cscmat` files can be converted to that format using Julia code in `codes/ldpc_codegen.jl`. This also has a command line interface. Knowledge of Julia is not required to use it.
-
-The command line interface allows converting the array of quasi-cyclic components into either 
-1. a C++ header file (storing the `rowidx` and `colptr` of the full binary LDPC matrix as constexpr arrays)
-2. A `.cscmat` file in the `Binary-Format`. Such files can be imported by the C++ code from the file at program runtime and be used to initialize the decoder.
-
-## Converting CSCMAT files
-
-The Julia code provided in this repository can be called with command line options. To do so, first install Julia v1.6 or later. Then, perform these steps to install dependencies:
+# Storing LDPC matrix in C++ header
+For use in the LDPC encoder/decoder, we store the LDPC matrices as static data in C++ header files and embed them into the executable.
+We provide a command line interface to convert the JSON-based format to a C++ header file.
+To do so, install Julia (at least v1.6) and perform these steps to download and install dependencies (as specified in `Project.toml` and `Manifest.toml`):
 
     cd LDPC4QKD/codes
     julia --project
     ] instantiate
 
-After the installation is complete, use these commands to convert LDPC codes:
+Next, use these commands to convert LDPC codes to a C++ header file:
 
-1. Convert to a C++ header file (default name `autogen_ldpc_matrix_csc.hpp`)
+    cd LDPC4QKD/codes
+    julia --project ldpc_codegen.jl --input_code_path <path>.json --output_path <path>.hpp
 
-        cd LDPC4QKD/codes
-        julia --project ldpc_codegen.jl --input_code_path <path>.cscmat --output_path <path>.hpp
-
-2. Convert to a CSCMAT file that can be read by the C++ decoder
-
-        cd LDPC4QKD/codes
-        julia --project ldpc_codegen.jl --input_code_path <path>.cscmat --output_path <path>.cscmat
 
 # List of LDPC matrices
 
-The following is a list of LDPC matrices of size MxN that are provided in this repository. The sha256 hashes of data files are given to make clear which data files and simulations refer to which code. The alist file hash is given to connect it to [AFF3CT](https://github.com/aff3ct/aff3ct) simulation results ([AFF3CT](https://github.com/aff3ct/aff3ct) accepts alist format but not our custom format. Alist files can be quite large and are therefore not part of this repository. To reproduce the [AFF3CT](https://github.com/aff3ct/aff3ct) simulation results, Julia code is provided to convert from cscmat to alist format.)
+The following is a list of LDPC matrices of size `rows x columns` that are provided in this repository. We define the **rate** as the numbers of rows divided by the number of columns.
 
-| Rate | M (= Rate * N) |    N    | Code Structure |    sha256 of alist file     |    sha256 of cscmat file (exponents)   |
-|------|----------------|---------|----------------|----------------------------|-----------------------------|
-| 1/2  | 2048           |   4096 | Protograph-QC  | 1fbeda66bd135033250aa88ef526f0bb5bb0a5dc9b61e7a960db1f03cb1dd935                        | 12cdb1acbe918b2db8efce2c897dcd0ccb3ae9a4af98220713f199eec0c874d3                             |
-| 1/2  | 8192           | 16384 | Protograph-QC  | 5bfa71c25ddb19f88a791fc15da9ecbe09dbe3bd49ebba87ecb596f5e1a6ea4f                        | 2207bee57d8c8e05fabdeea6585e476f0dcbfa89f37fcfed1374b9ade13dbe12  |
-| 1/2  | 524288         | 1048576 | Protograph-QC  | 6f1747ed60f2956a03250282395baba2437d1684588cec7b58e63b395fe133ca                        | 98e9fc7b26822043c894ad6c842e823278c317c958ffafe17179bc0124f85ee7                             |
-| 1/3  | 2048           | 6144 | Protograph-QC  | 54adc87fd548a4aa8c61efaf54194beca750afd72124ff52846bee4ee2cf482a                        | f40c5d91891e54f5ad44d58fc8fb970bd379af829cb6c9eb58eb546f00c6c91b                             |
-| 1/3  | 8192           | 24576 | Protograph-QC  | d839b0af96478e8d1e6c80ce52236aa284fcffcdc6ef7ed1603598a5eb22f184                        | 5502076bac2654824b58fe1744d106341b97c4f0c03c1be001d2f9bff07f273b                             |
-| 1/3  | 524288         | 1572864 | Protograph-QC  | dd32e139f2ab999ec18d8c4933dcb112fbfa4a26b511f29f57cd71590c8440dc                        | ba59da531aa7683ee0a6ccc913d2dc58b449c6b0345acdb565ff2fc1bbfac962                             |
+The sha256 hashes of json files connect the table items to files in this reporitory. The sha256 hashes of alist files are included in raw [AFF3CT](https://github.com/aff3ct/aff3ct) frame error rate (FER) simulation outputs (folder `codes/aff3ct_fer_simulations`, does not use rate adaption) to make sure they refer to the same code. 
+([AFF3CT](https://github.com/aff3ct/aff3ct) accepts `alist` format but not our custom format. 
+Alist files can be quite large and are therefore not part of this repository. 
+To reproduce the [AFF3CT](https://github.com/aff3ct/aff3ct) FER results, use the command line interface or [LDPCStorage.jl](https://github.com/XQP-Munich/LDPCStorage.jl) to create alist files.)
 
-[AFF3CT](https://github.com/aff3ct/aff3ct) simulations for all LDPC codes (without considering rate adaption) can be found in the folder `codes/aff3ct_fer_simulations` and are marked with the sha256 hash of the corresponding alist file.
+| Rate |    rows / columns    |   Code Structure   | Protograph or Degree Distribution |                       sha256 of alist file                       |                       sha256 of json file                        |
+|:----:|:--------------------:|:------------------:|:---------------------------------:|:----------------------------------------------------------------:|:----------------------------------------------------------------:|
+| 1/2  |    2,048 / 4,096     | Protograph QCE=32  |       `[1 2 1 3; 1 0 2 5]`        | 1fbeda66bd135033250aa88ef526f0bb5bb0a5dc9b61e7a960db1f03cb1dd935 | 098de6e117e43a408603758a3cb1985d9c18c188d08598485b22ab3b2235e8a5 |
+| 1/2  |    8,192 / 16,384    | Protograph QCE=64  |       `[1 2 1 3; 1 0 2 5]`        | 5bfa71c25ddb19f88a791fc15da9ecbe09dbe3bd49ebba87ecb596f5e1a6ea4f | 44dead953402ebe461f6c3895cc66b7f24366c6bd27ec84bb11de206778117a6 |
+| 1/2  | 524,288 / 1,048,576  | Protograph QCE=512 |       `[1 2 1 3; 1 0 2 5]`        | 6f1747ed60f2956a03250282395baba2437d1684588cec7b58e63b395fe133ca | 9f8c301f67b663c673a6feec52c8cc8b122bef97fe9aa06208f634be2f652c6f |
+| 1/3  |    2,048 / 6,144     | Protograph QCE=32  |   `[3 1 3 4 2 2; 4 1 0 4 0 1]`    | 54adc87fd548a4aa8c61efaf54194beca750afd72124ff52846bee4ee2cf482a | 608f5ab52838bf1c1660412824de51237879e2bc5a2b073369852a2d7c8a0c24 |
+| 1/3  |    8,192 / 24,576    | Protograph QCE=64  |   `[3 1 3 4 2 2; 4 1 0 4 0 1]`    | dd32e139f2ab999ec18d8c4933dcb112fbfa4a26b511f29f57cd71590c8440dc | 9b053763c2092802c02791da2d145b13bec8af11646d44bcb9f2db3284961606 |
+| 1/3  | 524,288  / 1,572,864 | Protograph QCE=512 |   `[3 1 3 4 2 2; 4 1 0 4 0 1]`    | d839b0af96478e8d1e6c80ce52236aa284fcffcdc6ef7ed1603598a5eb22f184 | 7f8df4cb9e4ef53d12f99813634e93e9d447ed7393d69e25dbd6e290ee601e43 |
+
+### Notes:
+
+For Protograph-based LDPC codes, the table gives the protograph as `[first row; second row; third row etc.]`. 
+
+For quasi-cyclic (QC) codes, the quasi-cyclic expansion factor (or lifting degree) is given as QCE.
+The QCE is the size of the block-sub-matrices constituting the full LDPC matrix defined by the quasi-cyclic exponents.

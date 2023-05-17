@@ -13,7 +13,7 @@ constexpr auto help_text =
 #include <chrono>
 
 // Command line argument parser library
-#include "CmdParser-91aaa61e/cmdparser.hpp"
+#include "external/CmdParser-91aaa61e/cmdparser.hpp"
 
 // Project scope
 #include "rate_adaptive_code.hpp"
@@ -108,7 +108,7 @@ void configure_parser(cli::Parser &parser) {
 
     parser.set_required<std::string>(
             "cp", "code-path",
-            "Path to file containing LDPC code (`.cscmat` format. Note: does not accept QC exponents!)");
+            "Path to file containing LDPC code (`.cscmat` or `.bincsc.json` format. Note: does not accept QC exponents!)");
 
     parser.set_required<std::string>(
             "rp", "rate-adaption-path",
@@ -127,13 +127,13 @@ int main(int argc, char *argv[]) {
     auto max_bp_iter = parser.get<std::size_t>("i");
     auto rng_seed = parser.get<std::size_t>("s");
     auto update_console_every_n_frames = parser.get<std::size_t>("upn");
-    auto cscmat_file_path = parser.get<std::string>("cp");;
+    auto code_file_path = parser.get<std::string>("cp");;
     auto rate_adaption_file_path = parser.get<std::string>("rp");;
 
-    auto H = load_ldpc(cscmat_file_path, rate_adaption_file_path);
+    auto H = load_ldpc(code_file_path, rate_adaption_file_path);
 
     std::cout << std::endl;
-    std::cout << "LDPC Code loaded from file: " << cscmat_file_path << '\n';
+    std::cout << "LDPC Code loaded from file: " << code_file_path << '\n';
     std::cout << "Rate adaption loaded from file: " << rate_adaption_file_path << '\n';
     std::cout << "Code size: " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';

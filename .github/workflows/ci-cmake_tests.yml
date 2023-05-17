@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
   
 env:
-  BUILD_TYPE: RelWithDebInfo
+  BUILD_TYPE: Debug
 
 defaults:
   run:
@@ -47,16 +47,27 @@ jobs:
         working-directory: ${{runner.workspace}}/build/examples
         run: ./demo_error_correction
 
+      - name: Install lcov and gcov (tools to get C++ coverage information)
+        working-directory: ${{runner.workspace}}/build/
+        run: |
+          set -x  # enable debugging in bash
+          sudo apt-get update
+          sudo apt-get -qq -y install lcov gcovr
+
       - name: Run unit tests with coverage
         working-directory: ${{runner.workspace}}/build/
         run: |
           set -x  # enable debugging in bash
-          sudo apt-get -qq -y install lcov gcovr
           lcov --zerocounters --directory .
+          # run all unit tests (ctest)
           GTEST_OUTPUT=xml:test-results/ GTEST_COLOR=1 ctest -V -C $BUILD_TYPE
-          gcovr -v --root ../ --xml-pretty --xml coverage.xml
+          # run also the simulator with very few frames to simulate
+          ./benchmarks_error_rate/rate_adapted_fer -cp "./tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json" -mf 3
+          ./benchmarks_error_rate/critical_rate_simulation -cp "./tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json" -rp "./tests/rate_adaption_2x6_block_6144_for_testing.csv" -nf 3
+          # collect coverage, etc.
+          gcovr -v --root ../ --xml-pretty --xml coverage.xml --exclude '.*/external/'
           echo
-          cat ./coverage.xml # pring coverage information
+          cat ./coverage.xml  # print coverage information
       
       - name: Publish to codecov
         uses: codecov/codecov-action@v2
