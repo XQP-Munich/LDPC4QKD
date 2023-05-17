@@ -319,10 +319,6 @@ namespace LDPC4QKD {
                    n_ra_rows == rhs.n_ra_rows;
         }
 
-        bool operator!=(const RateAdaptiveCode &rhs) const {
-            return !(rhs == *this); // Note: do not "simplify". The call to == is required.
-        }
-
         // ----------------------------------------------------------------------------------------- getters and setters
         [[nodiscard]]
         const std::vector<std::vector<idx_t>> &getPosCheckn() const {
