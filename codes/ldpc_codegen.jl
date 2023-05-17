@@ -28,12 +28,12 @@ function parse_my_args(args)
             arg_type = ValidPath
             help = "Path to .alist or .json file containing the LDPC code.
                 For .bincsc.json files, raw LDPC storage is supported.
-                For qccsc.json files, quasi-cyclic-exponents are supported"
+                For .qccsc.json files, quasi-cyclic-exponents are supported"
         "--output_path"
             default = "autogen_ldpc_matrix_csc.hpp"
             arg_type = String
             help = "Path to put the automatically generated C++ file containing the LDPC code.
-            If the file extension is .cscmat, a compressed sparse column storage of the full matrix
+            If the file extension is .bincsc.json, a compressed sparse column storage of the full matrix
             (actual binary matrix, not QC-exponents) is written instead."
     end
 
@@ -73,13 +73,14 @@ end
 
 
 """
-Converts all `.cscmat` files in the folder given by `input_folder_path` to same name `.cscmat`
-files in the `output_folder_path`. Each input file is assumed to contain QC exponents.
+Converts all `.qccsc.json` files in the folder given by `input_folder_path` to same name with extension `.bincsc.json`
+files in the `output_folder_path`.
+Each input file is assumed to contain QC exponents for an LDPC matrix (as defined by the `.qccsc.json` format).
 The output files store the full binary LDPC matrix, which can be used as input to the C++ programs.
 
 Warning: this may overwrite pre-existing files in the output folder.
 """
-function convert_all_to_loadable_cscmat(
+function convert_all_qc_to_binary(
     input_folder_path::AbstractString, output_folder_path::AbstractString;
     verbose=false
     )
@@ -87,15 +88,17 @@ function convert_all_to_loadable_cscmat(
     isdir(output_folder_path) || mkdir(output_folder_path)
 
     file_paths = readdir(input_folder_path; join=true)
-    filter!(p -> LDPCStorage.file_extension(p) == ".cscmat", file_paths)
+    filter!(p -> endswith(p, ".qccsc.json"), file_paths)
+    verbose && @info "Converting $(length(file_paths)) files."
 
     for p in file_paths
-        H = load_cscmat_standard_or_qc_exponents(p)
-        save_to_cscmat(H, joinpath(output_folder_path, basename(p)); 
-            allow_omit_entries_if_only_stored_ones=true,)
-    end
+        H = LDPCStorage.load_ldpc_from_json(p; expand_qc_exponents_to_binary=true)
 
-    verbose && @info "Converted $(size(file_paths)) files."
+        # store file with same name but replaced file extension reflecting contents
+        out_file_path = joinpath(output_folder_path, basename(p)[1:end-11]*".bincsc.json")
+        LDPCStorage.save_to_bincscjson(out_file_path, H)
+        verbose && @info "Converted `$p` -> `$out_file_path`."
+    end
     return nothing
 end
 
