@@ -67,7 +67,7 @@ jobs:
           # collect coverage, etc.
           gcovr -v --root ../ --xml-pretty --xml coverage.xml --exclude '.*/external/.*'
           echo
-          cat ./coverage.xml # pring coverage information
+          cat ./coverage.xml  # print coverage information
       
       - name: Publish to codecov
         uses: codecov/codecov-action@v2
