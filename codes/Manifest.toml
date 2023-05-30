@@ -55,11 +55,9 @@ version = "0.21.4"
 
 [[deps.LDPCStorage]]
 deps = ["DocStringExtensions", "JSON", "LinearAlgebra", "Pkg", "SHA", "SparseArrays"]
-git-tree-sha1 = "914a675ad4a253d6011d55c5203c913a892173ad"
-repo-rev = "main"
-repo-url = "https://github.com/XQP-Munich/LDPCStorage.jl.git"
+git-tree-sha1 = "b174772d89b0370c95895c0f5b2f72f81e84e95d"
 uuid = "d46d874d-5773-4ce9-8adb-568101dc8882"
-version = "0.3.3"
+version = "0.3.4"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
