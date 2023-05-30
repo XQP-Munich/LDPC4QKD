@@ -33,6 +33,10 @@ jobs:
         with:
             version: "1" # This will automatically pick the latest Julia version
 
+      - name: instantiate Julia dependencies
+        working-directory: ${{runner.workspace}}/LDPC4QKD/codes
+        run: julia --project -e 'import Pkg; Pkg.instantiate()'
+
       - name: test julia scripts to make sure they are up to date. This is not part of code coverage!
         working-directory: ${{runner.workspace}}/LDPC4QKD/codes
         run: |
