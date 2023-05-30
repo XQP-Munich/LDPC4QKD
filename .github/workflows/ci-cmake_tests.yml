@@ -34,7 +34,7 @@ jobs:
             version: "1" # This will automatically pick the latest Julia version
 
       - name: test julia scripts to make sure they are up to date. This is not part of code coverage!
-        working-directory: ${{runner.workspace}}/codes
+        working-directory: ${{runner.workspace}}/LDPC4QKD/codes
         run: |
             julia --project --  "./ldpc_codegen.jl" --input_code_path '../tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json' --output_path "./tmp.hpp"
             output="$(sha256sum ./tmp.hpp)"
