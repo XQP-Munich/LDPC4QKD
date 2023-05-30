@@ -41,10 +41,10 @@ jobs:
         working-directory: ${{runner.workspace}}/LDPC4QKD/codes
         run: |
             julia --project --  "./ldpc_codegen.jl" --input_code_path '../tests/test_reading_bincscjson_format_block_6144_proto_2x6_313422410401.bincsc.json' --output_path "./tmp.hpp"
-            output="$(sha256sum ./tmp.hpp)"
             expected="37eed538eb42205587dc1b6a4a805a16a9797c4cbcb478cc019f338b9d090c80  ./tmp.hpp"
-            if [ "$expected" != "$actual" ]; then
-                echo "Error on testing sha256 of output: EXPECTED=$expected ACTUAL=$actual"
+            actualoutput="$(sha256sum ./tmp.hpp)"
+            if [ "$actualoutput" != "$expected" ]; then
+                echo "Error on testing sha256 of output: EXPECTED=$expected ACTUAL=$actualoutput"
                 exit 2
             fi
 
