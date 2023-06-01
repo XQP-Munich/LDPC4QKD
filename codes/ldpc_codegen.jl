@@ -120,7 +120,9 @@ function main(args)
             "Unsupported input file at path $code_path. Expected file extension `qccsc.json`,`bincsc.json`, `.cscmat` (deprecated) or `.alist`."))
     end
 
-    if  endswith(output_path, ".hpp")
+    if endswith(output_path, ".alist")
+        LDPCStorage.save_to_alist(output_path, H)
+    elseif endswith(output_path, ".hpp")
         open(output_path, "w+") do io
             LDPCStorage.print_cpp_header(io, H)
         end
@@ -131,7 +133,7 @@ function main(args)
         LDPCStorage.save_to_bincscjson(output_path, H)
     else
         throw(ArgumentError(
-            "Unsupported input file at path $output_path. Expected file extension `.hpp` or `.cscmat`."))
+            "Unsupported output file format at path $output_path. Expected file extension `.alist`, `.hpp` `.bincsc.json` or `.cscmat`."))
     end
 
     @info "Saved output file ($(Base.stat(output_path).size / 1000.) kilobytes) at '$(output_path)'."
