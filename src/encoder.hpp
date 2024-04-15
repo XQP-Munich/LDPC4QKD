@@ -14,17 +14,17 @@
 #include <algorithm>
 
 
-#ifdef DEBUG_MESSAGES_ENABLED
+#ifdef LDPC4QKD_DEBUG_MESSAGES_ENABLED
 
 #include <iostream>
 
-#define DEBUG_MESSAGE(msg) do {std::cerr << msg << std::endl;} while (false)
+#define LDPC4QKD_DEBUG_MESSAGE(msg) do {std::cerr << msg << std::endl;} while (false)
 
 #else
 
-#define DEBUG_MESSAGE(msg)
+#define LDPC4QKD_DEBUG_MESSAGE(msg)
 
-#endif /* ifdef DEBUG_MESSAGES_ENABLED */
+#endif /* ifdef LDPC4QKD_DEBUG_MESSAGES_ENABLED */
 
 // automatically generated code containing the LDPC matrix and
 // the line indices to be combined for rate adaption.
@@ -115,13 +115,13 @@ namespace LDPC4QKD {
             const std::size_t size_rate_adapted_syndrome) {
         using AutogenRateAdapt::rows;
         if(size_rate_adapted_syndrome >= syndrome.size()) {
-            DEBUG_MESSAGE("Requested rate adapted syndrome size must be less than the original syndrome size.");
+            LDPC4QKD_DEBUG_MESSAGE("Requested rate adapted syndrome size must be less than the original syndrome size.");
             // TODO consider removing exception?
             throw std::runtime_error("Requested rate adapted syndrome size must be less than the original syndrome size.");
         }
         std::size_t n_row_combs = syndrome.size() - size_rate_adapted_syndrome;
         if(rows.size() / 2 < n_row_combs) {
-            DEBUG_MESSAGE("The specified rate adaption does not support such a high amount of line combinations");
+            LDPC4QKD_DEBUG_MESSAGE("The specified rate adaption does not support such a high amount of line combinations");
             // TODO consider removing exception?
             throw std::runtime_error("The specified rate adaption does not support such a high amount of line combinations");
         }

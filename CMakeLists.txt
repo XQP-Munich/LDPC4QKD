@@ -6,7 +6,7 @@ project(LDPC4QKD
         VERSION 0.0.0 # This version is meaningless at the moment! TODO generate Cmake-Project-version dynamically
         LANGUAGES C CXX
         DESCRIPTION "Rate adaptive distributed source coding using LDPC codes."
-        )
+)
 
 # Enable testing. This is not necessary for using GTest,
 # only provides integration with CTest (CMake test suite)
@@ -27,97 +27,133 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Mo
 # continue to be used. Delete the cache for such changes to take effect.
 # !!!!!
 
-option(DEBUG_MESSAGES_ENABLED
-        "Enables the output debug messages (compile definitions using macros in the C++ code)
-        "
-        ON
-        )
-
-option(BUILD_RUNTIME_BENCHMARKS
-        "Enables building of runtime performance benchmarks.
-        The benchmarks use the Google Benchmark framework, which must be installed.
-        "
+option(LDPC4QKD_HEADER_ONLY
+        "Enable this option if you don't want to build any executables.
+        This only creates a CMake target that ONLY points to where the header files are!"
         OFF
-        )
+)
+if (LDPC4QKD_HEADER_ONLY)
 
-option(BUILD_UNIT_TESTS
-        "Enables building unit tests.
-        The unit tests use the Google Test framework, which is downloaded and installed automatically!
-        "
-        ON
-        )
+    add_library(LDPC4QKD INTERFACE
+            src/rate_adaptive_code.hpp  # contains decoder and encoder. Does not need any other files to work.
 
-if (DEBUG_MESSAGES_ENABLED)
-    message(STATUS "#define compile definition DEBUG_MESSAGES_ENABLED.")
-    add_compile_definitions(DEBUG_MESSAGES_ENABLED)
-endif ()
+            src/encoder.hpp # contains only minimal encoder that needs static storage of the LDPC matrix
+            src/read_ldpc_file_formats.hpp # helper methods to generate static storage (not needed to use encoder/decoder class).
+    )
 
+    target_compile_features(LDPC4QKD INTERFACE cxx_std_17)
 
+    target_include_directories(LDPC4QKD
+            INTERFACE
+            ${CMAKE_CURRENT_LIST_DIR}/src
+    )
 
-# Interface library (without sources) that carries compiler/build flags.
-add_library(project_options INTERFACE)
-add_library(compiler_warnings INTERFACE)
+    # Create alias with "namespace". This is the target to be used to link to the library in higher level projects.
+    add_library(LDPC4QKD::LDPC4QKD ALIAS LDPC4QKD)
 
-include(BuildConfig)  # custom CMake module (see folder `cmake/Modules`)
-enable_sanitizers(project_options) # adds coverage if specified by flag ENABLE_COVERAGE
+else (LDPC4QKD_HEADER_ONLY)
 
-include(CompilerWarnings)
-set_project_warnings(compiler_warnings)
+    option(LDPC4QKD_DEBUG_MESSAGES_ENABLED
+            "Enables the output debug messages (compile definitions using macros in the C++ code)
+            "
+            ON
+    )
 
-# ----------------------------------------------------------------------------------------------------------------------
-# ---------------------------------------------------- MISCELLANEOUS ---------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
+    option(BUILD_RUNTIME_BENCHMARKS
+            "Enables building of runtime performance benchmarks.
+            The benchmarks use the Google Benchmark framework, which must be installed.
+            "
+            OFF
+    )
 
-# This will allow us to print a feature summary.
-# https://cmake.org/cmake/help/v3.11/module/FeatureSummary.html
-include(FeatureSummary)
+    option(LDPC4QKD_BUILD_ERROR_RATE_BENCHMARKS
+            "Enables building of error rate performance benchmarks.
+            "
+            ON
+    )
 
+    option(LDPC4QKD_BUILD_UNIT_TESTS
+            "Enables building unit tests.
+            The unit tests use the Google Test framework, which is downloaded and installed automatically!
+            "
+            ON
+    )
 
-# Required to enable testing for link-time optimization.
-# https://cmake.org/cmake/help/v3.11/module/CheckIPOSupported.html
-include(CheckIPOSupported)
-
-
-# Use link-time optimization if allowed.
-check_ipo_supported(RESULT ipo_supported)
-if (ipo_supported)
-    set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-    message(STATUS "Link-time optimization (IPO) is enabled.")
-else ()
-    message(WARNING "Link-time optimization is not supported.")
-endif ()
-
-
-# We attempt to use ccache to speed up the build.
-find_program(CCACHE_FOUND "ccache")
-if (CCACHE_FOUND)
-    message(STATUS "Using ccache for building.")
-    set_property(GLOBAL PROPERTY LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-    message(STATUS "ccache is being used to speed up the build.")
-else ()
-    message(WARNING "Using ccache to speed up the build is not possible.")
-endif (CCACHE_FOUND)
-
-# ----------------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------- INCLUDE SUBDIRECTORIES -----------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-add_subdirectory(src)
-
-add_subdirectory(examples)
-
-add_subdirectory(benchmarks_error_rate)
-
-if (BUILD_UNIT_TESTS)
-    add_subdirectory(tests)
-else (BUILD_UNIT_TESTS)
-    message(STATUS "Unit tests are not built, as specified by user.")
-endif (BUILD_UNIT_TESTS)
+    if (LDPC4QKD_DEBUG_MESSAGES_ENABLED)
+        message(STATUS "#define compile definition LDPC4QKD_DEBUG_MESSAGES_ENABLED.")
+        add_compile_definitions(LDPC4QKD_DEBUG_MESSAGES_ENABLED)
+    endif ()
 
 
-if (BUILD_RUNTIME_BENCHMARKS)
-    add_subdirectory(benchmarks_runtime)
-else (BUILD_RUNTIME_BENCHMARKS)
-    message(STATUS "Runtime performance benchmarks are not built, as specified by user.")
-endif (BUILD_RUNTIME_BENCHMARKS)
+    # Interface library (without sources) that carries compiler/build flags.
+    add_library(project_options INTERFACE)
+    add_library(compiler_warnings INTERFACE)
+
+    include(BuildConfig)  # custom CMake module (see folder `cmake/Modules`)
+    enable_sanitizers(project_options) # adds coverage if specified by flag ENABLE_COVERAGE
+
+    include(CompilerWarnings)
+    set_project_warnings(compiler_warnings)
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # ---------------------------------------------------- MISCELLANEOUS ---------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # This will allow us to print a feature summary.
+    # https://cmake.org/cmake/help/v3.11/module/FeatureSummary.html
+    include(FeatureSummary)
+
+
+    # Required to enable testing for link-time optimization.
+    # https://cmake.org/cmake/help/v3.11/module/CheckIPOSupported.html
+    include(CheckIPOSupported)
+
+
+    # Use link-time optimization if allowed.
+    check_ipo_supported(RESULT ipo_supported)
+    if (ipo_supported)
+        set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        message(STATUS "Link-time optimization (IPO) is enabled.")
+    else ()
+        message(WARNING "Link-time optimization is not supported.")
+    endif ()
+
+
+    # We attempt to use ccache to speed up the build.
+    find_program(CCACHE_FOUND "ccache")
+    if (CCACHE_FOUND)
+        message(STATUS "Using ccache for building.")
+        set_property(GLOBAL PROPERTY LAUNCH_COMPILE ccache)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+        message(STATUS "ccache is being used to speed up the build.")
+    else ()
+        message(WARNING "Using ccache to speed up the build is not possible.")
+    endif (CCACHE_FOUND)
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------- INCLUDE SUBDIRECTORIES -----------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    add_subdirectory(src)
+
+    add_subdirectory(examples)
+
+    if (LDPC4QKD_BUILD_ERROR_RATE_BENCHMARKS)
+        add_subdirectory(benchmarks_error_rate)
+    endif (LDPC4QKD_BUILD_ERROR_RATE_BENCHMARKS)
+
+
+    if (LDPC4QKD_BUILD_UNIT_TESTS)
+        add_subdirectory(tests)
+    else (LDPC4QKD_BUILD_UNIT_TESTS)
+        message(STATUS "Unit tests are not built, as specified by user.")
+    endif (LDPC4QKD_BUILD_UNIT_TESTS)
+
+
+    if (BUILD_RUNTIME_BENCHMARKS)
+        add_subdirectory(benchmarks_runtime)
+    else (BUILD_RUNTIME_BENCHMARKS)
+        message(STATUS "Runtime performance benchmarks are not built, as specified by user.")
+    endif (BUILD_RUNTIME_BENCHMARKS)
+
+endif (LDPC4QKD_HEADER_ONLY)

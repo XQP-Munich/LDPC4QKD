@@ -70,8 +70,8 @@ target_include_directories(benchmark_ra
         PRIVATE
         )
 
-if (BUILD_UNIT_TESTS)
+if (LDPC4QKD_BUILD_UNIT_TESTS)
     add_test(test_benchmark_ra benchmark_ra)
     add_test(test_benchmark_decoder benchmark_decoder)
     add_test(test_benchmark_encoder benchmark_encoder)
-endif (BUILD_UNIT_TESTS)
+endif (LDPC4QKD_BUILD_UNIT_TESTS)

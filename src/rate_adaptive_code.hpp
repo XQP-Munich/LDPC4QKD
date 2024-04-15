@@ -13,18 +13,20 @@
 #include <algorithm>
 #include <numeric>
 #include <set>
+#include <exception>
+#include <stdexcept>
 
-#ifdef DEBUG_MESSAGES_ENABLED
+#ifdef LDPC4QKD_DEBUG_MESSAGES_ENABLED
 
 #include <iostream>
 
-#define DEBUG_MESSAGE(msg) do {std::cerr << msg << std::endl;} while (false)
+#define LDPC4QKD_DEBUG_MESSAGE(msg) do {std::cerr << msg << std::endl;} while (false)
 
 #else
 
-#define DEBUG_MESSAGE(msg)
+#define LDPC4QKD_DEBUG_MESSAGE(msg)
 
-#endif /* ifdef DEBUG_MESSAGES_ENABLED */
+#endif /* ifdef LDPC4QKD_DEBUG_MESSAGES_ENABLED */
 
 
 namespace LDPC4QKD {
@@ -124,7 +126,7 @@ namespace LDPC4QKD {
         // ---------------------------------------------------------------------------------------------- public methods
         constexpr void encode_no_ra(const std::vector<Bit> &in, std::vector<Bit> &out) const {
             if (in.size() != n_cols) {
-                DEBUG_MESSAGE("Encoder (encode_no_ra) received invalid input length.");  // TODO maybe use exception?
+                LDPC4QKD_DEBUG_MESSAGE("Encoder (encode_no_ra) received invalid input length.");  // TODO maybe use exception?
                 return;
             }
             out.assign(n_mother_rows, 0);
@@ -274,7 +276,7 @@ namespace LDPC4QKD {
                     for (const auto &v : m) {
                         if (std::isnan(v)) {
                             // TODO maybe use exception?
-                            DEBUG_MESSAGE("Decoder Diverged at iteration " << it_unused);
+                            LDPC4QKD_DEBUG_MESSAGE("Decoder Diverged at iteration " << it_unused);
                             return false;
                         }
                     }
@@ -284,7 +286,8 @@ namespace LDPC4QKD {
             return false;  // Decoding was not successful.
         }
 
-        /// manually trigger rate adaption. In normal circumstances, the user does not need this function
+        //! manually trigger rate adaption. In normal circumstances, the user does not need this function
+        //! \param n_line_combs number of line combinations to use (starting from the mother code)
         void set_rate(std::size_t n_line_combs) {
             recompute_pos_vn_cn(n_line_combs);
         }
@@ -295,7 +298,7 @@ namespace LDPC4QKD {
         constexpr void encode_at_current_rate(
                 const std::vector<Bit> &in, std::vector<Bit> &out) const {
             if (in.size() != n_cols) {
-                DEBUG_MESSAGE("Encoder received invalid input length.");  // TODO maybe use exception?
+                LDPC4QKD_DEBUG_MESSAGE("Encoder received invalid input length.");  // TODO maybe use exception?
                 return;
             }
 
@@ -376,7 +379,7 @@ namespace LDPC4QKD {
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
                     // computing message from
                     if (msg_v[m][k] == 0.) {  // TODO test this bit more carefully.
-                        DEBUG_MESSAGE("Decoder went into the 'untested bit'!!");
+                        LDPC4QKD_DEBUG_MESSAGE("Decoder went into the 'untested bit'!!");
                         msg_part = 1;
                         for (std::size_t non_k{}; non_k < curr_check_node_degree; ++non_k) {
                             if (non_k != k) {
