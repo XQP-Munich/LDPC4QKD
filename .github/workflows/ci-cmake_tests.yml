@@ -95,8 +95,9 @@ jobs:
           cat ./coverage.xml  # print coverage information
       
       - name: Publish to codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{runner.workspace}}/build/coverage.xml
           fail_ci_if_error: true
       
