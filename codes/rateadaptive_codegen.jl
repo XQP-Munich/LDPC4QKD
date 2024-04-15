@@ -1,6 +1,8 @@
 # This script generates a `.hpp` file (C++ header) containing
 # an LDPC code stored in compressed sparse column (CSC) format.
 # See command line help for how to use it.
+# See command line help for how to use it by (in this directory) running
+# `julia --project rateadaptive_codegen.jl --help`
 
 using SparseArrays
 using LinearAlgebra
@@ -29,11 +31,17 @@ struct ValidPath
 end
 
 
-function parse_my_args(args)
+"""
+Parses command line arguments
+"""
+function parse_my_args()
     s = ArgParseSettings(
         "Create a C++ code-file containing line indices for combination, 
-        to be applied to a given LDPC code in order to achieve rate adaption."
-        ; allow_ambiguous_opts=false)
+        to be applied to a given LDPC code in order to achieve rate adaption.
+        Example usage:
+        julia --project rateadaptive_codegen.jl ./filename.csv --output_path autogen_rate_adaption.hpp
+        "
+        ; allow_ambiguous_opts=false, preformatted_description=true)
 
     @add_arg_table! s begin
         "rate_adaption_file_path"
@@ -49,7 +57,7 @@ function parse_my_args(args)
             action = :store_true
     end
 
-    parsed_args = parse_args(args, s)
+    parsed_args = parse_args(s)
     println("Parsed args:")
     for (key,val) in parsed_args
         println("  $key  =>  $(repr(val))")
@@ -121,8 +129,8 @@ function write_array_to_csv(arr::AbstractArray, out_path::AbstractString)
 end
 
 
-function main(args)
-    rate_adaption_file_path, output_path, only_debug_mode = parse_my_args(args)
+function main()
+    rate_adaption_file_path, output_path, only_debug_mode = parse_my_args()
     rate_adaption_rows = read_rate_adaption_file(rate_adaption_file_path)
     write_cpp_constexpr_rate_adaption(rate_adaption_rows, output_path; only_debug_mode)
 
@@ -130,4 +138,4 @@ function main(args)
 end
 
 
-main(ARGS)
+main()
