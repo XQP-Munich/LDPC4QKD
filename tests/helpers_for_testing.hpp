@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <array>
 
 namespace HelpersForTests {
 
