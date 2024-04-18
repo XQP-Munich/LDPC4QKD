@@ -53,3 +53,7 @@ target_include_directories(LDPC4QKD
 
 # Create alias with "namespace". This is the target to be used to link to the library in higher level projects.
 add_library(LDPC4QKD::LDPC4QKD ALIAS LDPC4QKD)
+
+
+add_executable(encoder_advanced encoder_advanced.cpp)
+target_compile_features(encoder_advanced PRIVATE cxx_std_20)
