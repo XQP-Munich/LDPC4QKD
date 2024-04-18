@@ -4,8 +4,6 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5579246.svg)](https://doi.org/10.5281/zenodo.5579246)
 # LDPC4QKD: LDPC codes for rate adaptive distributed source coding 
 
-Note: This repository is still missing some documentation, which will be added very soon.
-
 ## Overview
 
 This repository aims to solve the following problem. Suppose Alice and Bob each have a bit-string of length _N_.
