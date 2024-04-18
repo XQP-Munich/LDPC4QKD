@@ -13,10 +13,10 @@
 #include <random>
 #include <vector>
 #include <concepts>
-#include <any>
+#include <sstream>
 
-template<typename T, std::size_t N>
-void noise_bitstring_inplace(std::array<T, N> &src, double err_prob, unsigned int seed = 0) {
+
+void noise_bitstring_inplace(auto &src, double err_prob, unsigned int seed = 0) {
     std::mt19937_64 rng{seed}; // hard-coded seed for testing purposes.
 
     std::bernoulli_distribution distribution(err_prob);
@@ -303,35 +303,27 @@ namespace AutogenLDPC_QC_1MRhalf {
 } // namespace
 
 
-//template<typename bit_type>
-//struct Encoder {
-//
-//    /// performant but no size check (user has to provide valid std::span)
-//    /// key shall not be changed! (TODO enforce somehow...)
-//    /// also: inputs/outputs have to be contiguous in memory.
-//    virtual void encode_span(
-//            std::span<bit_type const> key,
-//            std::span<bit_type> syndrome) const = 0;
-//
-//    /// general, with runtime size check
-//    /// (a runtime cost usually not worth worrying about)
-//    void encode(auto const &key, auto &syndrome) const {
-//        if (key.size() == input_size && syndrome.size() == output_size) {
-//            encode_span(
-//                    std::span<bit_type const, input_size>{key},
-//                    std::span<bit_type, output_size>{syndrome});
-//        } else {
-//            throw std::runtime_error("encoder: incorrect sizes of intput / output arrays");
-//        }
-//    }
-//};
+struct FixedSizeInputOutput {
+    [[nodiscard]] virtual std::size_t get_input_size() const = 0;
+    [[nodiscard]] virtual std::size_t get_output_size() const = 0;
+
+    virtual constexpr ~FixedSizeInputOutput() = default;
+};
 
 template<
         typename bit_type, /// e.g. bool, or std::uint8_t
         std::size_t output_size, std::size_t input_size>
-struct Encoder {
+struct FixedSizeEncoder : public FixedSizeInputOutput {
     static constexpr std::size_t outputSize = output_size;
     static constexpr std::size_t inputSize = input_size;
+
+    [[nodiscard]] std::size_t get_input_size() const override {
+        return inputSize;
+    }
+
+    [[nodiscard]] std::size_t get_output_size() const override {
+        return output_size;
+    }
 
     /// performant but no size check (user has to provide valid std::span)
     /// key shall not be changed! (TODO enforce somehow...)
@@ -348,9 +340,16 @@ struct Encoder {
                     std::span<bit_type const, input_size>{key},
                     std::span<bit_type, output_size>{syndrome});
         } else {
-            throw std::runtime_error("LDPC encoder: incorrect sizes of intput / output arrays");
+            std::stringstream s;
+            s << "LDPC encoder: incorrect sizes of intput / output arrays\n"
+              << "RECEIVED: key.size() = " << key.size() << ". " << "syndrome.size() = " << syndrome.size() << ".\n"
+              << "EXPECTED: key.size() = " << input_size << ". " << "syndrome.size() = " << output_size << ".\n";
+            throw std::out_of_range(s.str());
         }
     }
+
+    // Have to write explicitly for some gcc versions. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
+    constexpr ~FixedSizeEncoder() override = default;
 };
 
 namespace {
@@ -364,11 +363,11 @@ namespace {
             typename bit_type, /// e.g. bool, or std::uint8_t
             std::size_t M, std::size_t N, std::size_t expansion_factor, std::size_t num_nz,
             std::integral coptr_uintx_t, std::integral row_idx_uintx_t, std::integral values_uintx_t>
-    struct EncoderQC : public Encoder<bit_type, M * expansion_factor, N * expansion_factor> {
+    struct FixedSizeEncoderQC : public FixedSizeEncoder<bit_type, M * expansion_factor, N * expansion_factor> {
 
-        constexpr EncoderQC(std::array<coptr_uintx_t, N + 1> colptr,
-                            std::array<row_idx_uintx_t, num_nz> row_idx,
-                            std::array<values_uintx_t, num_nz> values) :
+        constexpr FixedSizeEncoderQC(std::array<coptr_uintx_t, N + 1> colptr,
+                                     std::array<row_idx_uintx_t, num_nz> row_idx,
+                                     std::array<values_uintx_t, num_nz> values) :
                 colptr(colptr), row_idx(row_idx), values(values) {}
 
         void encode_span(
@@ -394,7 +393,8 @@ namespace {
 
             return true;
         }
-
+        // Have to write explicitly for some gcc versions. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
+        constexpr ~FixedSizeEncoderQC() override = default;
     private:
         void encode_qc(
                 std::span<bit_type const, N * expansion_factor> in,
@@ -420,66 +420,180 @@ namespace {
 }
 
 /// don't waste your time reading this...
-/// just reduces the number of templates that needs to be specified for the `EncoderQC<...>` constructor
-constexpr auto helper_create_EncoderQC = []
+/// just reduces the number of templates that needs to be specified for the `FixedSizeEncoderQC<...>` constructor
+constexpr auto helper_create_FixedSizeEncoderQC = []
         <std::size_t M, std::size_t expansion_factor>
         (auto colptr, auto row_idx, auto values) {
     using bit_type = std::uint8_t;
     constexpr auto num_nz = values.size();
     constexpr auto N = colptr.size() - 1;
-    using EncoderQC_inst = EncoderQC<bit_type, M, N, expansion_factor, num_nz,
+    using FixedSizeEncoderQC_inst = FixedSizeEncoderQC<bit_type, M, N, expansion_factor, num_nz,
             typename decltype(colptr)::value_type,
             typename decltype(row_idx)::value_type,
             typename decltype(values)::value_type>;
-    return EncoderQC_inst{colptr, row_idx, values};
+    return FixedSizeEncoderQC_inst{colptr, row_idx, values};
 };
 
 
-constexpr auto encoder1 = helper_create_EncoderQC.operator()<AutogenLDPC_QC::M, AutogenLDPC_QC::expansion_factor>(
+constexpr auto encoder1 = helper_create_FixedSizeEncoderQC.operator()<
+        AutogenLDPC_QC::M, AutogenLDPC_QC::expansion_factor>(
         AutogenLDPC_QC::colptr, AutogenLDPC_QC::row_idx, AutogenLDPC_QC::values);
 
-constexpr auto encoder_1M = helper_create_EncoderQC.operator()<AutogenLDPC_QC_1MRhalf::M, AutogenLDPC_QC_1MRhalf::expansion_factor>(
+constexpr auto encoder_1M = helper_create_FixedSizeEncoderQC.operator()<
+        AutogenLDPC_QC_1MRhalf::M, AutogenLDPC_QC_1MRhalf::expansion_factor>(
         AutogenLDPC_QC_1MRhalf::colptr, AutogenLDPC_QC_1MRhalf::row_idx, AutogenLDPC_QC_1MRhalf::values);
 
-const static std::array<std::any, 2> all_encoders{encoder1, encoder_1M}; // TODO remove and make std::tuple instead
 
 static_assert(encoder_1M.matrix_consistent_with_input_size(), "Bad encoder!");
 
-//void encode_1M(int seed) {
-//    std::cout << "hello\n";
-//
-//    std::array<std::uint8_t, AutogenLDPC_QC_1MRhalf::N * AutogenLDPC_QC_1MRhalf::expansion_factor> key{};
-//    noise_bitstring_inplace(key, 0.5, seed);
-//
-//    using namespace AutogenLDPC_QC_1MRhalf;
-//    std::array<std::uint8_t, M * expansion_factor> result{};
-//
-//    encoder_1M.encode_span(std::span<std::uint8_t, 4096>{key}, std::span{result});
-//
-////    encoder1.encode(key, result);
-//    std::cout << result.size() << std::endl;
-//    for (auto v: result) {
-//        std::cout << (int) v << ' ';
-//    }
-//    std::cout << std::endl;
-//    std::cout << "hello\n";
-//}
+namespace LDPC4QKD {
+
+    constexpr std::tuple all_encoders_tuple{encoder1, encoder_1M};
+
+    //! Encodes the `key` using the LDPC code specified by the `code_id`. The result is the syndrome.
+    //! Note: if `code_id` known at compile time, use templated version instead!
+    //!
+    //! NOTE: Containers will be converted to a `std::span` internally.
+    //! Sizes of `key` and `result` are checked at runtime and must match exactly, otherwise an exception is thrown.
+    //!
+    //! For **containers with compile-time known sizes**, using an incorrect size may also give a COMPILE ERROR.
+    //! (something like "no matching function for call to ‘std::span<...>::span(...)").
+    //! When using such containers, the input and output sizes must exactly match ALL available codes
+    //! (which is usually impossible when there are several different codes).
+    //! If `code_id` is known at compile time, use templated version instead!
+    //! If `code_id` isn't known at compile time,
+    //! then use `std::vector` and `FixedSizeEncoder::outputSize`, `FixedSizeEncoder::inputSize`
+    //! to get the size exactly right.
+    //! Alternatively, to avoid this check completely, use `std::span`
+    //! and make sure manually that you own enough memory (otherwise you get out-of-memory access!).
+    //!
+    //! \tparam N internal implementation detail, need not use.
+    //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
+    //! \param key  Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
+    //! \param result  Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
+    //                     Used to store syndrome. Must already be sized correctly for the given code!
+    template<std::size_t N = 0>
+    void encode_with(std::size_t code_id, auto const &key, auto &result) {
+        if (N == code_id) {
+            std::get<N>(all_encoders_tuple).encode(key, result);
+            return;
+        }
+
+        if constexpr (N + 1 < std::tuple_size_v<decltype(all_encoders_tuple)>) {
+            return encode_with<N + 1>(code_id, key, result);
+        }
+    }
+
+    //! Encodes the `key` using the LDPC code specified by the `code_id`.
+    //! The result is the syndrome. Note: code id must be known at compile time.
+    //! For runtime inference, use `encode_with(std::size_t code_id, auto const& key, auto &result)`
+    //!
+    //! NOTE: Containers will be converted to a `std::span` internally.
+    //! Sizes of `key` and `result` are checked at runtime and must match exactly, otherwise an exception is thrown.
+    //! For containers with compile-time known sizes, using an incorrect size may also give a COMPILE ERROR.
+    //! Use `FixedSizeEncoder::outputSize` and `FixedSizeEncoder::inputSize` to allocate correctly sized arrays
+    //! (to avoid this check, use `std::span` and make sure manually that you own enough memory!).
+    //!
+    //! \tparam code_id integer index into tuple of codes. Make sure both sides agree on these!
+    //! \param key Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
+    //! \param result Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
+    //!                 Used to store syndrome. Must already be sized correctly for the given code!
+    template<std::size_t code_id>
+    void encode_with(auto const &key, auto &result) {
+        std::get<code_id>(all_encoders_tuple).encode(key, result);
+    }
+
+    //! Get input size of code with given ID.
+    //!
+    //! \tparam N internal implementation detail, need not use.
+    //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
+    template<std::size_t N = 0>
+    std::size_t get_input_size(std::size_t code_id) {
+        if (N == code_id) {
+            return std::get<N>(all_encoders_tuple).get_input_size();
+        }
+
+        if constexpr (N + 1 < std::tuple_size_v<decltype(all_encoders_tuple)>) {
+            return get_input_size<N + 1>(code_id);
+        }
+        return 0; // this should never happen
+    }
+
+    //! Get input size of code with given ID.
+    //!
+    //! \tparam N internal implementation detail, need not use.
+    //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
+    template<std::size_t N = 0>
+    std::size_t get_output_size(std::size_t code_id) {
+        if (N == code_id) {
+            return std::get<N>(all_encoders_tuple).get_output_size();
+        }
+
+        if constexpr (N + 1 < std::tuple_size_v<decltype(all_encoders_tuple)>) {
+            return get_output_size<N + 1>(code_id);
+        }
+        return 0; // this should never happen
+    }
+}
+
 
 int main(int argc, char **argv) {
     std::cout << "hello\n";
-    std::array<std::uint8_t, AutogenLDPC_QC::N * AutogenLDPC_QC::expansion_factor> key{};
-    noise_bitstring_inplace(key, 0.5, argc);
+    auto seed = argc; // seed for PRNG
 
-    using namespace AutogenLDPC_QC;
-    std::array<std::uint8_t, M * expansion_factor> result{};
+    // If the code choice is done at RUNTIME (will usually be the case, e.g. because QBER is known only at runtime),
+    // need to provide containers for input and output with correct sizes, otherwise an exception will be thrown.
+    {
+        // if we don't know the size of `key` at runtime, it will probably be a `std::vector`, not a `std::array`.
 
-    encoder1.encode(key, result);
+        int code_id = 0;  // Not `constexpr`, let's say we only know this value at runtime!
 
-//    encoder1.encode(key, result);
-    std::cout << result.size() << std::endl;
-    for (auto v: result) {
-        std::cout << (int) v << ' ';
+        std::vector<std::uint8_t> key_vec{};
+        key_vec.resize(LDPC4QKD::get_input_size(code_id)); // get size at runtime!
+        noise_bitstring_inplace(key_vec, 0.5, seed);  // create a random key
+
+        // allocate a buffer for the syndrome (runtime-known length).
+        std::vector<std::uint8_t> syndrome_vec{};
+        syndrome_vec.resize(LDPC4QKD::get_output_size(code_id));
+
+        // However,  if `key_vec.size()` and `syndrome_vec.size()` aren't exactly right for the chosen code,
+        // then the above will throw `std::out_of_range` exception!
+        LDPC4QKD::encode_with(code_id, key_vec, syndrome_vec);
+
+        // Use the non-generic version of `encode_with`:
+        std::cout << "Syndrome of runtime known size " << syndrome_vec.size() << std::endl;
+        for (auto v: syndrome_vec) {
+            std::cout << (int) v << ' ';  // print syndrome bits
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
-    std::cout << "hello\n";
+
+    { // If the block size and syndrome size are known at compile time, we can use fixed-length buffers (`std::array`)
+        // If any of the containers used for key or syndrome has a compile-time known size
+        // (e.g. `std::array` or `std::span`), then this method MUST be used!
+        std::array<std::uint8_t, AutogenLDPC_QC::N * AutogenLDPC_QC::expansion_factor> key_arr{};
+        noise_bitstring_inplace(key_arr, 0.5, seed);  // create a random key
+
+        // allocate a buffer for the syndrome
+        std::array<std::uint8_t, AutogenLDPC_QC::M * AutogenLDPC_QC::expansion_factor> syndrome{};
+
+//        encoder1.encode(key_arr, syndrome);  // this would work. It's just using a concrete encoder object.
+
+        // This also works and does the same thing.
+        // Use this way when LDPC code choice is known at compile time.
+        // That's because `key` and `syndrome` have the correct sizes for `code_id = 0` (which is precisely `encoder1`)
+        constexpr int code_id = 0;  // HAS to be `constexpr`!
+        LDPC4QKD::encode_with<code_id>(key_arr, syndrome);
+
+        // this will not compile because `key` has a compile-time known size.
+        // The template instantiation will try to compile against **each** available code (although only one is used).
+        // Since the codes have different sizes, this will fail on most codes and give a compiler error.
+//    LDPC4QKD::encode_with(code_id, key, syndrome);  // error: no matching function for call to ‘std::span<...>::span(...)
+
+        std::cout << "Syndrome of compile-time known size " << syndrome.size() << std::endl;
+        for (auto v: syndrome) {
+            std::cout << (int) v << ' ';  // print syndrome bits
+        }
+        std::cout << std::endl;
+    }
 }
