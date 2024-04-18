@@ -30,32 +30,6 @@ void noise_bitstring_inplace(auto &src, double err_prob, unsigned int seed = 0) 
     }
 }
 
-/// this checks that the QC-encoder will never access input or output arrays outside bounds.
-/// I.e., for the input the size is `expansion_factor*N` while output size is `expansion_factor*M`.
-template <std::size_t M, std::size_t N, std::size_t num_nz,
-        typename t_colptr, typename t_rowidx, typename t_val>
-constexpr bool matrix_consistent_with_input_size(
-        const std::array<t_colptr, N + 1> &colptr,
-        const std::array<t_rowidx, num_nz> &row_idx,
-        const std::array<t_val, num_nz> &values,
-        const std::size_t expansion_factor
-) {
-
-    for (std::size_t col = 0; col < M; col++) {
-        auto effCol = col/expansion_factor;
-        for (std::size_t j = colptr[effCol]; j < colptr[effCol + 1]; j++) {
-            auto shiftVal = values[j];
-            auto outIdx = expansion_factor*row_idx[j] + col%expansion_factor;
-            auto inIdx = (col + shiftVal) % expansion_factor;
-            if (outIdx >= M*expansion_factor || inIdx >= N*expansion_factor) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
 namespace AutogenLDPC_QC {
 
     constexpr inline std::size_t M = 64;
@@ -88,13 +62,6 @@ namespace AutogenLDPC_QC {
             10,23,15,28,31,13,18,14,22,15,21,26,3,25,9,27,21,9,12,28,30,31,31,27,4,6,1,22,29,16,19,22,10,31,19,31,29,18,23,27,26,10,22,23,23,14,29,7,31,29,18,15,29,27,6,1,2,23,21,4,21,4,15,6,30,24,2,32,1,1,23,5,23,24,17,6,29,22,27,19,25,21,6,10,4,9,16,5,15,28,25,1,29,3,21,21,28,29,18,6,
             23,10,29,24,5,3,25,26,25,22,20,16,16,11,23,29,19,26,27,24,5,18,19,30,11,10,21,32,4,22,15,30,5,1,4,20,17,27,4,23,23,9,15,20,28,22,19,27,13,15,24,1,14,26,25,13,28,8,12,17,12,1,8,24,19,5,10,10,27,5,23,19,17,22,28,23,10,31,10,7
     };
-
-    static_assert(matrix_consistent_with_input_size<M, N>(
-            colptr,
-            row_idx,
-            values,
-            expansion_factor
-    ), "The arrays do not imply a valid quasi-cyclic LDPC code.");
 } // namespace AutogenLDPC_QC
 
 
@@ -293,12 +260,6 @@ namespace AutogenLDPC_QC_1MRhalf {
             288,93,191,72,180,106,275,479,408,4,107,505,133,140,420,246,62,38,273,500,78,379,486,81,55,163,235,8,147,228,446,438,258,452,413,298,277,508,480,327,487,366,124,178,233,323,174,100,235,369,329,14,2,136,354,153,384,448,2,360,26,404,370,259,337,281,494,236,344,87,83,98,435,317,170,253,109,94,466,325,474,255,164,474,309,359,348,91,227,493,438,457,454,180,382,355,88,222,4,351,
             461,239,153,170,494,61,398,243,374,317,186,172,308,464,258,512,460,111,163,404,190,146,97,56,447,184,261,197,181,193,457,383,501,195,366,204,188,342,389,108,3,508,497,487,382,64,403,185,155,365,357,126,145,198,17,327,4,505,25,280,495,278,373,89,477,113,16,98,285,392,416,353,44,119,412,82,509,241,112,135
     };
-    static_assert(matrix_consistent_with_input_size<M, N>(
-            colptr,
-            row_idx,
-            values,
-            expansion_factor
-    ), "The arrays do not imply a valid quasi-cyclic LDPC code.");
 
 } // namespace
 
@@ -368,7 +329,15 @@ namespace {
         constexpr FixedSizeEncoderQC(std::array<coptr_uintx_t, N + 1> colptr,
                                      std::array<row_idx_uintx_t, num_nz> row_idx,
                                      std::array<values_uintx_t, num_nz> values) :
-                colptr(colptr), row_idx(row_idx), values(values) {}
+                colptr(colptr), row_idx(row_idx), values(values) {
+            if (!matrix_consistent_with_input_size()) {
+                // Note: this will show up as a compile-time error if the constructor is called at compile time!
+                // The error will not have the exception text, just say that throwing is disallowed at compile time!
+                // If you get "error: expression ‘<throw-expression>’ is not a constant expression",
+                // this is still the error though!
+                throw std::runtime_error("Inputs would make encoder that performs out-of-memory access!");
+            }
+        }
 
         void encode_span(
                 std::span<bit_type const, N * expansion_factor> key,
@@ -376,9 +345,13 @@ namespace {
             encode_qc(key, syndrome);
         }
 
+        // Have to write explicitly for some gcc versions. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
+        constexpr ~FixedSizeEncoderQC() override = default;
+        private:
         /// checks that a constexpr QC-encoder will never access input or output arrays outside bounds.
         /// I.e., for the input the size is `expansion_factor*N` while output size is `expansion_factor*M`.
-        [[nodiscard]] consteval bool matrix_consistent_with_input_size() const {
+        /// NOTE: IF THIS RETURNS FALSE, THE OBJECT IS INVALID!!!
+        [[nodiscard]] constexpr bool matrix_consistent_with_input_size() const {
             for (std::size_t col = 0; col < M; col++) {
                 auto effCol = col / expansion_factor;
                 for (std::size_t j = colptr[effCol]; j < colptr[effCol + 1]; j++) {
@@ -393,9 +366,7 @@ namespace {
 
             return true;
         }
-        // Have to write explicitly for some gcc versions. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
-        constexpr ~FixedSizeEncoderQC() override = default;
-    private:
+
         void encode_qc(
                 std::span<bit_type const, N * expansion_factor> in,
                 std::span<bit_type, M * expansion_factor> out) const {
@@ -421,9 +392,8 @@ namespace {
 
 /// don't waste your time reading this...
 /// just reduces the number of templates that needs to be specified for the `FixedSizeEncoderQC<...>` constructor
-constexpr auto helper_create_FixedSizeEncoderQC = []
-        <std::size_t M, std::size_t expansion_factor>
-        (auto colptr, auto row_idx, auto values) {
+template <std::size_t M, std::size_t expansion_factor>  // other values are inferred
+consteval auto helper_create_FixedSizeEncoderQC(auto colptr, auto row_idx, auto values) {
     using bit_type = std::uint8_t;
     constexpr auto num_nz = values.size();
     constexpr auto N = colptr.size() - 1;
@@ -435,16 +405,14 @@ constexpr auto helper_create_FixedSizeEncoderQC = []
 };
 
 
-constexpr auto encoder1 = helper_create_FixedSizeEncoderQC.operator()<
+constexpr auto encoder1 = helper_create_FixedSizeEncoderQC<
         AutogenLDPC_QC::M, AutogenLDPC_QC::expansion_factor>(
         AutogenLDPC_QC::colptr, AutogenLDPC_QC::row_idx, AutogenLDPC_QC::values);
 
-constexpr auto encoder_1M = helper_create_FixedSizeEncoderQC.operator()<
+constexpr auto encoder_1M = helper_create_FixedSizeEncoderQC<
         AutogenLDPC_QC_1MRhalf::M, AutogenLDPC_QC_1MRhalf::expansion_factor>(
         AutogenLDPC_QC_1MRhalf::colptr, AutogenLDPC_QC_1MRhalf::row_idx, AutogenLDPC_QC_1MRhalf::values);
 
-
-static_assert(encoder_1M.matrix_consistent_with_input_size(), "Bad encoder!");
 
 namespace LDPC4QKD {
 
