@@ -21,39 +21,31 @@ using namespace LDPC4QKD;
 
 namespace {
 
-    RateAdaptiveCode<Bit> get_code_big_nora() {
+    auto get_code_big_nora() {
         std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
         std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
-        return RateAdaptiveCode<Bit>(colptr, row_idx);
+        return RateAdaptiveCode(colptr, row_idx);
     }
 
-    RateAdaptiveCode<Bit> get_code_big_wra() {
+    auto get_code_big_wra() {
         std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
         std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
         std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
-        return RateAdaptiveCode<Bit>(colptr, row_idx, rows_to_combine);
+        return RateAdaptiveCode(colptr, row_idx, rows_to_combine);
     }
 
-
-    RateAdaptiveCode<Bit> get_code_small() {
+    auto get_code_small() {
         //    H =  [1 0 1 0 1 0 1
         //			0 1 1 0 0 1 1
         //			0 0 0 1 1 1 1]
         std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
         std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
-        return RateAdaptiveCode<Bit>(colptr, row_idx);
+        return RateAdaptiveCode(colptr, row_idx);
     }
 
 }
 
-//TEST(rate_adaptive_code, TMPTMPTMPTMTPTMP) { // this test accesses private fields.
-//    auto H = get_code_big();
-//    EXPECT_EQ(hash_vector(H.colptr), 736283749);
-//    EXPECT_EQ(hash_vector(H.row_idx), 4281948431);
-//}
-
-
-TEST(rate_adaptive_code, decode_test_small) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, decode_test_small) {
     auto H = get_code_small();
 
     std::vector<Bit> x{1, 1, 1, 1, 0, 0, 0}; // true data to be sent
@@ -75,7 +67,7 @@ TEST(rate_adaptive_code, decode_test_small) {
     EXPECT_EQ(solution, x);
 }
 
-TEST(rate_adaptive_code, decode_test_big) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, decode_test_big) {
     auto H = get_code_big_nora();
 
     std::vector<Bit> x = get_bitstring(H.getNCols()); // true data to be sent
@@ -104,7 +96,7 @@ TEST(rate_adaptive_code, decode_test_big) {
 }
 
 
-TEST(rate_adaptive_code, encode_no_ra) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, encode_no_ra) {
     auto H = get_code_big_nora();
     std::vector<Bit> in = get_bitstring(H.getNCols());
     std::vector<Bit> out(H.get_n_rows_mother_matrix());
@@ -116,7 +108,7 @@ TEST(rate_adaptive_code, encode_no_ra) {
 }
 
 
-TEST(rate_adaptive_code, encode_current_rate) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, encode_current_rate) {
     auto H = get_code_big_wra();
     std::vector<Bit> in = get_bitstring(H.getNCols());
     std::vector<Bit> out(H.get_n_rows_mother_matrix());
@@ -133,13 +125,13 @@ TEST(rate_adaptive_code, encode_current_rate) {
 }
 
 
-TEST(rate_adaptive_code, no_ra_if_no_linecombs) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, no_ra_if_no_linecombs) {
     auto H = get_code_big_nora();
     EXPECT_ANY_THROW(H.set_rate(H.get_n_rows_mother_matrix() - 5));
 }
 
 
-TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, init_pos_CN_pos_VN) {
     auto H = get_code_small();
 
     std::vector<std::vector<decltype(H)::MatrixIndex>> expect_posCN{{0},
@@ -158,14 +150,14 @@ TEST(rate_adaptive_code, init_pos_CN_pos_VN) {
 
 
 // vn eliminations are allowed now! TODO reconsider this.
-//TEST(rate_adaptive_code, dont_allow_vn_elimination) {
+//TEST(rate_adaptive_code_from_colptr_rowIdx, dont_allow_vn_elimination) {
 //    std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
 //    std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
-//    EXPECT_ANY_THROW(RateAdaptiveCode<Bit>(colptr, row_idx, {0,1}));
+//    EXPECT_ANY_THROW(RateAdaptiveCode(colptr, row_idx, {0,1}));
 //}
 
 
-TEST(rate_adaptive_code, getters) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, getters) {
     auto H = get_code_big_nora();
     EXPECT_EQ(H.get_n_rows_mother_matrix(), 2048);
     EXPECT_EQ(H.getNCols(), 6144);
@@ -173,7 +165,7 @@ TEST(rate_adaptive_code, getters) {
     EXPECT_EQ(H.get_n_rows_after_rate_adaption(), H.get_n_rows_mother_matrix());
 }
 
-TEST(rate_adaptive_code, encode_with_ra) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, encode_with_ra) {
     auto H = get_code_big_wra();
 
     std::vector<Bit> input = get_bitstring(H.getNCols()); // true data to be sent
@@ -200,7 +192,7 @@ TEST(rate_adaptive_code, encode_with_ra) {
 }
 
 
-TEST(rate_adaptive_code, ra_reported_size) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, ra_reported_size) {
     auto H = get_code_big_wra();
 
     {
@@ -215,7 +207,7 @@ TEST(rate_adaptive_code, ra_reported_size) {
     }
 }
 
-TEST(rate_adaptive_code, decode_infer_rate) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, decode_infer_rate) {
     auto H = get_code_big_wra();
 
     std::vector<Bit> x = get_bitstring(H.getNCols()); // true data to be sent
@@ -246,7 +238,7 @@ TEST(rate_adaptive_code, decode_infer_rate) {
 }
 
 
-TEST(rate_adaptive_code, rate_adapted_fer) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, rate_adapted_fer) {
     // assert that the rate adapted FER (at set fraction of mother syndrome) is small.
     std::mt19937_64 rng(42);
     auto H = get_code_big_wra();
@@ -298,7 +290,7 @@ TEST(rate_adaptive_code, rate_adapted_fer) {
     ASSERT_EQ(fer, 0.);
 }
 
-TEST(rate_adaptive_code, llrs_bsc) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, llrs_bsc) {
     std::vector<bool> x{1, 1, 1, 1, 0, 0, 0};
     double p = 0.01;
 
@@ -308,12 +300,12 @@ TEST(rate_adaptive_code, llrs_bsc) {
         llrs[i] = vlog * (1 - 2 * x[i]); // log likelihood ratios
     }
 
-    std::vector<double> llrs_convenience = LDPC4QKD::RateAdaptiveCode<bool>::llrs_bsc(x, p);
+    std::vector<double> llrs_convenience = LDPC4QKD::llrs_bsc(x, p);
 
     EXPECT_EQ(llrs_convenience, llrs);
 }
 
-TEST(rate_adaptive_code, equals_not_equals_operators) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, equals_not_equals_operators) {
     auto H1 = get_code_big_wra();
     auto H2 = get_code_big_wra();
     EXPECT_FALSE(H1 != H2);
