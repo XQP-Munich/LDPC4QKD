@@ -63,10 +63,10 @@ namespace LDPC4QKD {
         virtual constexpr ~FixedSizeInputOutput() = default;
     };
 
-    template<typename Bit, // TODO maybe specify default args
-            typename idx_t>
+    template<typename idx_t>
     struct ComputablePosVar : public FixedSizeInputOutput {
         [[nodiscard]] virtual std::vector<std::vector<idx_t>> get_pos_varn() const = 0;
+
         constexpr ~ComputablePosVar() override = default;
     };
 
@@ -74,8 +74,7 @@ namespace LDPC4QKD {
     template<
             typename bit_type, /// e.g. bool, or std::uint8_t
             std::size_t output_size, std::size_t input_size>
-    struct FixedSizeEncoder : public ComputablePosVar<bit_type, smallest_type<input_size>>
-            {
+    struct FixedSizeEncoder : public ComputablePosVar<smallest_type<input_size>> {
         static constexpr std::size_t outputSize = output_size;
         static constexpr std::size_t inputSize = input_size;
 
@@ -144,6 +143,7 @@ namespace LDPC4QKD {
 
 
         using idx_t = smallest_type<FixedSizeEncoderQC::inputSize>;
+
         [[nodiscard]] std::vector<std::vector<idx_t>> get_pos_varn() const override {
             const auto n_cols = FixedSizeEncoderQC::inputSize;
             const auto n_rows = FixedSizeEncoderQC::outputSize;
@@ -151,19 +151,12 @@ namespace LDPC4QKD {
             std::vector<std::vector<idx_t>> pos_varn{};
             pos_varn.assign(n_rows, std::vector<idx_t>{});
 
-//            for (idx_t col = 0; col < n_cols; col++) {
-//                for (std::size_t j = colptr[col]; j < colptr[col + 1u]; j++) {
-//                    pos_varn[row_idx[j]].push_back(col);
-//                }
-//            }
-
             for (std::size_t col = 0; col < n_cols; col++) {
                 auto effCol = col / expansion_factor;
                 for (std::size_t j = colptr[effCol]; j < colptr[effCol + 1]; j++) {
                     auto shiftVal = values[j];
                     auto outIdx = expansion_factor * row_idx[j] + col % expansion_factor;
-                    auto inIdx = (col + shiftVal) % expansion_factor;
-//                    out[outIdx] = xor_as_bools(out[outIdx], in[inIdx]);
+                    auto inIdx = static_cast<idx_t>((col + shiftVal) % expansion_factor);
                     pos_varn[outIdx].push_back(inIdx);
                 }
             }
@@ -216,7 +209,8 @@ namespace LDPC4QKD {
 
 /// don't waste your time reading this...
 /// just reduces the number of templates that needs to be specified for the `FixedSizeEncoderQC<...>` constructor
-    template<std::size_t M, std::size_t expansion_factor> // other values are inferred
+    template<std::size_t M, std::size_t expansion_factor>
+    // other values are inferred
     consteval auto helper_create_FixedSizeEncoderQC(auto colptr, auto row_idx, auto values) {
         using bit_type = std::uint8_t;
         constexpr auto num_nz = values.size();
@@ -233,9 +227,10 @@ namespace LDPC4QKD {
             AutogenLDPC_QC::M, AutogenLDPC_QC::expansion_factor>(
             AutogenLDPC_QC::colptr, AutogenLDPC_QC::row_idx, AutogenLDPC_QC::values);
 
-    constexpr auto encoder2 =helper_create_FixedSizeEncoderQC<
+    constexpr auto encoder2 = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_Rate33_block6k::M, AutogenLDPC_QC_Rate33_block6k::expansion_factor>(
-            AutogenLDPC_QC_Rate33_block6k::colptr, AutogenLDPC_QC_Rate33_block6k::row_idx, AutogenLDPC_QC_Rate33_block6k::values);
+            AutogenLDPC_QC_Rate33_block6k::colptr, AutogenLDPC_QC_Rate33_block6k::row_idx,
+            AutogenLDPC_QC_Rate33_block6k::values);
 
     constexpr auto encoder_1M = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_1MRhalf::M, AutogenLDPC_QC_1MRhalf::expansion_factor>(
