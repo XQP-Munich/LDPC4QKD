@@ -29,10 +29,6 @@ add_executable(unit_tests_error_correction test_main.cpp
         fortest_autogen_rate_adaption.hpp
         )
 
-target_compile_features(unit_tests_error_correction
-        PUBLIC cxx_std_17
-        )
-
 target_include_directories(unit_tests_error_correction
         PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
