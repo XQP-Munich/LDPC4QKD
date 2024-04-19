@@ -44,7 +44,7 @@ add_library(LDPC4QKD INTERFACE
         read_ldpc_file_formats.hpp # helper methods to generate static storage (not needed to use encoder/decoder class).
         )
 
-target_compile_features(LDPC4QKD INTERFACE cxx_std_17)
+target_compile_features(LDPC4QKD INTERFACE cxx_std_20)
 
 target_include_directories(LDPC4QKD
         INTERFACE
