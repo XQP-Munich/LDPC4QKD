@@ -41,19 +41,18 @@ namespace HelpersForTests {
         return seed
     end
     ```
- * @tparam T should be primitive type std::uint[x]_t
- * @param vec Vector
+ * @tparam Vec should be something like `std::array` or `std::vector`.
+ * @param vec input data
  * @return a hash of all vector entries
  */
-    template<typename T>
-    std::uint32_t hash_vector(const std::vector<T> &vec) {
+    template<typename Vec>
+    std::uint32_t hash_vector(const Vec &vec) {
         auto seed = static_cast<std::uint32_t>(vec.size());
         for (auto i : vec) {
             seed ^= static_cast<std::uint32_t>(i) + 0x9e3779b9 + (seed << 6u) + (seed >> 2u);
         }
         return seed;
     }
-
 
     template<typename T>
     void write_vector_to_csv(const std::string &filepath, const std::vector<T> &vec, bool cast_to_long) {
@@ -155,15 +154,6 @@ namespace HelpersForTests {
                 src[i] = src[i];
             }
         }
-    }
-
-    template<typename T>
-    std::uint32_t hash_vector(const T &vec) {
-        auto seed = static_cast<std::uint32_t>(vec.size());
-        for (auto i : vec) {
-            seed ^= static_cast<std::uint32_t>(i) + 0x9e3779b9 + (seed << 6u) + (seed >> 2u);
-        }
-        return seed;
     }
 
     template<typename T, std::size_t N>
