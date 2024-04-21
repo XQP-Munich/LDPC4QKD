@@ -39,6 +39,16 @@ namespace LDPC4QKD {
     }
 
 
+    //```julia
+    // H = SparseMatrixCSC(...)
+    // function encode(in, out)
+    //    for col=1:length(in)
+    //        for j = H.colptr[col]:(H.colptr[col+1]-1)
+    //            out[H.rowval[j]] = xor(out[H.rowval[j]], in[col])
+    //        end
+    //    end
+    // end
+    //```
     template<typename Bit>
     constexpr void encode(const std::array<Bit, AutogenLDPC::N> &in, std::array<Bit, AutogenLDPC::M> &out) {
         using namespace AutogenLDPC;
@@ -75,8 +85,8 @@ namespace LDPC4QKD {
 
         // have to modify values to mark which bits are used during rate adaption
         // Also need -1 as a value, which has special purpose below.
-        std::array<signed short, AutogenLDPC::M> syndrome_copy;  // uninitialized because filled via copy right below
-        std::copy(syndrome.begin(), syndrome.end(), syndrome_copy.begin());
+        std::array<signed short, AutogenLDPC::M> syndrome_copy{};  // initialization is optimized out!
+        std::copy(syndrome.cbegin(), syndrome.cend(), syndrome_copy.begin()); // TODO look if this can't be done in one line
 
         static_assert(reduced_size < AutogenLDPC::M,
                 "Requested rate adapted syndrome size must be less than the original syndrome size.");
@@ -149,20 +159,8 @@ namespace LDPC4QKD {
     }
 
 
-    /// TODO in-place computation may require moving bits around a lot. Think about how to achieve it efficiently.
-//    /// TODO allow runtime determination of reduced_size!!!
-//    ///     This is just for testing and seeing the difference in performance
-//    template<typename Bit, std::size_t reduced_size>
-//    constexpr void rate_adapt_inplace(const std::array<Bit, AutogenLDPC::M> &syndrome) {
-//
-//    }
-//
-//    /// TODO allow runtime determination of reduced_size!!!
-//    ///     This is just for testing and seeing the difference in performance
-//    template<typename Bit>
-//    constexpr void rate_adapt_inplace(const std::array<Bit, AutogenLDPC::M> &syndrome, const std::size_t reduced_size) {
-//
-//    }
+    // TODO in-place computation may require moving bits around a lot.
+    //  Think about how to achieve it efficiently and if we need it...
 
 }  // namespace RALDPC
 
