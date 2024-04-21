@@ -12,7 +12,6 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
-#include <set>
 #include <exception>
 #include <stdexcept>
 
@@ -336,16 +335,13 @@ namespace LDPC4QKD {
         }
 
         bool operator==(const RateAdaptiveCode &rhs) const {
-            return rows_to_combine == rhs.rows_to_combine &&
+            return n_mother_rows == rhs.n_mother_rows &&
+                   n_cols == rhs.n_cols &&
+                   mother_pos_varn == rhs.mother_pos_varn &&
+                   rows_to_combine == rhs.rows_to_combine &&
                    pos_checkn == rhs.pos_checkn &&
                    pos_varn == rhs.pos_varn &&
-                   n_mother_rows == rhs.n_mother_rows &&
-                   n_cols == rhs.n_cols &&
                    n_ra_rows == rhs.n_ra_rows;
-        }
-
-        bool operator!=(const RateAdaptiveCode &rhs) const {
-            return !(rhs == *this); // Note: do not "simplify". The call to == is required.
         }
 
         // ----------------------------------------------------------------------------------------- getters and setters
