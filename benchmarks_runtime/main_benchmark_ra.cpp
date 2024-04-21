@@ -16,11 +16,11 @@
 #include "autogen_rate_adaption.hpp"
 
 
-LDPC4QKD::RateAdaptiveCode<bool> get_code_big_wra() {
+LDPC4QKD::RateAdaptiveCode get_code_big_wra() {
     std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
     std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
     std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
-    return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx, rows_to_combine);
+    return LDPC4QKD::RateAdaptiveCode(colptr, row_idx, rows_to_combine);
 }
 
 

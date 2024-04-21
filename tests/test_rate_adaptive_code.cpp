@@ -314,3 +314,30 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, equals_not_equals_operators) {
     EXPECT_FALSE(H1 == H2);
     EXPECT_TRUE(H1 != H2);
 }
+
+TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
+    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2);
+    auto H2 = get_code_big_wra();
+
+    {
+        std::vector<std::uint8_t> in = get_bitstring<std::uint8_t>(H1.getNCols());
+        std::vector<std::uint8_t> out(H1.get_n_rows_mother_matrix());
+
+        std::cout << "input hash: " << hash_vector(in) << std::endl;
+        H1.encode_no_ra(in, out);
+        std::cout << "output hash: " << hash_vector(out) << std::endl;
+
+        EXPECT_EQ(hash_vector(out), 2814594723);
+    }
+    {
+        std::vector<std::uint8_t> in = get_bitstring<std::uint8_t>(H2.getNCols());
+        std::vector<std::uint8_t> out(H2.get_n_rows_mother_matrix());
+
+        write_vector_to_csv("tmp_randkey_6144.csv", in, true);
+        std::cout << "input hash: " << hash_vector(in) << std::endl;
+        H2.encode_no_ra(in, out);
+        std::cout << "output hash: " << hash_vector(out) << std::endl;
+
+        EXPECT_EQ(hash_vector(out), 2814594723);
+    }
+}
