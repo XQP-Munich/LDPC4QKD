@@ -1,5 +1,5 @@
 //
-// Created by labor on 18.04.24.
+// Created by Adomas Baliuka on 18.04.24.
 //
 
 #ifndef QKD_POSTPROC_BOB_ENCODER_ADVANCED_HPP
@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <array>
 #include <span>
-#include <iostream>
 #include <random>
 #include <vector>
 #include <concepts>
@@ -151,13 +150,17 @@ namespace LDPC4QKD {
             std::vector<std::vector<idx_t>> pos_varn{};
             pos_varn.assign(n_rows, std::vector<idx_t>{});
 
-            for (std::size_t col = 0; col < n_cols; col++) {
-                auto effCol = col / expansion_factor;
-                for (std::size_t j = colptr[effCol]; j < colptr[effCol + 1]; j++) {
+            for (idx_t col = 0; col < n_cols; col++) {
+                auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                for (auto j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
-                    auto outIdx = expansion_factor * row_idx[j] + col % expansion_factor;
-                    auto inIdx = static_cast<idx_t>((col + shiftVal) % expansion_factor);
-                    pos_varn[outIdx].push_back(inIdx);
+                    auto QCrow = row_idx[j];  // row index into matrix of exponents
+                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
+                    // arising from the current sub-block.
+                    // The sub-block is determined by the QC-exponent `shiftVal`.
+                    // Add the base row-index of the current sub-block to the shift
+                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+                    pos_varn[outIdx].push_back(static_cast<idx_t>(col));
                 }
             }
 
@@ -169,18 +172,22 @@ namespace LDPC4QKD {
         /// I.e., for the input the size is `expansion_factor*N` while output size is `expansion_factor*M`.
         /// NOTE: IF THIS RETURNS FALSE, THE OBJECT IS INVALID!!!
         [[nodiscard]] constexpr bool matrix_consistent_with_input_size() const {
-            for (std::size_t col = 0; col < M; col++) {
-                auto effCol = col / expansion_factor;
-                for (std::size_t j = colptr[effCol]; j < colptr[effCol + 1]; j++) {
+            for (std::size_t col = 0; col < N; col++) {
+                auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
-                    auto outIdx = expansion_factor * row_idx[j] + col % expansion_factor;
-                    auto inIdx = (col + shiftVal) % expansion_factor;
-                    if (outIdx >= M * expansion_factor || inIdx >= N * expansion_factor) {
+                    auto QCrow = row_idx[j];  // row index into matrix of exponents
+                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
+                    // arising from the current sub-block.
+                    // The sub-block is determined by the QC-exponent `shiftVal`.
+                    // Add the base row-index of the current sub-block to the shift
+                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+
+                    if (outIdx >= M * expansion_factor || col >= N * expansion_factor) {
                         return false;
                     }
                 }
             }
-
             return true;
         }
 
@@ -191,12 +198,17 @@ namespace LDPC4QKD {
             static_assert(N >= M, "The syndrome should be shorter than the input bitstring.");
 
             for (std::size_t col = 0; col < in.size(); col++) {
-                auto effCol = col / expansion_factor;
-                for (std::size_t j = colptr[effCol]; j < colptr[effCol + 1]; j++) {
+                auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
-                    auto outIdx = expansion_factor * row_idx[j] + col % expansion_factor;
-                    auto inIdx = (col + shiftVal) % expansion_factor;
-                    out[outIdx] = xor_as_bools(out[outIdx], in[inIdx]);
+                    auto QCrow = row_idx[j];  // row index into matrix of exponents
+                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
+                    // arising from the current sub-block.
+                    // The sub-block is determined by the QC-exponent `shiftVal`.
+                    // Add the base row-index of the current sub-block to the shift
+                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+
+                    out[outIdx] = xor_as_bools(out[outIdx], in[col]);
                 }
             }
         }
