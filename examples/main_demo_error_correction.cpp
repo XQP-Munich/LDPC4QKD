@@ -10,7 +10,7 @@
 
 
 /// Get a LDPC matrix
-LDPC4QKD::RateAdaptiveCode<bool> get_code_small() {
+auto get_code_small() {
     /// We use this matrix as an example:
     ///    H =  [1 0 1 0 1 0 1
     ///			0 1 1 0 0 1 1
@@ -19,7 +19,7 @@ LDPC4QKD::RateAdaptiveCode<bool> get_code_small() {
     /// To use it, we must convert H to compressed sparse column (CSC) storage:
     std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
     std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
-    return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx);
+    return LDPC4QKD::RateAdaptiveCode(colptr, row_idx);
 }
 
 
@@ -44,7 +44,7 @@ int main() {
         llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
     }
     // alternatively, use the built-in convenience method that does the same:
-//    std::vector<double> llrs = LDPC4QKD::RateAdaptiveCode<bool>::llrs_bsc(x, p);
+//    std::vector<double> llrs = LDPC4QKD::RateAdaptiveCode::llrs_bsc(x, p);
 
     std::vector<bool> solution;
     bool decoder_converged = H.decode_at_current_rate(llrs, syndrome, solution);

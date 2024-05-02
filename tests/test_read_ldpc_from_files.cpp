@@ -22,7 +22,7 @@ namespace {
     auto get_code_big_nora() {
         std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
         std::vector<std::uint32_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
-        return RateAdaptiveCode<Bit, uint32_t, uint32_t>(colptr, row_idx);
+        return RateAdaptiveCode<uint32_t, uint32_t>(colptr, row_idx);
     }
 
 }

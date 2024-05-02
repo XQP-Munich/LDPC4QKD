@@ -32,10 +32,10 @@ void noise_bitstring_inplace(std::vector<T> &src, double err_prob, unsigned int 
 }
 
 
-LDPC4QKD::RateAdaptiveCode<bool> get_code_big_nora() {
+LDPC4QKD::RateAdaptiveCode get_code_big_nora() {
     std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
     std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
-    return LDPC4QKD::RateAdaptiveCode<bool>(colptr, row_idx);
+    return LDPC4QKD::RateAdaptiveCode(colptr, row_idx);
 }
 
 

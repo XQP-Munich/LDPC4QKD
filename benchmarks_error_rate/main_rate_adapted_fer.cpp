@@ -29,7 +29,7 @@ using namespace LDPC4QKD::CodeSimulationHelpers;
 template<typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
         typename idx_t=std::uint16_t>
 std::pair<size_t, size_t> run_simulation(
-        const LDPC4QKD::RateAdaptiveCode<bool, colptr_t, idx_t> &H,
+        const LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t> &H,
         double p,
         std::size_t num_frames_to_test,
         std::mt19937_64 &rng,
