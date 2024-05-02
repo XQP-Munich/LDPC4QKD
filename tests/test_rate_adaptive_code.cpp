@@ -11,6 +11,7 @@
 
 // To be tested
 #include "rate_adaptive_code.hpp"
+#include "encoder_advanced.hpp"
 
 // Test cases test against constants known to be correct for the LDPC-matrix defined here:
 #include "fortest_autogen_ldpc_matrix_csc.hpp"
@@ -316,7 +317,9 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, equals_not_equals_operators) {
 }
 
 TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
-    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2);
+    std::vector<std::uint16_t> rows_to_combine{}; // not used here!
+    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+
     auto H2 = get_code_big_wra();
 
     {
@@ -340,4 +343,13 @@ TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
 
         EXPECT_EQ(hash_vector(out), 2814594723);
     }
+}
+
+TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_equals) {
+    std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
+    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+
+    // TODO add random rate adaption for comparison
+    auto H2 = get_code_big_wra();
+    EXPECT_TRUE(H1 == H2);
 }
