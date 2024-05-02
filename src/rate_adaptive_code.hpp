@@ -53,11 +53,13 @@ namespace LDPC4QKD {
      * Intended for distributed source coding (a.k.a. Slepian-Wolf coding).
      * LDPC code is stored in sparse column storage (CSC) format.
      *
-     * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
+     * (TODO use concept `std::unsigned_integral` when using C++20)
+     *
+     * @tparam colptr_t unsigned integert type that fits ("number of non-zero matrix entries" + 1)
      * @tparam idx_t unsigned integer type fitting number of columns N (thus also number of rows M)
      */
-    template<std::unsigned_integral colptr_t=std::uint32_t,
-            std::unsigned_integral idx_t=std::uint16_t>
+    template<typename colptr_t=std::uint32_t,
+            typename idx_t=std::uint16_t>
     class RateAdaptiveCode {
     public:
         // ------------------------------------------------------------------------------------------------ type aliases
@@ -161,10 +163,15 @@ namespace LDPC4QKD {
 
         // ---------------------------------------------------------------------------------------------- public methods
 
-        /// Encode (i.e., compute syndrome) using mother matrix
-        // Note: BitR is allowed to be signed, to enable the "mark combined by -1" trick in `encode_with_ra`.
-        template<std::unsigned_integral BitL=bool, typename BitR=bool>
-        // e.g. std::uint8_t or bool
+
+        /*!
+         *  Encode (i.e., compute syndrome) using mother matrix
+         * @tparam BitL e.g. std::uint8_t or bool.
+         * @tparam BitRBitR allowed to be signed, to enable the "mark combined by -1" trick in `encode_with_ra`.
+         * @param in input bitvector
+         * @param out output bitvector
+         */
+        template<typename BitL=bool, typename BitR=bool>
         constexpr void encode_no_ra(const std::vector<BitL> &in, std::vector<BitR> &out) const {
             if (in.size() != n_cols) {
                 throw std::domain_error("Encoder (encode_no_ra) received invalid input length.");
@@ -180,12 +187,12 @@ namespace LDPC4QKD {
 
         /*!
          * Compute syndrome using given rate adaption. Does not change internal rate adaption state!
-         * @tparam Bit e.g. std::uint8_t or bool. Shall not be signed!
+         * @tparam Bit e.g. std::uint8_t or bool. TODO use concept `std::unsigned_integral` when using C++20
          * @param in input array
          * @param out Vector to store syndrome. Will be resized to `output_syndrome_length`
          * @param output_syndrome_length Desired length of syndrome (exception is thrown if not satisfiable)
          */
-        template<std::unsigned_integral Bit>
+        template<typename Bit>
         void encode_with_ra(
                 const std::vector<Bit> &in, std::vector<Bit> &out, std::size_t output_syndrome_length) const {
             if (in.size() != n_cols) {
@@ -230,8 +237,8 @@ namespace LDPC4QKD {
         /// decoder infers rate from the length of the syndrome and changes the internal decoder state to match this rate.
         /// Note: since this function modifies the code (by performing rate adaption), it is NOT CONST.
         /// this change may be somewhat computationally expensive TODO benchmark this
-        template<std::unsigned_integral Bit>
-        // e.g. std::uint8_t or bool
+        /// `Bit` should be e.g. std::uint8_t or bool. TODO use concept `std::unsigned_integral` when using C++20
+        template<typename Bit>
         bool decode_infer_rate(const std::vector<double> &llrs,
                                const std::vector<Bit> &syndrome,
                                std::vector<Bit> &out,
@@ -247,7 +254,7 @@ namespace LDPC4QKD {
         /*!
          * Decode using belief propagation
          *
-         * @tparam Bit: e.g. std::uint8_t or bool
+         * @tparam Bit: e.g. std::uint8_t or bool TODO use concept `std::unsigned_integral` when using C++20
          * @param llrs: Log likelihood ratios representing the received message
          * @param syndrome: Syndrome of the sent message
          * @param out: Buffer to which the function writes its prediction for the sent message.
@@ -257,7 +264,7 @@ namespace LDPC4QKD {
          * @param vsat: Cut-off value for messages.
          * @return true if and only if the syndrome of buffer `out` matches given `syndrome` (i.e., decoder converged).
          */
-        template<std::unsigned_integral Bit>
+        template<typename Bit>
         bool decode_at_current_rate(const std::vector<double> &llrs,
                                     const std::vector<Bit> &syndrome,
                                     std::vector<Bit> &out,
