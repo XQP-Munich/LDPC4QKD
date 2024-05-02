@@ -1,6 +1,8 @@
 //
 // Created by Adomas Baliuka on 18.04.24.
 //
+// See unit tests (`test_encoder_advanced.cpp`) for an example of how to use this.
+// Note: this file uses C++20 features!
 
 #ifndef QKD_POSTPROC_BOB_ENCODER_ADVANCED_HPP
 #define QKD_POSTPROC_BOB_ENCODER_ADVANCED_HPP
@@ -86,7 +88,7 @@ namespace LDPC4QKD {
         }
 
         /// performant but no size check (user has to provide valid std::span)
-        /// key shall not be changed! (TODO enforce somehow...)
+        /// key shall not be changed!
         /// also: inputs/outputs have to be contiguous in memory.
         virtual void encode_span(
                 std::span<bit_type const, input_size> key,
@@ -222,7 +224,6 @@ namespace LDPC4QKD {
 /// don't waste your time reading this...
 /// just reduces the number of templates that needs to be specified for the `FixedSizeEncoderQC<...>` constructor
     template<std::size_t M, std::size_t expansion_factor>
-    // other values are inferred
     consteval auto helper_create_FixedSizeEncoderQC(auto colptr, auto row_idx, auto values) {
         using bit_type = std::uint8_t;
         constexpr auto num_nz = values.size();
@@ -234,7 +235,7 @@ namespace LDPC4QKD {
         return FixedSizeEncoderQC_inst{colptr, row_idx, values};
     }
 
-
+    // TODO rename
     constexpr auto encoder1 = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC::M, AutogenLDPC_QC::expansion_factor>(
             AutogenLDPC_QC::colptr, AutogenLDPC_QC::row_idx, AutogenLDPC_QC::values);

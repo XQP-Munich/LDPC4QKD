@@ -4,6 +4,8 @@
 // The decoder can also encode and has a much cleaner interface.
 // Basically, this file just implements matrix-vector multiplication in compressed sparse column (CSC) storage format.
 //
+// For a more user-friendly version using storage of QC-exponents directly, see `encoder_advanced.hpp`.
+// TODO This file will be deprecated and removed in a future version.
 
 #ifndef LDPC4QKD_ENCODER_HPP
 #define LDPC4QKD_ENCODER_HPP

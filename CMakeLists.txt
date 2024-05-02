@@ -36,9 +36,10 @@ if (LDPC4QKD_HEADER_ONLY)
 
     add_library(LDPC4QKD INTERFACE
             src/rate_adaptive_code.hpp  # contains decoder and encoder. Does not need any other files to work.
-
+            # TODO add `encoder_advanced` and require C++20
+            # encoder_advanced.hpp # REQUIRES C++20!!! advanced encoder (QC-enabled and constexpr objects). Handles storage.
             src/encoder.hpp # contains only minimal encoder that needs static storage of the LDPC matrix
-            src/read_ldpc_file_formats.hpp # helper methods to generate static storage (not needed to use encoder/decoder class).
+            src/read_ldpc_file_formats.hpp # helper methods (not needed to use `rate_adaptive_code.hpp`).
     )
 
     target_compile_features(LDPC4QKD INTERFACE cxx_std_17)
@@ -95,9 +96,9 @@ else (LDPC4QKD_HEADER_ONLY)
     include(CompilerWarnings)
     set_project_warnings(compiler_warnings)
 
-    # ----------------------------------------------------------------------------------------------------------------------
-    # ---------------------------------------------------- MISCELLANEOUS ---------------------------------------------------
-    # ----------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    # ---------------------------------------------------- MISCELLANEOUS -----------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     # This will allow us to print a feature summary.
     # https://cmake.org/cmake/help/v3.11/module/FeatureSummary.html
@@ -130,9 +131,9 @@ else (LDPC4QKD_HEADER_ONLY)
         message(WARNING "Using ccache to speed up the build is not possible.")
     endif (CCACHE_FOUND)
 
-    # ----------------------------------------------------------------------------------------------------------------------
-    # ----------------------------------------------- INCLUDE SUBDIRECTORIES -----------------------------------------------
-    # ----------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------- INCLUDE SUBDIRECTORIES -------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     add_subdirectory(src)
 

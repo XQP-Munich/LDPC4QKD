@@ -1,17 +1,29 @@
+//
+// Created by Adomas Baliuka on 02.05.24.
+//
+
+// Google Test framework
+#include <gtest/gtest.h>
+#include "helpers_for_testing.hpp"
+
+// Standard library
+#include <iostream>
+
+// To be tested
 #include "encoder_advanced.hpp"
 
 using namespace LDPC4QKD;
 
-int main(int argc, char **) {
+TEST(test_encoder_advanced, basic_example) {
     std::cout << "hello\n";
-    auto seed = argc; // seed for PRNG
+    unsigned seed = 42; // seed for PRNG
 
     // If the code choice is done at RUNTIME (will usually be the case, e.g. because QBER is known only at runtime),
     // need to provide containers for input and output with correct sizes, otherwise an exception will be thrown.
     {
         // if we don't know the size of `key` at runtime, it will probably be a `std::vector`, not a `std::array`.
 
-        int code_id = 0;  // Not `constexpr`, let's say we only know this value at runtime!
+        std::size_t code_id = 0;  // Not `constexpr`, let's say we only know this value at runtime!
 
         std::vector<std::uint8_t> key_vec{};
         key_vec.resize(LDPC4QKD::get_input_size(code_id)); // get size at runtime!
@@ -28,7 +40,7 @@ int main(int argc, char **) {
         // Use the non-generic version of `encode_with`:
         std::cout << "Syndrome of runtime known size " << syndrome_vec.size() << std::endl;
         for (auto v: syndrome_vec) {
-            std::cout << (int) v << ' ';  // print syndrome bits
+            std::cout << static_cast<int>(v)  << ' ';  // print syndrome bits
         }
         std::cout << std::endl;
     }
@@ -57,7 +69,7 @@ int main(int argc, char **) {
 
         std::cout << "Syndrome of compile-time known size " << syndrome.size() << std::endl;
         for (auto v: syndrome) {
-            std::cout << (int) v << ' ';  // print syndrome bits
+            std::cout << static_cast<int>(v) << ' ';  // print syndrome bits
         }
         std::cout << std::endl;
     }
