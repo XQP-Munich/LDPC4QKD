@@ -14,6 +14,22 @@
 
 using namespace LDPC4QKD;
 
+namespace {
+    void noise_bitstring_inplace(auto &src, double err_prob, unsigned int seed = 0) {
+        std::mt19937_64 rng{seed}; // hard-coded seed for testing purposes.
+
+        std::bernoulli_distribution distribution(err_prob);
+
+        for (std::size_t i = 0; i < src.size(); i++) {
+            if (distribution(rng)) {
+                src[i] = !src[i];
+            } else {
+                src[i] = src[i];
+            }
+        }
+    }
+}
+
 TEST(test_encoder_advanced, basic_example) {
     std::cout << "hello\n";
     unsigned seed = 42; // seed for PRNG
@@ -40,7 +56,7 @@ TEST(test_encoder_advanced, basic_example) {
         // Use the non-generic version of `encode_with`:
         std::cout << "Syndrome of runtime known size " << syndrome_vec.size() << std::endl;
         for (auto v: syndrome_vec) {
-            std::cout << static_cast<int>(v)  << ' ';  // print syndrome bits
+            std::cout << static_cast<int>(v) << ' ';  // print syndrome bits
         }
         std::cout << std::endl;
     }

@@ -18,38 +18,24 @@
 
 #include "autogen_ldpc_QC.hpp"
 
-void noise_bitstring_inplace(auto &src, double err_prob, unsigned int seed = 0) {
-    std::mt19937_64 rng{seed}; // hard-coded seed for testing purposes.
-
-    std::bernoulli_distribution distribution(err_prob);
-
-    for (std::size_t i = 0; i < src.size(); i++) {
-        if (distribution(rng)) {
-            src[i] = !src[i];
-        } else {
-            src[i] = src[i];
-        }
-    }
-}
-
-template<std::size_t N>
-constexpr auto bits_needed() {
-    auto n = N;
-    std::size_t number_of_bits{0ul};
-    while (n > 0) {
-        n >>= 1;
-        number_of_bits++;
-    }
-    return number_of_bits;
-}
-
-template<std::size_t N>
-using smallest_type = std::conditional_t<bits_needed<N>() <= 8 * sizeof(std::uint8_t), std::uint8_t,
-        std::conditional_t<bits_needed<N>() <= 8 * sizeof(std::uint16_t), std::uint16_t,
-                std::conditional_t<bits_needed<N>() <= 8 * sizeof(std::uint32_t), std::uint32_t, std::uint64_t>>>;
-
 
 namespace LDPC4QKD {
+    template<std::size_t N>
+    constexpr auto bits_needed() {
+        auto n = N;
+        std::size_t number_of_bits{0ul};
+        while (n > 0) {
+            n >>= 1;
+            number_of_bits++;
+        }
+        return number_of_bits;
+    }
+
+    template<std::size_t N>
+    using smallest_type = std::conditional_t<bits_needed<N>() <= 8 * sizeof(std::uint8_t), std::uint8_t,
+            std::conditional_t<bits_needed<N>() <= 8 * sizeof(std::uint16_t), std::uint16_t,
+                    std::conditional_t<bits_needed<N>() <= 8 * sizeof(std::uint32_t), std::uint32_t, std::uint64_t>>>;
+
 
     template<typename Bit1, typename Bit2>
     constexpr bool xor_as_bools(Bit1 lhs, Bit2 rhs) {
