@@ -15,8 +15,6 @@
 #include <exception>
 #include <stdexcept>
 
-#include "encoder_advanced.hpp"
-
 #ifdef LDPC4QKD_DEBUG_MESSAGES_ENABLED
 
 #include <iostream>
@@ -32,10 +30,15 @@
 
 namespace LDPC4QKD {
 
-    /// compute log-likelihood-ratios for a given keye and channel parameter
+    /*!
+     * compute log-likelihood-ratios for a given keye and channel parameter
+     * @tparam Bit e.g. std::uint8_t or bool
+     * @param bitstring string of bits
+     * @param bsc_channel_parameter bit-flip probability of binary symmetric channel (BSC)
+     * @return log-likelyhoods corresponding to input bitstring
+     */
     template<typename Bit>
-    // e.g. std::uint8_t or bool
-    static std::vector<double> llrs_bsc(const std::vector<Bit> &bitstring, const double bsc_channel_parameter) {
+    std::vector<double> llrs_bsc(const std::vector<Bit> &bitstring, const double bsc_channel_parameter) {
         double vlog = log((1 - bsc_channel_parameter) / bsc_channel_parameter);
         std::vector<double> llrs(bitstring.size());
         for (std::size_t i{}; i < llrs.size(); ++i) {
@@ -73,9 +76,8 @@ namespace LDPC4QKD {
                 : n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
                   mother_pos_varn(compute_mother_pos_varn(colptr, rowIdx)), // computed here and henceforth `const`!
-                  rows_to_combine({}),
-                  n_ra_rows(n_mother_rows) {
-            constexpr std::size_t n_line_combs = 0;
+                  rows_to_combine({}) {
+            constexpr idx_t n_line_combs = 0;
             recompute_pos_vn_cn(n_line_combs);
         }
 
@@ -94,26 +96,25 @@ namespace LDPC4QKD {
          *      Such indices are now removed during `recompute_pos_vn_cn`. Consequentially, node eliminations are allowed.
          *              TODO reconsider this and remove commented-out function `has_var_node_eliminations` below
          *
-         * @param colptr colptr column pointer array for specifying mother parity check matrix.
-         * @param rowIdx rowIdx row index array for specifying mother parity check matrix.
-         * @param rows_to_combine_rate_adapt rows_to_combine_rate_adapt array of marix line indices to be combined for rate adaption
-         * @param initial_row_combs initial_row_combs number of line indices to combine initially
+         * @param colptr column pointer array for specifying mother parity check matrix.
+         * @param rowIdx row index array for specifying mother parity check matrix.
+         * @param rows_to_combine_rate_adapt array of mother-matrix line indices to be combined for rate adaption
+         * @param initial_row_combs number of line indices to combine initially
          */
         RateAdaptiveCode(std::vector<colptr_t> colptr,
                          std::vector<idx_t> rowIdx,
                          std::vector<idx_t> rows_to_combine_rate_adapt,
-                         std::size_t initial_row_combs = 0)
+                         idx_t initial_row_combs = 0)
                 : n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
                   mother_pos_varn(compute_mother_pos_varn(colptr, rowIdx)), // computed here and henceforth `const`!
-                  rows_to_combine(std::move(rows_to_combine_rate_adapt)),
-                  n_ra_rows(n_mother_rows - initial_row_combs / 2) {
+                  rows_to_combine(std::move(rows_to_combine_rate_adapt)) {
             if (rows_to_combine.size() % 2 != 0) {
                 throw std::domain_error("The number of rows to combine for rate adaption "
                                         "(size of argument array) is an odd number (expected even).");
             }
 
-            if (initial_row_combs >= rows_to_combine.size() / 2) {
+            if (initial_row_combs > rows_to_combine.size() / 2) {
                 throw std::domain_error("The number of desired initial row combinations for rate adaption "
                                         "is larger than the given array of lines to combine.");
             }
@@ -128,20 +129,33 @@ namespace LDPC4QKD {
         }
 
         /*!
-         * Create Codec from just an encoder
+         * Constructor for using the code with rate adaption.
+         * The mother parity check matrix is stored in `mother_pos_varn`
+         * The rate adaption is stored as an array of matrix row indices, which are combined for rate adaption.
          *
-         * @param encoder object representing LDPC code.
-         *      The `RateAdaptiveCode` does NOT take ownership of the encoder.
-         *      IMPORTANT! The pointer must remain valid as long as this `RateAdaptiveCode` exists!
+         * @param mother_pos_varn input check nodes to each variable node of the mother matrix
+         * @param rows_to_combine_rate_adapt array of mother-matrix line indices to be combined for rate adaption
+         * @param initial_row_combs number of line indices to combine initially
          */
-        explicit RateAdaptiveCode(ComputablePosVar<idx_t> const &encoder) :
-                n_mother_rows(encoder.get_output_size()),
-                n_cols(encoder.get_input_size()),
-                mother_pos_varn(encoder.get_pos_varn()),
-                rows_to_combine({}),
-                n_ra_rows(n_mother_rows) {
+        RateAdaptiveCode(std::vector<std::vector<idx_t>> mother_pos_varn,
+                         std::vector<idx_t> rows_to_combine_rate_adapt,
+                         idx_t initial_row_combs = 0)
+                : n_mother_rows(mother_pos_varn.size()),
+                  n_cols(compute_n_cols(mother_pos_varn)),
+                  mother_pos_varn(std::move(mother_pos_varn)), // computed here and henceforth `const`!
+                  rows_to_combine(std::move(rows_to_combine_rate_adapt)),
+                  n_ra_rows(n_mother_rows - initial_row_combs) {
+            if (rows_to_combine.size() % 2 != 0) {
+                throw std::domain_error("The number of rows to combine for rate adaption "
+                                        "(size of argument array) is an odd number (expected even).");
+            }
 
-            constexpr std::size_t initial_row_combs = 0;
+            if (initial_row_combs > rows_to_combine.size() / 2) {
+                throw std::domain_error("The number of desired initial row combinations for rate adaption "
+                                        "is larger than the given array of lines to combine.");
+            }
+
+            // compute current `pos_varn` and `pos_checkn` from `mother_pos_varn`
             recompute_pos_vn_cn(initial_row_combs);
         }
 
@@ -356,24 +370,42 @@ namespace LDPC4QKD {
         }
 
         /// ignores rate adaption! Only gives number of rows in the mother matrix.
-        [[nodiscard]] std::size_t get_n_rows_mother_matrix() const {
+        [[nodiscard]] auto get_n_rows_mother_matrix() const {
             return n_mother_rows;
         }
 
         /// Includes rate adaption. Access to internal state!
-        [[nodiscard]] std::size_t get_n_rows_after_rate_adaption() const {
+        [[nodiscard]] auto get_n_rows_after_rate_adaption() const {
             return n_ra_rows;
         }
 
-        [[nodiscard]] std::size_t getNCols() const {
+        [[nodiscard]] auto getNCols() const {
             return n_cols;
         }
 
-        [[nodiscard]] std::size_t get_max_ra_steps() const {
+        [[nodiscard]] auto get_max_ra_steps() const {
             return rows_to_combine.size() / 2;
         }
 
     private:   // -------------------------------------------------------------------------------------- private members
+        template<typename BitL, typename BitR>
+        constexpr static bool xor_as_bools(BitL lhs, BitR rhs) {
+            return (static_cast<bool>(lhs) != static_cast<bool>(rhs));
+        }
+
+        template<typename Idx>
+        static Idx compute_n_cols(std::vector<std::vector<Idx>> mother_pos_varn) {
+            if (mother_pos_varn.empty()) {
+                return 0;
+            } else {
+                Idx result{};
+                for (const auto &v: mother_pos_varn) {
+                    auto current_max = *std::max_element(v.cbegin(), v.cend());
+                    result = std::max(result, current_max);
+                }
+                return result + 1; // add one because indices in `mother_pos_varn` are zero-based.
+            }
+        }
 
         /// compute `mother_pos_varn` from `colptr` and `rowIdx`
         static std::vector<std::vector<idx_t>> compute_mother_pos_varn(
@@ -386,7 +418,7 @@ namespace LDPC4QKD {
 
             std::vector<std::vector<idx_t>> pos_varn_tmp{n_mother_rows, std::vector<idx_t>{}};
             for (idx_t col = 0; col < n_cols; col++) {
-                for (std::size_t j = colptr[col]; j < colptr[col + 1u]; j++) {
+                for (auto j = colptr[col]; j < colptr[col + 1u]; j++) {
                     pos_varn_tmp[rowIdx[j]].push_back(col);
                 }
             }
@@ -398,7 +430,7 @@ namespace LDPC4QKD {
                                const std::vector<std::vector<double>> &msg_v,
                                const std::vector<Bit> &syndrome) const {
             double msg_part{};
-            std::vector<std::size_t> mc_position(n_cols);
+            std::vector<idx_t> mc_position(n_cols);
 
             for (std::size_t m{}; m < n_ra_rows; ++m) {
                 // product of incoming messages
@@ -436,7 +468,7 @@ namespace LDPC4QKD {
         void var_node_update(std::vector<std::vector<double>> &msg_v,
                              const std::vector<std::vector<double>> &msg_c,
                              const std::vector<double> &llrs) const {
-            std::vector<std::size_t> mv_position(n_cols);
+            std::vector<idx_t> mv_position(n_cols);
 
             for (std::size_t m{}; m < llrs.size(); ++m) {
                 const double mv_sum = std::accumulate(msg_c[m].begin(), msg_c[m].end(), llrs[m]);
@@ -505,7 +537,7 @@ namespace LDPC4QKD {
                     std::vector<std::vector<idx_t>> pos_varn_nora{mother_pos_varn};
 
                     // put results of combined lines at the back of the new LDPC code
-                    const std::size_t start_of_ra_part = n_mother_rows - 2 * n_line_combs;
+                    const auto start_of_ra_part = n_mother_rows - 2 * n_line_combs;
 
                     for (std::size_t i{}; i < n_line_combs; ++i) {
                         auto &curr_varn_vec = pos_varn[start_of_ra_part + i];
@@ -553,10 +585,11 @@ namespace LDPC4QKD {
         }
 
         // ---------------------------------------------------------------------------------------------- private fields
-
+        // TODO consider making these of type `idx_t`.
         const std::size_t n_mother_rows;  // const because it's not possible to change the mother matrix
         const std::size_t n_cols;  // const because it's not possible to change the mother matrix
-        /// Input check nodes to each variable node of the mother matrix.
+
+        /// Input variable nodes to each check node of the mother matrix.
         /// Rate adaption always starts from here.
         /// Can be obtained from
         /// (1) arrays `colptr` and `row_idx`, which represent the binary LDPC matrix in CSC format
