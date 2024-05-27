@@ -96,6 +96,11 @@ namespace LDPC4QKD {
             }
         }
 
+        /// Note: vector<bool> cannot be supported in the interface specified here.
+        /// This is due to the template specialization for vector<bool>,
+        /// which does not allow direct conversion to span, as in `std::span<bool, N>{vec}`.
+        void encode(std::vector<bool> const &key, std::vector<bool> &syndrome) const = delete;
+
         // Have to write explicitly for some gcc versions. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
         constexpr ~FixedSizeEncoder() override = default;
     };
@@ -128,7 +133,6 @@ namespace LDPC4QKD {
         // Have to write explicitly for some gcc versions. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
         constexpr ~FixedSizeEncoderQC() override = default;
 
-
         using idx_t = smallest_type<FixedSizeEncoderQC::inputSize>;
 
         [[nodiscard]] std::vector<std::vector<idx_t>> get_pos_varn() const override {
@@ -155,6 +159,57 @@ namespace LDPC4QKD {
             return pos_varn;
         }
 
+        /// Avoiding runtime length-check from the types.
+        /// TODO this template overload does not match things like `std::array`, although it would be nice!
+        void encode_qc(
+                std::span<bit_type const, N * expansion_factor> in,
+                std::span<bit_type, M * expansion_factor> out) const {
+
+            static_assert(N >= M, "The syndrome should be shorter than the input bitstring.");
+
+            for (std::size_t col = 0; col < in.size(); col++) {
+                auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
+                    auto shiftVal = values[j];
+                    auto QCrow = row_idx[j];  // row index into matrix of exponents
+                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
+                    // arising from the current sub-block.
+                    // The sub-block is determined by the QC-exponent `shiftVal`.
+                    // Add the base row-index of the current sub-block to the shift
+                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+
+                    out[outIdx] = xor_as_bools(out[outIdx], in[col]);
+                }
+            }
+        }
+
+        /// General overload, which does not assume spans, but does a **runtime length check!**.
+        void encode_qc(auto const &in, auto &out) const {
+            if (std::size(in) != N * expansion_factor || std::size(out) != M * expansion_factor) {
+                std::stringstream s;
+                s << "LDPC encoder: incorrect sizes of intput / output arrays\n"
+                  << "RECEIVED: key.size() = " << in.size() << ". " << "syndrome.size() = " << out.size() << ".\n"
+                  << "EXPECTED: key.size() = " << N * expansion_factor << ". "
+                  << "syndrome.size() = " << M * expansion_factor << ".\n";
+                throw std::out_of_range(s.str());
+            }
+
+            for (std::size_t col = 0; col < in.size(); col++) {
+                auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
+                    auto shiftVal = values[j];
+                    auto QCrow = row_idx[j];  // row index into matrix of exponents
+                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
+                    // arising from the current sub-block.
+                    // The sub-block is determined by the QC-exponent `shiftVal`.
+                    // Add the base row-index of the current sub-block to the shift
+                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+
+                    out[outIdx] = xor_as_bools(out[outIdx], in[col]);
+                }
+            }
+        }
+
     private:
         /// checks that a constexpr QC-encoder will never access input or output arrays outside bounds.
         /// I.e., for the input the size is `expansion_factor*N` while output size is `expansion_factor*M`.
@@ -177,28 +232,6 @@ namespace LDPC4QKD {
                 }
             }
             return true;
-        }
-
-        void encode_qc(
-                std::span<bit_type const, N * expansion_factor> in,
-                std::span<bit_type, M * expansion_factor> out) const {
-
-            static_assert(N >= M, "The syndrome should be shorter than the input bitstring.");
-
-            for (std::size_t col = 0; col < in.size(); col++) {
-                auto QCcol = col / expansion_factor;  // column index into matrix of exponents
-                for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
-                    auto shiftVal = values[j];
-                    auto QCrow = row_idx[j];  // row index into matrix of exponents
-                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
-                    // arising from the current sub-block.
-                    // The sub-block is determined by the QC-exponent `shiftVal`.
-                    // Add the base row-index of the current sub-block to the shift
-                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
-
-                    out[outIdx] = xor_as_bools(out[outIdx], in[col]);
-                }
-            }
         }
 
         std::array<coptr_uintx_t, N + 1> colptr;
@@ -262,11 +295,13 @@ namespace LDPC4QKD {
     //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
     //! \param key  Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
     //! \param result  Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
-    //                     Used to store syndrome. Must already be sized correctly for the given code!
+    //!                     Used to store syndrome. Must already be sized correctly for the given code!
     template<std::size_t N = 0>
     void encode_with(std::size_t code_id, auto const &key, auto &result) {
         if (N == code_id) {
-            std::get<N>(all_encoders_tuple).encode(key, result);
+            // if/when `all_encoders_tuple` contains non-QC matrices, this needs to change!
+            // Originally, this was using `encode` instead of `encode_qc` but then it doesn't work with `vector<bool>`
+            std::get<N>(all_encoders_tuple).encode_qc(key, result);
             return;
         }
 
