@@ -90,18 +90,18 @@ TEST(test_encoder_advanced, basic_example_code_choicecomptime) {
     // If the block size and syndrome size are known at compile time, we can use fixed-length buffers (`std::array`)
     // If any of the containers used for key or syndrome has a compile-time known size
     // (e.g. `std::array` or `std::span`), then this method MUST be used!
-    std::array<std::uint8_t, AutogenLDPC_QC::N * AutogenLDPC_QC::expansion_factor> key_arr{};
+    std::array<std::uint8_t, AutogenLDPC_QC_2048x4096_0c809c3::N * AutogenLDPC_QC_2048x4096_0c809c3::expansion_factor> key_arr{};
     noise_bitstring_inplace(key_arr, 0.5, seed);  // create a random key
 
     // allocate a buffer for the syndrome
-    std::array<std::uint8_t, AutogenLDPC_QC::M * AutogenLDPC_QC::expansion_factor> syndrome{};
+    std::array<std::uint8_t, AutogenLDPC_QC_2048x4096_0c809c3::M * AutogenLDPC_QC_2048x4096_0c809c3::expansion_factor> syndrome{};
 
 //    encoder1.encode(key_arr, syndrome);  // this would work. It's just using a concrete encoder object.
 
     // This also works and does the same thing.
     // Use this way when LDPC code choice is known at compile time.
     // That's because `key` and `syndrome` have the correct sizes for `code_id = 0` (which is precisely `encoder1`)
-    constexpr int code_id = 0;  // HAS to be `constexpr`!
+    constexpr int code_id = 3;  // HAS to be `constexpr`!
     LDPC4QKD::encode_with<code_id>(key_arr, syndrome);
 
     // this will not compile because `key` has a compile-time known size.

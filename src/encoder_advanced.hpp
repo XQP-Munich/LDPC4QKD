@@ -254,25 +254,44 @@ namespace LDPC4QKD {
         return FixedSizeEncoderQC_inst{colptr, row_idx, values};
     }
 
-    // TODO rename
-    constexpr auto encoder1 = helper_create_FixedSizeEncoderQC<
-            AutogenLDPC_QC::M, AutogenLDPC_QC::expansion_factor>(
-            AutogenLDPC_QC::colptr, AutogenLDPC_QC::row_idx, AutogenLDPC_QC::values);
+    constexpr auto encoder_2048x6144_4663d91 = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_2048x6144_4663d91::M, AutogenLDPC_QC_2048x6144_4663d91::expansion_factor>(
+            AutogenLDPC_QC_2048x6144_4663d91::colptr, AutogenLDPC_QC_2048x6144_4663d91::row_idx,
+            AutogenLDPC_QC_2048x6144_4663d91::values);
 
-    constexpr auto encoder2 = helper_create_FixedSizeEncoderQC<
-            AutogenLDPC_QC_Rate33_block6k::M, AutogenLDPC_QC_Rate33_block6k::expansion_factor>(
-            AutogenLDPC_QC_Rate33_block6k::colptr, AutogenLDPC_QC_Rate33_block6k::row_idx,
-            AutogenLDPC_QC_Rate33_block6k::values);
+    constexpr auto encoder_8192x24576_71b51c1 = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_8192x24576_71b51c1::M, AutogenLDPC_QC_8192x24576_71b51c1::expansion_factor>(
+            AutogenLDPC_QC_8192x24576_71b51c1::colptr, AutogenLDPC_QC_8192x24576_71b51c1::row_idx,
+            AutogenLDPC_QC_8192x24576_71b51c1::values);
 
-    constexpr auto encoder_1M = helper_create_FixedSizeEncoderQC<
-            AutogenLDPC_QC_1MRhalf::M, AutogenLDPC_QC_1MRhalf::expansion_factor>(
-            AutogenLDPC_QC_1MRhalf::colptr, AutogenLDPC_QC_1MRhalf::row_idx, AutogenLDPC_QC_1MRhalf::values);
+    constexpr auto encoder_524288x1572864_4d78a9f = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_524288x1572864_4d78a9f::M, AutogenLDPC_QC_524288x1572864_4d78a9f::expansion_factor>(
+            AutogenLDPC_QC_524288x1572864_4d78a9f::colptr, AutogenLDPC_QC_524288x1572864_4d78a9f::row_idx,
+            AutogenLDPC_QC_524288x1572864_4d78a9f::values);
 
+    constexpr auto encoder_2048x4096_0c809c3 = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_2048x4096_0c809c3::M, AutogenLDPC_QC_2048x4096_0c809c3::expansion_factor>(
+            AutogenLDPC_QC_2048x4096_0c809c3::colptr, AutogenLDPC_QC_2048x4096_0c809c3::row_idx,
+            AutogenLDPC_QC_2048x4096_0c809c3::values);
 
-// TODO add all other codes
+    constexpr auto encoder_8192x16384_3fcad37 = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_8192x16384_3fcad37::M, AutogenLDPC_QC_8192x16384_3fcad37::expansion_factor>(
+            AutogenLDPC_QC_8192x16384_3fcad37::colptr, AutogenLDPC_QC_8192x16384_3fcad37::row_idx,
+            AutogenLDPC_QC_8192x16384_3fcad37::values);
 
+    constexpr auto encoder_524288x1048576_9b50f98 = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_524288x1048576_9b50f98::M, AutogenLDPC_QC_524288x1048576_9b50f98::expansion_factor>(
+            AutogenLDPC_QC_524288x1048576_9b50f98::colptr, AutogenLDPC_QC_524288x1048576_9b50f98::row_idx,
+            AutogenLDPC_QC_524288x1048576_9b50f98::values);
 
-    constexpr std::tuple all_encoders_tuple{encoder1, encoder2, encoder_1M};
+    constexpr std::tuple all_encoders_tuple{
+            encoder_2048x6144_4663d91,
+            encoder_8192x24576_71b51c1,
+            encoder_524288x1572864_4d78a9f,
+            encoder_2048x4096_0c809c3,
+            encoder_8192x16384_3fcad37,
+            encoder_524288x1048576_9b50f98
+    };
 
     //! Encodes the `key` using the LDPC code specified by the `code_id`. The result is the syndrome.
     //! Note: if `code_id` known at compile time, use templated version instead!
@@ -316,8 +335,8 @@ namespace LDPC4QKD {
     //!
     //! NOTE: Containers will be converted to a `std::span` internally.
     //! Sizes of `key` and `result` are checked at runtime and must match exactly, otherwise an exception is thrown.
-    //! For containers with compile-time known sizes, using an incorrect size may also give a COMPILE ERROR.
-    //! Use `FixedSizeEncoder::outputSize` and `FixedSizeEncoder::inputSize` to allocate correctly sized arrays
+    //! For containers with compile-time known sizes, using an incorrect **size may also give a COMPILE ERROR**.
+    //! Use `get_input_size` and `get_input_size` to allocate correctly sized arrays
     //! (to avoid this check, use `std::span` and make sure manually that you own enough memory!).
     //!
     //! \tparam code_id integer index into tuple of codes. Make sure both sides agree on these!

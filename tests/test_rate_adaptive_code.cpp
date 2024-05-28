@@ -318,7 +318,7 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, equals_not_equals_operators) {
 
 TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
     std::vector<std::uint16_t> rows_to_combine{}; // not used here!
-    RateAdaptiveCode<std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+    RateAdaptiveCode<std::uint16_t> H1(encoder_2048x6144_4663d91.get_pos_varn(), rows_to_combine);
 
     auto H2 = get_code_big_wra();
 
@@ -346,7 +346,7 @@ TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
 
 TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_equals) {
     std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
-    RateAdaptiveCode<std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+    RateAdaptiveCode<std::uint16_t> H1(encoder_2048x6144_4663d91.get_pos_varn(), rows_to_combine);
 
     // TODO add random rate adaption for comparison
     auto H2 = get_code_big_wra();
