@@ -318,7 +318,7 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, equals_not_equals_operators) {
 
 TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
     std::vector<std::uint16_t> rows_to_combine{}; // not used here!
-    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+    RateAdaptiveCode<std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
 
     auto H2 = get_code_big_wra();
 
@@ -336,7 +336,6 @@ TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
         std::vector<std::uint8_t> in = get_bitstring<std::uint8_t>(H2.getNCols());
         std::vector<std::uint8_t> out(H2.get_n_rows_mother_matrix());
 
-        write_vector_to_csv("tmp_randkey_6144.csv", in, true);
         std::cout << "input hash: " << hash_vector(in) << std::endl;
         H2.encode_no_ra(in, out);
         std::cout << "output hash: " << hash_vector(out) << std::endl;
@@ -347,7 +346,7 @@ TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
 
 TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_equals) {
     std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
-    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+    RateAdaptiveCode<std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
 
     // TODO add random rate adaption for comparison
     auto H2 = get_code_big_wra();

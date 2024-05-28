@@ -60,20 +60,19 @@ namespace LDPC4QKD::CodeSimulationHelpers {
      * @return Rate adaptive code
      */
     template<typename Bit=bool,
-            typename colptr_t=std::uint32_t,
             typename idx_t=std::uint32_t>
-    LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t> load_ldpc_from_cscmat(
+    LDPC4QKD::RateAdaptiveCode< idx_t> load_ldpc_from_cscmat(
             const std::string &cscmat_file_path, const std::string &rate_adaption_file_path=""
     ) {
-        auto pair = LDPC4QKD::read_matrix_from_cscmat<colptr_t, idx_t>(cscmat_file_path);
+        auto pair = LDPC4QKD::read_matrix_from_cscmat<idx_t>(cscmat_file_path);
         auto colptr = pair.first;
         auto row_idx = pair.second;
 
         if(rate_adaption_file_path.empty()) {
-            return LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t>(colptr, row_idx);
+            return LDPC4QKD::RateAdaptiveCode<idx_t>(colptr, row_idx);
         } else {
             std::vector<idx_t> rows_to_combine = read_rate_adaption_from_csv<idx_t>(rate_adaption_file_path);
-            return LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t>(colptr, row_idx, rows_to_combine);
+            return LDPC4QKD::RateAdaptiveCode<idx_t>(colptr, row_idx, rows_to_combine);
         }
     }
 
@@ -94,7 +93,7 @@ namespace LDPC4QKD::CodeSimulationHelpers {
     template<typename Bit=bool,
             typename colptr_t=std::uint32_t,
             typename idx_t=std::uint32_t>
-    LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t> load_ldpc_from_json(
+    LDPC4QKD::RateAdaptiveCode<idx_t> load_ldpc_from_json(
             const std::string &json_file_path, const std::string &rate_adaption_file_path = ""
     ) {
         try {
@@ -113,10 +112,10 @@ namespace LDPC4QKD::CodeSimulationHelpers {
                 std::vector<idx_t> rowval = data["rowval"];
 
                 if (rate_adaption_file_path.empty()) {
-                    return LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t>(colptr, rowval);
+                    return LDPC4QKD::RateAdaptiveCode<idx_t>(colptr, rowval);
                 } else {
                     std::vector<idx_t> rows_to_combine = read_rate_adaption_from_csv<idx_t>(rate_adaption_file_path);
-                    return LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t>(colptr, rowval, rows_to_combine);
+                    return LDPC4QKD::RateAdaptiveCode<idx_t>(colptr, rowval, rows_to_combine);
                 }
             } else if (data["format"] == "COMPRESSED_SPARSE_COLUMN") { // quasi-cyclic exponents stored
 //                std::vector<std::uint64_t> colptr = data["colptr"];
@@ -155,7 +154,7 @@ namespace LDPC4QKD::CodeSimulationHelpers {
     template<typename Bit=bool,
             typename colptr_t=std::uint32_t,
             typename idx_t=std::uint32_t>
-    LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t> load_ldpc(
+    LDPC4QKD::RateAdaptiveCode<idx_t> load_ldpc(
             const std::string &file_path, const std::string &rate_adaption_file_path=""
     ) {
         std::filesystem::path filePath = file_path;

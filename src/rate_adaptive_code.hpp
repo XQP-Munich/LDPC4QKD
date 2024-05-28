@@ -55,25 +55,24 @@ namespace LDPC4QKD {
      *
      * (TODO use concept `std::unsigned_integral` when using C++20)
      *
-     * @tparam colptr_t unsigned integert type that fits ("number of non-zero matrix entries" + 1)
      * @tparam idx_t unsigned integer type fitting number of columns N (thus also number of rows M)
      */
-    template<typename colptr_t=std::uint32_t,
-            typename idx_t=std::uint16_t>
+    template<typename idx_t=std::uint16_t>
     class RateAdaptiveCode {
     public:
         // ------------------------------------------------------------------------------------------------ type aliases
         using MatrixIndex = idx_t;
-        using ColumnPointer = colptr_t;
 
         // ------------------------------------------------------------------------------------------------ constructors
         /*!
          * Constructor for using the code without rate adaption.
          * The parity check matrix matrix is stored using Compressed Sparse Column (CSC) format.
          *
+         * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
          * @param colptr column pointer array for specifying mother parity check matrix.
          * @param rowIdx row index array for specifying mother parity check matrix.
          */
+        template <typename colptr_t>
         RateAdaptiveCode(const std::vector<colptr_t> &colptr, const std::vector<idx_t> &rowIdx)
                 : n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
@@ -96,13 +95,15 @@ namespace LDPC4QKD {
          *
          * note: there used to be a parameter `do_elimination_check` to check for repeated node indices after rate adaption.
          *      Such indices are now removed during `recompute_pos_vn_cn`. Consequentially, node eliminations are allowed.
-         *              TODO reconsider this and remove commented-out function `has_var_node_eliminations` below
+         *              TODO make sure this is correct
          *
+         * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
          * @param colptr column pointer array for specifying mother parity check matrix.
          * @param rowIdx row index array for specifying mother parity check matrix.
          * @param rows_to_combine_rate_adapt array of mother-matrix line indices to be combined for rate adaption
          * @param initial_row_combs number of line indices to combine initially
          */
+        template <typename colptr_t>
         RateAdaptiveCode(std::vector<colptr_t> colptr,
                          std::vector<idx_t> rowIdx,
                          std::vector<idx_t> rows_to_combine_rate_adapt,
@@ -123,11 +124,6 @@ namespace LDPC4QKD {
 
             // compute current `pos_varn` and `pos_checkn` from `mother_pos_varn`
             recompute_pos_vn_cn(initial_row_combs);
-
-//            if (do_elimination_check && has_var_node_eliminations()) {
-//                throw std::domain_error("Given rate adaption implies variable node eliminations. "
-//                                        "Rate adaption with eliminations degrades performance. Do not use!");
-//            }
         }
 
         /*!
@@ -414,17 +410,27 @@ namespace LDPC4QKD {
             }
         }
 
-        /// compute `mother_pos_varn` from `colptr` and `rowIdx`
+        /*!
+         * compute `mother_pos_varn` from `colptr` and `rowIdx` for a given LDPC matrix stored in compressed sparse column
+         * format. "Values" array is omitted because all values are assumed to be 1 (binary LDPC matrix).
+         *
+         * @tparam idx_t unsigned integer type fitting number of columns N (thus also number of rows M)
+         * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
+         * @param colptr column pointer array for specifying mother parity check matrix.
+         * @param rowIdx row index array for specifying mother parity check matrix.
+         * @return Input variable nodes to each check node (of the Tanner graph)
+         */
+        template <typename colptr_t>
         static std::vector<std::vector<idx_t>> compute_mother_pos_varn(
                 const std::vector<colptr_t> &colptr,
                 const std::vector<idx_t> &rowIdx) {
             // number of columns in full matrix represented by given compressed sparse column (CSC) storage
-            const auto n_cols = colptr.size() - 1;
+            const auto nCols = colptr.size() - 1;
             // number of rows in full matrix represented by given compressed sparse column (CSC) storage
-            const auto n_mother_rows = *std::max_element(rowIdx.begin(), rowIdx.end()) + 1u;
+            const auto nMotherRows = *std::max_element(rowIdx.begin(), rowIdx.end()) + 1u;
 
-            std::vector<std::vector<idx_t>> pos_varn_tmp{n_mother_rows, std::vector<idx_t>{}};
-            for (idx_t col = 0; col < n_cols; col++) {
+            std::vector<std::vector<idx_t>> pos_varn_tmp{nMotherRows, std::vector<idx_t>{}};
+            for (idx_t col = 0; col < nCols; col++) {
                 for (auto j = colptr[col]; j < colptr[col + 1u]; j++) {
                     pos_varn_tmp[rowIdx[j]].push_back(col);
                 }

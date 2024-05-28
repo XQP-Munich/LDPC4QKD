@@ -334,7 +334,7 @@ namespace LDPC4QKD {
     //! \tparam N internal implementation detail, need not use.
     //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
     template<std::size_t N = 0>
-    std::size_t get_input_size(std::size_t code_id) {
+    constexpr std::size_t get_input_size(std::size_t code_id) {
         if (N == code_id) {
             return std::get<N>(all_encoders_tuple).get_input_size();
         }
@@ -350,7 +350,7 @@ namespace LDPC4QKD {
     //! \tparam N internal implementation detail, need not use.
     //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
     template<std::size_t N = 0>
-    std::size_t get_output_size(std::size_t code_id) {
+    constexpr std::size_t get_output_size(std::size_t code_id) {
         if (N == code_id) {
             return std::get<N>(all_encoders_tuple).get_output_size();
         }
