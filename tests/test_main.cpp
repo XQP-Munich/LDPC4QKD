@@ -23,21 +23,6 @@ TEST(TestUtils, valgrind_check) {
 
 
 TEST(TestUtils, hash_vector) {
-    // test correspondence of the hash function (only used for testing equality of data between
-    // this C++ code and Luhn/Freiwang Python code, no proven hash properties)
-    /* Comparison done using:
-    ```python
-    # Python 3, numpy v1.19.0
-    def hash_vector(vec):
-        assert len(vec.shape) == 1, "only accepts 1d vectors"
-        seed = np.uint32(vec.shape[0])
-        for i in vec:
-            seed ^= np.uint32(i) + np.uint32(0x9e3779b9) + (seed << np.uint32(6)) + (seed >> np.uint32(2))
-        return seed
-
-     hash_vector(np.array([0,1,2,3,4])) // returns 3632105860
-     ```
-     */
     std::vector<std::uint32_t> test_vec{0, 1, 2, 3, 4};
     EXPECT_EQ(hash_vector(test_vec), 3632105860);
 }
