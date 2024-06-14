@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <random>
 
-#include "autogen_ldpc_matrix_csc.hpp"
+#include "fortest_autogen_ldpc_matrix_csc.hpp"
 
 using namespace AutogenLDPC;
 

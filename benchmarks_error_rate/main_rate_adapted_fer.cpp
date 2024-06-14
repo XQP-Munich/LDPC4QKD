@@ -20,7 +20,7 @@ constexpr auto help_text =
 #include "external/CmdParser-91aaa61e/cmdparser.hpp"
 
 // Project scope
-#include "rate_adaptive_code.hpp"
+#include "LDPC4QKD/rate_adaptive_code.hpp"
 #include "code_simulation_helpers.hpp"
 
 using namespace LDPC4QKD::CodeSimulationHelpers;

@@ -12,7 +12,10 @@
 #include <chrono>
 
 // Project scope
-#include "encoder.hpp"
+#include "fortest_autogen_ldpc_matrix_csc.hpp"
+#include "fortest_autogen_rate_adaption.hpp"
+
+#include "LDPC4QKD/encoder.hpp"
 
 
 using namespace LDPC4QKD;

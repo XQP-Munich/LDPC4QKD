@@ -6,7 +6,7 @@
 // example showing how to use the LDPC belief-propagation decoder.
 
 // Project scope
-#include "rate_adaptive_code.hpp"
+#include "LDPC4QKD/rate_adaptive_code.hpp"
 
 
 /// Get a LDPC matrix

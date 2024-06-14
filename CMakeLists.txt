@@ -32,28 +32,10 @@ option(LDPC4QKD_HEADER_ONLY
         This only creates a CMake target that ONLY points to where the header files are!"
         OFF
 )
-if (LDPC4QKD_HEADER_ONLY)
 
-    add_library(LDPC4QKD INTERFACE
-            src/rate_adaptive_code.hpp  # contains decoder and encoder. Does not need any other files to work.
-            # TODO add `encoder_advanced` and require C++20
-            # encoder_advanced.hpp # REQUIRES C++20!!! advanced encoder (QC-enabled and constexpr objects). Handles storage.
-            src/encoder.hpp # contains only minimal encoder that needs static storage of the LDPC matrix
-            src/read_ldpc_file_formats.hpp # helper methods (not needed to use `rate_adaptive_code.hpp`).
-    )
+add_subdirectory(src)  # This contains header only library!
 
-    target_compile_features(LDPC4QKD INTERFACE cxx_std_17)
-
-    target_include_directories(LDPC4QKD
-            INTERFACE
-            ${CMAKE_CURRENT_LIST_DIR}/src
-    )
-
-    # Create alias with "namespace". This is the target to be used to link to the library in higher level projects.
-    add_library(LDPC4QKD::LDPC4QKD ALIAS LDPC4QKD)
-
-else (LDPC4QKD_HEADER_ONLY)
-
+if (NOT LDPC4QKD_HEADER_ONLY)
     option(LDPC4QKD_DEBUG_MESSAGES_ENABLED
             "Enables the output debug messages (compile definitions using macros in the C++ code)
             "
@@ -104,11 +86,9 @@ else (LDPC4QKD_HEADER_ONLY)
     # https://cmake.org/cmake/help/v3.11/module/FeatureSummary.html
     include(FeatureSummary)
 
-
     # Required to enable testing for link-time optimization.
     # https://cmake.org/cmake/help/v3.11/module/CheckIPOSupported.html
     include(CheckIPOSupported)
-
 
     # Use link-time optimization if allowed.
     check_ipo_supported(RESULT ipo_supported)
@@ -118,7 +98,6 @@ else (LDPC4QKD_HEADER_ONLY)
     else ()
         message(WARNING "Link-time optimization is not supported.")
     endif ()
-
 
     # We attempt to use ccache to speed up the build.
     find_program(CCACHE_FOUND "ccache")
@@ -131,18 +110,11 @@ else (LDPC4QKD_HEADER_ONLY)
         message(WARNING "Using ccache to speed up the build is not possible.")
     endif (CCACHE_FOUND)
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # ----------------------------------------------- INCLUDE SUBDIRECTORIES -------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    add_subdirectory(src)
-
     add_subdirectory(examples)
 
     if (LDPC4QKD_BUILD_ERROR_RATE_BENCHMARKS)
         add_subdirectory(benchmarks_error_rate)
     endif (LDPC4QKD_BUILD_ERROR_RATE_BENCHMARKS)
-
 
     if (LDPC4QKD_BUILD_UNIT_TESTS)
         add_subdirectory(tests)
@@ -150,11 +122,10 @@ else (LDPC4QKD_HEADER_ONLY)
         message(STATUS "Unit tests are not built, as specified by user.")
     endif (LDPC4QKD_BUILD_UNIT_TESTS)
 
-
     if (BUILD_RUNTIME_BENCHMARKS)
         add_subdirectory(benchmarks_runtime)
     else (BUILD_RUNTIME_BENCHMARKS)
         message(STATUS "Runtime performance benchmarks are not built, as specified by user.")
     endif (BUILD_RUNTIME_BENCHMARKS)
 
-endif (LDPC4QKD_HEADER_ONLY)
+endif (NOT LDPC4QKD_HEADER_ONLY)

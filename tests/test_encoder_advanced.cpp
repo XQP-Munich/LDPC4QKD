@@ -10,7 +10,7 @@
 #include <iostream>
 
 // To be tested
-#include "encoder_advanced.hpp"
+#include "LDPC4QKD/encoder_advanced.hpp"
 
 using namespace LDPC4QKD;
 
@@ -102,7 +102,7 @@ TEST(test_encoder_advanced, basic_example_code_choicecomptime) {
     // Use this way when LDPC code choice is known at compile time.
     // That's because `key` and `syndrome` have the correct sizes for `code_id = 0` (which is precisely `encoder1`)
     constexpr int code_id = 3;  // HAS to be `constexpr`!
-    LDPC4QKD::encode_with<code_id>(key_arr, syndrome);
+    LDPC4QKD::encode_with_static<code_id>(key_arr, syndrome);
 
     // this will not compile because `key` has a compile-time known size.
     // The template instantiation will try to compile against **each** available code (although only one is used).

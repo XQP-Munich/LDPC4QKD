@@ -9,8 +9,8 @@
 
 #include "external/json-6af826d/json.hpp"  // external json parser library
 
-#include "read_ldpc_file_formats.hpp"
-#include "src/rate_adaptive_code.hpp"
+#include "LDPC4QKD/read_ldpc_file_formats.hpp"
+#include "LDPC4QKD/rate_adaptive_code.hpp"
 
 
 namespace LDPC4QKD::CodeSimulationHelpers {

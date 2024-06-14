@@ -344,7 +344,7 @@ namespace LDPC4QKD {
     //! \param result Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
     //!                 Used to store syndrome. Must already be sized correctly for the given code!
     template<std::size_t code_id>
-    void encode_with(auto const &key, auto &result) {
+    void encode_with_static(auto const &key, auto &result) {
         std::get<code_id>(all_encoders_tuple).encode(key, result);
     }
 

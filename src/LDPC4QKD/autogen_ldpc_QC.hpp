@@ -2,14 +2,13 @@
 // Created by Adomas Baliuka on 18.04.24.
 //
 // This is an automatically generated file.
-// A sparse LDPC matrix (containing only zeros and ones) is saved in compressed sparse column (CSC) format.
-// Since the matrix (and LDPC code) is known at compile time, there is no need to save it separately in a file.
+// Several sparse LDPC matrices (containing only zeros and ones) are saved in compressed sparse column (CSC) format.
+// Since matrices are known at compile time, they can be embedded into the executable.
 // This significantly blows up the executable size (the memory would still have to be used when saving the matrix).
-// The method seems to be reasonably fast (on a standard laptop).
 
 
-#ifndef QKD_POSTPROC_BOB_AUTOGEN_LDPC_QC_HPP
-#define QKD_POSTPROC_BOB_AUTOGEN_LDPC_QC_HPP
+#ifndef LDPC4QKD_AUTOGEN_LDPC_QC_HPP
+#define LDPC4QKD_AUTOGEN_LDPC_QC_HPP
 
 #include <cstdint>
 #include <array>
@@ -719,4 +718,4 @@ namespace AutogenLDPC_QC_524288x1048576_9b50f98 {
 } // namespace AutogenLDPC_QC_524288x1048576_9b50f98
 
 
-#endif //QKD_POSTPROC_BOB_AUTOGEN_LDPC_QC_HPP
+#endif //LDPC4QKD_AUTOGEN_LDPC_QC_HPP

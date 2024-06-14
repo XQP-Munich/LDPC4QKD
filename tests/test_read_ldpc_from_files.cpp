@@ -10,7 +10,7 @@
 #include <iostream>
 
 // To be tested
-#include "read_ldpc_file_formats.hpp"
+#include "LDPC4QKD/read_ldpc_file_formats.hpp"
 #include "fortest_autogen_ldpc_matrix_csc.hpp"
 #include "benchmarks_error_rate/code_simulation_helpers.hpp"
 
