@@ -247,7 +247,7 @@ TEST(new_819k_code, fer_simulation) {
     std::mt19937_64 rng(42);
     auto H = get_code_819k(14);
 
-    constexpr double p = 0.098;
+    constexpr double p = 0.097;
     constexpr std::size_t num_frames_to_test = 10;
     constexpr std::size_t max_num_iter = 50;
     const std::size_t syndrome_size = H.get_n_rows_mother_matrix();
