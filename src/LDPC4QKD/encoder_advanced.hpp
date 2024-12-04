@@ -1,8 +1,8 @@
 //
-// Created by Adomas Baliuka on 18.04.24.
+// Created by Adomas Baliuka on 03.12.24.
 //
-// See unit tests (`test_encoder_advanced.cpp`) for an example of how to use this.
-// Note: this file uses C++20 features!
+// NOTE TODO: THIS FILE SHOULD BE REMOVED once the new codes are published on GitHub
+//          right now this is somewhat in conflict with the LDPC4QKD submodule!
 
 #ifndef QKD_POSTPROC_BOB_ENCODER_ADVANCED_HPP
 #define QKD_POSTPROC_BOB_ENCODER_ADVANCED_HPP
@@ -16,8 +16,18 @@
 #include <concepts>
 #include <sstream>
 
-#include "autogen_ldpc_QC.hpp"
+#include "LDPC4QKD/rate_adaptive_code.hpp"
 
+// automatically generated LDPC codes and rate adaption arrays
+#include "LDPC4QKD/autogen_ldpc_QC.hpp"
+#include "LDPC4QKD/autogen/all_819k_codes.qccsc.hpp"
+
+#include "LDPC4QKD/autogen/rate_adaption_2x4_block_4096.hpp"
+#include "LDPC4QKD/autogen/rate_adaption_2x4_block_16384.hpp"
+#include "LDPC4QKD/autogen/rate_adaption_2x4_block_1048576.hpp"
+#include "LDPC4QKD/autogen/rate_adaption_2x6_block_6144.hpp"
+#include "LDPC4QKD/autogen/rate_adaption_2x6_block_24576.hpp"
+#include "LDPC4QKD/autogen/rate_adaption_2x6_block_1572864.hpp"
 
 namespace LDPC4QKD {
     template<std::size_t N>
@@ -254,44 +264,241 @@ namespace LDPC4QKD {
         return FixedSizeEncoderQC_inst{colptr, row_idx, values};
     }
 
-    constexpr auto encoder_2048x6144_4663d91 = helper_create_FixedSizeEncoderQC<
+    // Protograph based codes:
+    constexpr inline auto encoder_2048x6144_4663d91 = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_2048x6144_4663d91::M, AutogenLDPC_QC_2048x6144_4663d91::expansion_factor>(
             AutogenLDPC_QC_2048x6144_4663d91::colptr, AutogenLDPC_QC_2048x6144_4663d91::row_idx,
             AutogenLDPC_QC_2048x6144_4663d91::values);
 
-    constexpr auto encoder_8192x24576_71b51c1 = helper_create_FixedSizeEncoderQC<
+    constexpr inline auto encoder_8192x24576_71b51c1 = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_8192x24576_71b51c1::M, AutogenLDPC_QC_8192x24576_71b51c1::expansion_factor>(
             AutogenLDPC_QC_8192x24576_71b51c1::colptr, AutogenLDPC_QC_8192x24576_71b51c1::row_idx,
             AutogenLDPC_QC_8192x24576_71b51c1::values);
 
-    constexpr auto encoder_524288x1572864_4d78a9f = helper_create_FixedSizeEncoderQC<
+    constexpr inline auto encoder_524288x1572864_4d78a9f = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_524288x1572864_4d78a9f::M, AutogenLDPC_QC_524288x1572864_4d78a9f::expansion_factor>(
             AutogenLDPC_QC_524288x1572864_4d78a9f::colptr, AutogenLDPC_QC_524288x1572864_4d78a9f::row_idx,
             AutogenLDPC_QC_524288x1572864_4d78a9f::values);
 
-    constexpr auto encoder_2048x4096_0c809c3 = helper_create_FixedSizeEncoderQC<
+    constexpr inline auto encoder_2048x4096_0c809c3 = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_2048x4096_0c809c3::M, AutogenLDPC_QC_2048x4096_0c809c3::expansion_factor>(
             AutogenLDPC_QC_2048x4096_0c809c3::colptr, AutogenLDPC_QC_2048x4096_0c809c3::row_idx,
             AutogenLDPC_QC_2048x4096_0c809c3::values);
 
-    constexpr auto encoder_8192x16384_3fcad37 = helper_create_FixedSizeEncoderQC<
+    constexpr inline auto encoder_8192x16384_3fcad37 = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_8192x16384_3fcad37::M, AutogenLDPC_QC_8192x16384_3fcad37::expansion_factor>(
             AutogenLDPC_QC_8192x16384_3fcad37::colptr, AutogenLDPC_QC_8192x16384_3fcad37::row_idx,
             AutogenLDPC_QC_8192x16384_3fcad37::values);
 
-    constexpr auto encoder_524288x1048576_9b50f98 = helper_create_FixedSizeEncoderQC<
+    constexpr inline auto encoder_524288x1048576_9b50f98 = helper_create_FixedSizeEncoderQC<
             AutogenLDPC_QC_524288x1048576_9b50f98::M, AutogenLDPC_QC_524288x1048576_9b50f98::expansion_factor>(
             AutogenLDPC_QC_524288x1048576_9b50f98::colptr, AutogenLDPC_QC_524288x1048576_9b50f98::row_idx,
             AutogenLDPC_QC_524288x1048576_9b50f98::values);
 
-    constexpr std::tuple all_encoders_tuple{
+    // degree-distribution-based codes:
+    constexpr inline auto encoder_lrate_P15_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P15_block_819k::M, AutogenLDPC_QC_lrate_P15_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P15_block_819k::colptr, AutogenLDPC_QC_lrate_P15_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P15_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P1_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P1_block_819k::M, AutogenLDPC_QC_lrate_P1_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P1_block_819k::colptr, AutogenLDPC_QC_lrate_P1_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P1_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P25_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P25_block_819k::M, AutogenLDPC_QC_lrate_P25_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P25_block_819k::colptr, AutogenLDPC_QC_lrate_P25_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P25_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P2_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P2_block_819k::M, AutogenLDPC_QC_lrate_P2_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P2_block_819k::colptr, AutogenLDPC_QC_lrate_P2_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P2_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P35_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P35_block_819k::M, AutogenLDPC_QC_lrate_P35_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P35_block_819k::colptr, AutogenLDPC_QC_lrate_P35_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P35_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P3_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P3_block_819k::M, AutogenLDPC_QC_lrate_P3_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P3_block_819k::colptr, AutogenLDPC_QC_lrate_P3_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P3_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P45_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P45_block_819k::M, AutogenLDPC_QC_lrate_P45_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P45_block_819k::colptr, AutogenLDPC_QC_lrate_P45_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P45_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P4_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P4_block_819k::M, AutogenLDPC_QC_lrate_P4_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P4_block_819k::colptr, AutogenLDPC_QC_lrate_P4_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P4_block_819k::values);
+
+    constexpr inline auto encoder_lrate_P5_block_819k = helper_create_FixedSizeEncoderQC<
+            AutogenLDPC_QC_lrate_P5_block_819k::M, AutogenLDPC_QC_lrate_P5_block_819k::expansion_factor>(
+            AutogenLDPC_QC_lrate_P5_block_819k::colptr, AutogenLDPC_QC_lrate_P5_block_819k::row_idx,
+            AutogenLDPC_QC_lrate_P5_block_819k::values);
+
+    constexpr inline std::tuple all_encoders_tuple{
+            // Protograph-based
             encoder_2048x6144_4663d91,
             encoder_8192x24576_71b51c1,
             encoder_524288x1572864_4d78a9f,
             encoder_2048x4096_0c809c3,
             encoder_8192x16384_3fcad37,
-            encoder_524288x1048576_9b50f98
+            encoder_524288x1048576_9b50f98,
+            // degree-distribution-based
+            encoder_lrate_P1_block_819k,
+            encoder_lrate_P15_block_819k,
+            encoder_lrate_P2_block_819k,
+            encoder_lrate_P25_block_819k,
+            encoder_lrate_P3_block_819k,
+            encoder_lrate_P35_block_819k,
+            encoder_lrate_P4_block_819k,
+            encoder_lrate_P45_block_819k,
+            encoder_lrate_P5_block_819k
     };
+
+    namespace HelperFixedSize {
+        using Idx = std::uint32_t;
+        using Bit = std::uint8_t;
+
+        using ErrorCorrector = LDPC4QKD::RateAdaptiveCode<Idx>;
+
+        template<typename Tout, typename Tin>
+        std::vector<std::vector<Tout>> static_cast_vec_vec(std::vector<std::vector<Tin>> const &v) {
+            std::vector<std::vector<Tout>> result(v.size());
+            for (std::size_t i = 0; i < v.size(); ++i) {
+                result[i].reserve(v[i].size());
+                for (const auto &val: v[i]) {
+                    result[i].push_back(val);
+                }
+            }
+            return result;
+        }
+
+        template<typename Tout, typename Tin>
+        std::vector<Tout> static_cast_vec(std::vector<Tin> const &v) {
+            std::vector<Tout> result;
+            result.reserve(v.size());
+            for (const auto &val: v) {
+                result.push_back(val);
+            }
+            return result;
+        }
+
+        template<typename T, std::size_t N>
+        std::vector<T> arr_to_vec(std::array<T, N> a) {
+            return std::vector<T>(a.begin(), a.end());
+        }
+
+        template <typename Idx=Idx>
+        LDPC4QKD::RateAdaptiveCode<Idx> get_rate_adaptive_code(std::size_t id) {
+            switch (id) {
+                case 0: { // encoder_2048x6144_4663d91
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<0>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = static_cast_vec<Idx>(
+                            arr_to_vec(AutogenRateAdapt_2x6_block_6144::rows));
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 1: { // encoder_8192x24576_71b51c1
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<1>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = static_cast_vec<Idx>(
+                            arr_to_vec(AutogenRateAdapt_2x6_block_24576::rows));
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 2: { // encoder_524288x1572864_4d78a9f
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<2>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = static_cast_vec<Idx>(
+                            arr_to_vec(AutogenRateAdapt_2x6_block_1572864::rows));
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 3: { // encoder_2048x4096_0c809c3
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<3>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = static_cast_vec<Idx>(
+                            arr_to_vec(AutogenRateAdapt_2x4_block_4096::rows));
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 4: { // encoder_8192x16384_3fcad37
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<4>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = static_cast_vec<Idx>(
+                            arr_to_vec(AutogenRateAdapt_2x4_block_16384::rows));
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 5: { // encoder_524288x1048576_9b50f98
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<5>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = static_cast_vec<Idx>(
+                            arr_to_vec(AutogenRateAdapt_2x4_block_1048576::rows));
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 6: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<6>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 7: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<7>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 8: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<8>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 9: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<9>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 10: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<10>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 11: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<11>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 12: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<12>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 13: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<13>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                case 14: { // encoder 819k, rate TODO
+                    auto pos_varn = static_cast_vec_vec<Idx>(
+                            std::get<14>(all_encoders_tuple).get_pos_varn());
+                    auto rate_adapt_rows = std::vector<Idx>{}; // TODO
+                    return {pos_varn, rate_adapt_rows, 0};
+                }
+                default: {
+                    throw std::runtime_error("No code available for requested ID " + std::to_string(id));
+                }
+            }
+        }
+    }
 
     //! Encodes the `key` using the LDPC code specified by the `code_id`. The result is the syndrome.
     //! Note: if `code_id` known at compile time, use templated version instead!
@@ -317,6 +524,9 @@ namespace LDPC4QKD {
     //!                     Used to store syndrome. Must already be sized correctly for the given code!
     template<std::size_t N = 0>
     void encode_with(std::size_t code_id, auto const &key, auto &result) {
+        if (code_id >= std::tuple_size_v<decltype(all_encoders_tuple)>) {
+            throw std::runtime_error("Invalid code ID requested!");
+        }
         if (N == code_id) {
             // if/when `all_encoders_tuple` contains non-QC matrices, this needs to change!
             // Originally, this was using `encode` instead of `encode_qc` but then it doesn't work with `vector<bool>`
@@ -354,6 +564,9 @@ namespace LDPC4QKD {
     //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
     template<std::size_t N = 0>
     constexpr std::size_t get_input_size(std::size_t code_id) {
+        if (code_id >= std::tuple_size_v<decltype(all_encoders_tuple)>) {
+            throw std::runtime_error("Invalid code ID requested!");
+        }
         if (N == code_id) {
             return std::get<N>(all_encoders_tuple).get_input_size();
         }
@@ -370,6 +583,9 @@ namespace LDPC4QKD {
     //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
     template<std::size_t N = 0>
     constexpr std::size_t get_output_size(std::size_t code_id) {
+        if (code_id >= std::tuple_size_v<decltype(all_encoders_tuple)>) {
+            throw std::runtime_error("Invalid code ID requested!");
+        }
         if (N == code_id) {
             return std::get<N>(all_encoders_tuple).get_output_size();
         }
