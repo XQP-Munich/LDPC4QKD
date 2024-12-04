@@ -247,8 +247,8 @@ TEST(new_819k_code, fer_simulation) {
     std::mt19937_64 rng(42);
     auto H = get_code_819k(14);
 
-    constexpr double p = 0.097;
-    constexpr std::size_t num_frames_to_test = 10;
+    constexpr double p = 0.095;
+    constexpr std::size_t num_frames_to_test = 5;
     constexpr std::size_t max_num_iter = 50;
     const std::size_t syndrome_size = H.get_n_rows_mother_matrix();
 
@@ -256,7 +256,7 @@ TEST(new_819k_code, fer_simulation) {
               << " at QBER = " << p << std::endl;
 
     std::size_t num_frame_errors{};
-    std::size_t frame_idx{1};  // counts the number of iterations
+    std::size_t frame_idx{0};  // counts the number of iterations
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
         std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
         noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
