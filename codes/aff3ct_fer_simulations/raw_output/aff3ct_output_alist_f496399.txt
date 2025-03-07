@@ -1,0 +1,90 @@
+sha256sum ./block_819200_pegqc.alist
+f4963997d779ad20a2aa15f924609d3b9bdca79ffc5cb8572f4594459ab7a4b4  ./block_819200_pegqc.alist
+
+# ----------------------------------------------------
+# ---- A FAST FORWARD ERROR CORRECTION TOOLBOX >> ----
+# ----------------------------------------------------
+# Parameters:
+# * Simulation ------------------------------------
+#    ** Type                      = BFER
+#    ** Type of bits              = int32
+#    ** Type of reals             = float32
+#    ** Date (UTC)                = 2023-05-25 02:50:53
+#    ** Git version               = v2.3.5-387-g4fdaa13
+#    ** Code type (C)             = LDPC
+#    ** Noise range               = 0.08 -> 0.11 dB
+#    ** Noise type (E)            = EP
+#    ** Seed                      = 0
+#    ** Statistics                = off
+#    ** Debug mode                = off
+#    ** Multi-threading (t)       = 14 thread(s)
+#    ** Coset approach (c)        = no
+#    ** Coded monitoring          = no
+#    ** Bad frames tracking       = off
+#    ** Bad frames replay         = off
+#    ** Clone allocations         = on
+#    ** Sequence multithreading   = on
+#    ** Bit rate                  = 0.5 (1/2)
+#    ** Inter frame level         = 1
+# * Source ----------------------------------------
+#    ** Type                      = AZCW
+#    ** Implementation            = STD
+#    ** Info. bits (K_info)       = 409600
+# * Codec -----------------------------------------
+#    ** Type                      = LDPC
+#    ** Info. bits (K)            = 409600
+#    ** Codeword size (N_cw)      = 819200
+#    ** Frame size (N)            = 819200
+#    ** Code rate                 = 0.5 (1/2)
+# * Encoder ---------------------------------------
+#    ** Type                      = AZCW
+#    ** Systematic                = yes
+# * Decoder ---------------------------------------
+#    ** Type (D)                  = BP_FLOODING
+#    ** Implementation            = SPA
+#    ** Systematic                = yes
+#    ** H matrix path             = ./block_819200_pegqc.alist
+#    ** H matrix reordering       = NONE
+#    ** Num. of iterations (i)    = 1000
+#    ** Stop criterion (syndrome) = on
+#    ** Stop criterion depth      = 1
+# * Modem -----------------------------------------
+#    ** Type                      = OOK
+#    ** Implementation            = STD
+#    ** Bits per symbol           = 1
+#    ** Sigma square              = on
+# * Channel ---------------------------------------
+#    ** Type                      = BSC
+#    ** Implementation            = STD
+#    ** Complex                   = off
+#    ** Add users                 = off
+# * Monitor ---------------------------------------
+#    ** Lazy reduction            = off
+#    ** Frame error count (e)     = 500
+#    ** Compute mutual info       = no
+# * Terminal --------------------------------------
+#    ** Enabled                   = yes
+#    ** Frequency (ms)            = 500
+# 
+# The simulation is running...
+# -----------------||------------------------------------------------------||---------------------
+# Event Probability||   Bit Error Rate (BER) and Frame Error Rate (FER)    ||  Global throughput  
+#       (EP)       ||                                                      ||  and elapsed time   
+# -----------------||------------------------------------------------------||---------------------
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+#               EP ||      FRA |       BE |       FE |      BER |      FER ||  SIM_THR |    ET/RT 
+#                  ||          |          |          |          |          ||   (Mb/s) | (hhmmss) 
+# -----------------||----------|----------|----------|----------|----------||----------|----------
+            0.1100 ||      514 | 23161004 |      514 | 1.10e-01 | 1.00e+00 ||    0.020 | 02h53'14   
+            0.1090 ||      513 | 22893516 |      513 | 1.09e-01 | 1.00e+00 ||    0.020 | 02h52'08   
+            0.1080 ||      525 | 23223841 |      525 | 1.08e-01 | 1.00e+00 ||    0.020 | 02h55'50   
+            0.1070 ||      518 | 22702478 |      518 | 1.07e-01 | 1.00e+00 ||    0.020 | 02h54'27   
+            0.1060 ||      522 | 22663451 |      522 | 1.06e-01 | 1.00e+00 ||    0.020 | 02h55'17   
+            0.1050 ||      521 | 22402059 |      521 | 1.05e-01 | 1.00e+00 ||    0.020 | 02h54'39   
+            0.1040 ||      514 | 21891514 |      514 | 1.04e-01 | 1.00e+00 ||    0.020 | 02h52'42   
+            0.1030 ||      514 | 21676114 |      514 | 1.03e-01 | 1.00e+00 ||    0.020 | 02h53'11   
+            0.1020 ||      520 | 21728782 |      520 | 1.02e-01 | 1.00e+00 ||    0.020 | 02h54'30   
+            0.1010 ||      524 | 21662869 |      524 | 1.01e-01 | 1.00e+00 ||    0.020 | 02h56'33   
+            0.1000 ||      554 | 20899760 |      513 | 9.21e-02 | 9.26e-01 ||    0.022 | 02h55'53   
+            0.0990 ||     3267 | 20296400 |      507 | 1.52e-02 | 1.55e-01 ||    0.074 | 05h01'56   
+            0.0980 ||    75990 |   915800 |       23 | 2.94e-05 | 3.03e-04 ||    0.255 |703h00'53   
