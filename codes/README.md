@@ -50,7 +50,8 @@ all files in the `/codes` directory and find the ones you need using the tables 
   To make sure which code is simulated, we include the sha256 of the **alist file** in the raw results (at `/codes/aff3ct_fer_simulations`)
   Alist files can be quite large (~50 Megabytes per file) and are therefore not part of this repository.
   To reproduce the FER results, use the command line interface or [LDPCStorage.jl](https://github.com/XQP-Munich/LDPCStorage.jl) to recreate alist files and check the hash.
-  For plots and evaluation of the FER simulations, see the paper and included Julia code.
+  For plots and evaluation of the FER simulations, see the paper and Julia code at `/codes/aff3ct_fer_simulations/evaluation`.
+  The Julia code generates all plots in the paper (and more) by reading all raw AFF3CT outputs and matching them by the sha256 of the respective alist file.
 
 - The sha256 of corresponding **rate adaption files** (where applicable) connect each code to its rate adaption.
 
