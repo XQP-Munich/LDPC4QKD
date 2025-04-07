@@ -26,6 +26,12 @@ target_include_directories(critical_rate_simulation
         "${CMAKE_CURRENT_LIST_DIR}/../"
         )
 
+target_include_directories(critical_rate_simulation
+        SYSTEM PRIVATE  # Do not give warnings from 3rd party libraries
+        "${CMAKE_CURRENT_LIST_DIR}/../external/CmdParser-91aaa61e"
+)
+
+
 # ------------------------------------------------------------- frame error rate (FER) simulation (allows rate adaption)
 add_executable(rate_adapted_fer main_rate_adapted_fer.cpp
         code_simulation_helpers.hpp)
@@ -46,3 +52,8 @@ target_include_directories(rate_adapted_fer
         PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/../"
         )
+
+target_include_directories(rate_adapted_fer
+        SYSTEM PRIVATE  # Do not give warnings from 3rd party libraries
+        "${CMAKE_CURRENT_LIST_DIR}/../external/CmdParser-91aaa61e"
+)
