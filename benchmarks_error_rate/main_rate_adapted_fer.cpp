@@ -17,19 +17,18 @@ constexpr auto help_text =
 #include <chrono>
 
 // Command line argument parser library
-#include "external/CmdParser-91aaa61e/cmdparser.hpp"
+#include "cmdparser.hpp"
 
 // Project scope
-#include "rate_adaptive_code.hpp"
+#include "LDPC4QKD/rate_adaptive_code.hpp"
 #include "code_simulation_helpers.hpp"
 
 using namespace LDPC4QKD::CodeSimulationHelpers;
 
 
-template<typename colptr_t=std::uint32_t, // integer type that fits ("number of non-zero matrix entries" + 1)
-        typename idx_t=std::uint16_t>
+template<typename idx_t=std::uint16_t>
 std::pair<size_t, size_t> run_simulation(
-        const LDPC4QKD::RateAdaptiveCode<colptr_t, idx_t> &H,
+        const LDPC4QKD::RateAdaptiveCode<idx_t> &H,
         double p,
         std::size_t num_frames_to_test,
         std::mt19937_64 &rng,

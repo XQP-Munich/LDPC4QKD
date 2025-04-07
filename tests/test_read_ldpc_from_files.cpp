@@ -10,7 +10,7 @@
 #include <iostream>
 
 // To be tested
-#include "read_ldpc_file_formats.hpp"
+#include "LDPC4QKD/read_ldpc_file_formats.hpp"
 #include "fortest_autogen_ldpc_matrix_csc.hpp"
 #include "benchmarks_error_rate/code_simulation_helpers.hpp"
 
@@ -22,7 +22,7 @@ namespace {
     auto get_code_big_nora() {
         std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
         std::vector<std::uint32_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
-        return RateAdaptiveCode<uint32_t, uint32_t>(colptr, row_idx);
+        return RateAdaptiveCode<uint32_t>(colptr, row_idx);
     }
 
 }

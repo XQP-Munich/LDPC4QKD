@@ -1,6 +1,8 @@
 //
-// Created by alice on 23.04.21.
-// Note: this file is for applications (e.g. small executable required) where only the encoder (NO decoder) is desired.
+// Created by Adomas Baliuka on 23.04.21.
+//
+// Note: You probably don't want to use this file!
+// This file is for applications (e.g. small executable required) where only the encoder (NO decoder) is desired.
 // The decoder can also encode and has a much cleaner interface.
 // Basically, this file just implements matrix-vector multiplication in compressed sparse column (CSC) storage format.
 //
@@ -30,8 +32,10 @@
 
 // automatically generated code containing the LDPC matrix and
 // the line indices to be combined for rate adaption.
-#include "autogen_ldpc_matrix_csc.hpp"
-#include "autogen_rate_adaption.hpp"
+// Need to include manually.
+
+//#include "autogen_ldpc_matrix_csc.hpp"
+//#include "autogen_rate_adaption.hpp"
 
 
 namespace LDPC4QKD {
@@ -159,10 +163,6 @@ namespace LDPC4QKD {
             reduced_syndrome_idx++;
         }
     }
-
-
-    // TODO in-place computation may require moving bits around a lot.
-    //  Think about how to achieve it efficiently and if we need it...
 
 }  // namespace RALDPC
 

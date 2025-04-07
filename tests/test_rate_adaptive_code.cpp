@@ -10,8 +10,8 @@
 #include <iostream>
 
 // To be tested
-#include "rate_adaptive_code.hpp"
-#include "encoder_advanced.hpp"
+#include "LDPC4QKD/rate_adaptive_code.hpp"
+#include "LDPC4QKD/encoder_advanced.hpp"
 
 // Test cases test against constants known to be correct for the LDPC-matrix defined here:
 #include "fortest_autogen_ldpc_matrix_csc.hpp"
@@ -42,6 +42,10 @@ namespace {
         std::vector<std::uint32_t> colptr{0, 1, 2, 4, 5, 7, 9, 12};
         std::vector<std::uint16_t> row_idx{0, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 2};
         return RateAdaptiveCode(colptr, row_idx);
+    }
+
+    auto get_code_819k(std::size_t id) {
+        return HelperFixedSize::get_rate_adaptive_code(id);
     }
 
 }
@@ -238,6 +242,60 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, decode_infer_rate) {
     ASSERT_EQ(prediction, x);
 }
 
+TEST(new_819k_code, fer_simulation) {
+    // assert that the rate adapted FER (at set fraction of mother syndrome) is small.
+    std::mt19937_64 rng(42);
+    auto H = get_code_819k(14);
+
+    constexpr double p = 0.095;
+    constexpr std::size_t num_frames_to_test = 5;
+    constexpr std::size_t max_num_iter = 50;
+    const std::size_t syndrome_size = H.get_n_rows_mother_matrix();
+
+    std::cout << "Testing code with size " << H.get_n_rows_mother_matrix() << " x " << H.getNCols()
+              << " at QBER = " << p << std::endl;
+
+    std::size_t num_frame_errors{};
+    std::size_t frame_idx{0};  // counts the number of iterations
+    for (; frame_idx < num_frames_to_test; ++frame_idx) {
+        std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
+        noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
+
+        std::vector<bool> syndrome;  // syndrome for error correction, which is sent over a noise-less channel.
+        H.encode_with_ra(x, syndrome, syndrome_size);
+
+        std::vector<bool> x_noised = x; // copy for distorted data
+        noise_bitstring_inplace(rng, x_noised, p);
+
+        // log likelihood ratio (llr) computation
+        double vlog = ::log((1 - p) / p);
+        std::vector<double> llrs(x.size());
+        for (std::size_t i{}; i < llrs.size(); ++i) {
+            llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
+        }
+
+        std::vector<bool> solution;
+        bool success = H.decode_infer_rate(llrs, syndrome, solution, max_num_iter);
+
+        if (solution == x) {
+            if (!success) {
+                std::cerr << "DECODER GIVES CORRECT RESULT ALTHOUGH IT HAS NOT CONVERGED!!!!" << std::endl;
+                FAIL();
+            }
+        } else {
+            num_frame_errors++;
+            if (success) {
+                std::cerr << "\n\nDECODER CONVERGED TO WRONG CODEWORD!!!!\n" << std::endl;
+                FAIL();
+            }
+        }
+    }
+
+    double fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_to_test);
+    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << num_frames_to_test << " frames )"
+              << std::endl;
+    ASSERT_EQ(fer, 0.);
+}
 
 TEST(rate_adaptive_code_from_colptr_rowIdx, rate_adapted_fer) {
     // assert that the rate adapted FER (at set fraction of mother syndrome) is small.
@@ -248,6 +306,9 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, rate_adapted_fer) {
     constexpr std::size_t num_frames_to_test = 100;
     constexpr std::size_t max_num_iter = 50;
     const std::size_t syndrome_size = H.get_n_rows_mother_matrix() - 10;
+
+    std::cout << "Testing rate adaption for mother code with size " << H.get_n_rows_mother_matrix() << " x " << H.getNCols()
+              << " at QBER = " << p << std::endl;
 
     std::size_t num_frame_errors{};
     std::size_t frame_idx{1};  // counts the number of iterations
@@ -318,7 +379,7 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, equals_not_equals_operators) {
 
 TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
     std::vector<std::uint16_t> rows_to_combine{}; // not used here!
-    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+    RateAdaptiveCode<std::uint16_t> H1(encoder_2048x6144_4663d91.get_pos_varn(), rows_to_combine);
 
     auto H2 = get_code_big_wra();
 
@@ -336,7 +397,6 @@ TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
         std::vector<std::uint8_t> in = get_bitstring<std::uint8_t>(H2.getNCols());
         std::vector<std::uint8_t> out(H2.get_n_rows_mother_matrix());
 
-        write_vector_to_csv("tmp_randkey_6144.csv", in, true);
         std::cout << "input hash: " << hash_vector(in) << std::endl;
         H2.encode_no_ra(in, out);
         std::cout << "output hash: " << hash_vector(out) << std::endl;
@@ -347,7 +407,7 @@ TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_behaviour) {
 
 TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_equals) {
     std::vector<std::uint16_t> rows_to_combine(AutogenRateAdapt::rows.begin(), AutogenRateAdapt::rows.end());
-    RateAdaptiveCode<std::uint32_t, std::uint16_t> H1(encoder2.get_pos_varn(), rows_to_combine);
+    RateAdaptiveCode<std::uint16_t> H1(encoder_2048x6144_4663d91.get_pos_varn(), rows_to_combine);
 
     // TODO add random rate adaption for comparison
     auto H2 = get_code_big_wra();

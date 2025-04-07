@@ -121,6 +121,43 @@ function convert_all_qc_to_binary(
     return nothing
 end
 
+"""
+Converts all `.qccsc.json` files in the folder given by `input_folder_path` to same name with extension `.hpp`
+files in the `output_folder_path`.
+Each input file is assumed to contain QC exponents for an LDPC matrix (as defined by the `.qccsc.json` format).
+The output files store the QC-exponents in CSC format inside a C++ header.
+
+Warning: this may overwrite pre-existing files in the output folder.
+"""
+function convert_all_qc_to_header(
+    input_folder_path::AbstractString, output_folder_path::AbstractString;
+    verbose=false
+    )
+    isdir(input_folder_path) || error("`$input_folder_path` is not a valid folder path.")
+    isdir(output_folder_path) || mkdir(output_folder_path)
+
+    file_paths = readdir(input_folder_path; join=true)
+    filter!(p -> endswith(p, ".qccsc.json"), file_paths)
+    verbose && @info "Converting $(length(file_paths)) files."
+
+    for p in file_paths
+        H = LDPCStorage.load_ldpc_from_json(p; expand_qc_exponents_to_binary=false)
+
+        # store file with same name but replaced file extension reflecting contents
+        out_file_path = joinpath(output_folder_path, basename(p)[1:end-11]*".hpp")
+
+        expansion_factor = LDPCStorage.get_qc_expansion_factor(p)
+        hash = LDPCStorage.Hqc_to_pcm(H, expansion_factor) |>  LDPCStorage.hash_sparse_matrix |> bytes2hex
+
+        namespace_name = "AutogenLDPC_QC_$(expansion_factor*size(H,1))x$(expansion_factor*size(H,2))_$(hash[1:7])"
+        open(out_file_path, "w+") do io
+            LDPCStorage.print_cpp_header_QC(io, H; expansion_factor, namespace_name)
+        end
+        verbose && @info "Converted `$p` -> `$out_file_path`."
+    end
+    return nothing
+end
+
 
 function main()
     code_path, output_path, output_quasi_cyclic_exponents = parse_my_args()

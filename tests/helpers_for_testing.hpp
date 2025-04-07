@@ -15,8 +15,7 @@ namespace HelpersForTests {
     using Bit = bool;
 
 /*!
- * This is only used for the tests to verify agreement between vectors loaded by
- * this code and Luhn/Freiwang Python code.
+ * This is only used for the tests to verify agreement between vectors.
  * Note: due to the bitsize conversions this hash function has no guarantees about any properties.
  * Adapted from https://stackoverflow.com/a/27216842
  *

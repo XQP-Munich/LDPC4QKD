@@ -13,10 +13,10 @@ constexpr auto help_text =
 #include <chrono>
 
 // Command line argument parser library
-#include "external/CmdParser-91aaa61e/cmdparser.hpp"
+#include "cmdparser.hpp"
 
 // Project scope
-#include "rate_adaptive_code.hpp"
+#include "LDPC4QKD/rate_adaptive_code.hpp"
 
 #include "code_simulation_helpers.hpp"
 
