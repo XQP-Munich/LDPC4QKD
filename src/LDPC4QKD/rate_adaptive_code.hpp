@@ -91,11 +91,9 @@ namespace LDPC4QKD {
          * variable node eliminations, disable the elimination check to speed up this constructor.
          *
          * note: invalid `rows_to_combine_rate_adapt`, for example non-zero based, may lead to a segmentation fault.
-         * TODO add extra checks for validity of `rows_to_combine_rate_adapt`
          *
          * note: there used to be a parameter `do_elimination_check` to check for repeated node indices after rate adaption.
          *      Such indices are now removed during `recompute_pos_vn_cn`. Consequentially, node eliminations are allowed.
-         *              TODO make sure this is correct
          *
          * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
          * @param colptr column pointer array for specifying mother parity check matrix.
@@ -232,7 +230,7 @@ namespace LDPC4QKD {
 
         /// decoder infers rate from the length of the syndrome and changes the internal decoder state to match this rate.
         /// Note: since this function modifies the code (by performing rate adaption), it is NOT CONST.
-        /// this change may be somewhat computationally expensive TODO benchmark this
+        /// this change may be somewhat computationally expensive
         /// `Bit` should be e.g. std::uint8_t or bool. TODO use concept `std::unsigned_integral` when using C++20
         template<typename Bit>
         bool decode_infer_rate(const std::vector<double> &llrs,
@@ -536,7 +534,6 @@ namespace LDPC4QKD {
             }
 
             {   // recompute pos_varn ---------------------------------------------------------------
-                // TODO check if this assumes full rank of H (should have that anyway)
                 // This uses different size vectors for nodes with different degrees.
                 // Alternatively, one could set the sizes to be the same (set them to the largest check node degree)
 
