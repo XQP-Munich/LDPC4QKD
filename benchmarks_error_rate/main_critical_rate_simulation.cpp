@@ -102,6 +102,7 @@ std::vector<std::size_t> run_simulation_nobisect(RateAdaptiveCodeTemplate &H,
     std::cout << std::endl;
 
     if (!n_messages_out_csv_file_path.empty()) {
+        std::cout << "saving numbers of messages to " << n_messages_out_csv_file_path << std::endl;
         write_vector_to_csv(n_messages_out_csv_file_path, n_messages, true);
     }
 
@@ -195,7 +196,7 @@ void configure_parser(cli::Parser &parser) {
             "If non-zero, we start at start-syndrome-size and increase the syndrome in steps of step-size.");
 
     parser.set_optional<std::size_t>(
-            "s", "start-syndrome-size", 0,
+            "st", "start-syndrome-size", 0,
             "Only has an effect if step-size is non-zero. "
             "If it has an effect, start at this syndrome size and increase until success.");
 
@@ -226,7 +227,7 @@ int main(int argc, char *argv[]) {
     const auto max_bp_iter = parser.get<std::size_t>("i");
     const auto rng_seed = parser.get<std::size_t>("s");
     const auto update_console_every_n_frames = parser.get<std::size_t>("upn");
-    const auto code_file_path = parser.get<std::string>("cp");;
+    const auto code_file_path = parser.get<std::string>("cp");
     const auto rate_adaption_file_path = parser.get<std::string>("rp");
 
     std::cout << std::endl;
@@ -252,7 +253,7 @@ int main(int argc, char *argv[]) {
     const bool run_bisection = (step_size == 0);
     const auto min_supported_syndrome_size = H.get_n_rows_mother_matrix() - H.get_max_ra_steps();
     const auto start_syndrome_size = [&parser, &min_supported_syndrome_size]() {
-        auto user_requested_start_syndrome_size = parser.get<std::size_t>("s");
+        auto user_requested_start_syndrome_size = parser.get<std::size_t>("st");
         if (user_requested_start_syndrome_size < min_supported_syndrome_size) {
             std::cerr << "Warning:  Requested start syndrome size not supported. "
                          "Using smallest supported by selected code, which is "
