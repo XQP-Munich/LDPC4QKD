@@ -95,6 +95,7 @@ std::vector<std::size_t> run_simulation_nobisect(RateAdaptiveCodeTemplate &H,
                                    std::next(n_messages.begin(), static_cast<int32_t>(frame_idx + 1))}) {
                 std::cout << " " << x;
             }
+            std:: cout << " ." << '\n';
         }
     }
     std::cout << std::endl;
