@@ -286,13 +286,13 @@ int main(int argc, char *argv[]) {
     std::mt19937_64 rng(rng_seed);
     auto begin = std::chrono::steady_clock::now();
 
-    const auto syndrome_size_success = [&]() {
+    const auto final_syndrome_sizes = [&]() {
         if (run_bisection) {
             return run_simulation_bisect(
                     H, p, num_frames_to_test, rng,
                     max_bp_iter, update_console_every_n_frames);
         } else {
-            const auto out_file_path = std::string{"n_messages"} + std::to_string(rng_seed);
+            const auto out_file_path = std::string{"out/n_messages"} + std::to_string(rng_seed);
             return run_simulation_nobisect(
                     H, p, num_frames_to_test, rng, step_size, start_syndrome_size, out_file_path,
                     max_bp_iter, update_console_every_n_frames);
@@ -305,12 +305,14 @@ int main(int argc, char *argv[]) {
 
 
     std::cout << "all syndrome sizes:" << std::endl;
-    for (auto s: syndrome_size_success) {
+    for (auto s: final_syndrome_sizes) {
         std::cout << s << ' ';
     }
     std::cout << "\n\n";
+    const auto out_file_path_syndrome_sizes = std::string{"out/syndrome_size_"} + std::to_string(rng_seed);
+    write_vector_to_csv(out_file_path_syndrome_sizes, final_syndrome_sizes, true);
 
-    double avg_synd_size = avg(syndrome_size_success);
+    double avg_synd_size = avg(final_syndrome_sizes);
     std::cout << "Average syndrome size (out of " << num_frames_to_test << " codewords tried): " << avg_synd_size
               << std::endl;
 
