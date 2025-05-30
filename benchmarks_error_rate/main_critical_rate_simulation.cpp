@@ -16,6 +16,7 @@ constexpr auto help_text =
 #include "cmdparser.hpp"
 
 // Project scope
+#undef LDPC4QKD_DEBUG_MESSAGES_ENABLED
 #include "LDPC4QKD/rate_adaptive_code.hpp"
 #include "LDPC4QKD/encoder_advanced.hpp"
 
