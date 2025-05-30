@@ -439,55 +439,55 @@ namespace LDPC4QKD {
                             arr_to_vec(AutogenRateAdapt_2x4_block_1048576::rows));
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 6: { // encoder 819k, rate TODO
+                case 6: { // encoder 819k, lrate 0.1
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<6>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 7: { // encoder 819k, rate TODO
+                case 7: { // encoder 819k, lrate 0.15
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<7>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 8: { // encoder 819k, rate TODO
+                case 8: { // encoder 819k, lrate 0.2
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<8>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 9: { // encoder 819k, rate TODO
+                case 9: { // encoder 819k, lrate 0.25
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<9>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 10: { // encoder 819k, rate TODO
+                case 10: { // encoder 819k, lrate 0.3
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<10>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 11: { // encoder 819k, rate TODO
+                case 11: { // encoder 819k, lrate 0.35
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<11>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 12: { // encoder 819k, rate TODO
+                case 12: { // encoder 819k, lrate 0.4
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<12>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 13: { // encoder 819k, rate TODO
+                case 13: { // encoder 819k, lrate 0.45
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<13>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
                     return {pos_varn, rate_adapt_rows, 0};
                 }
-                case 14: { // encoder 819k, rate TODO
+                case 14: { // encoder 819k, lrate 0.5
                     auto pos_varn = static_cast_vec_vec<Idx>(
                             std::get<14>(all_encoders_tuple).get_pos_varn());
                     auto rate_adapt_rows = std::vector<Idx>{}; // TODO
