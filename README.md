@@ -48,12 +48,17 @@ To build the C++ executables (except for unit tests) using CMake (Julia not requ
         cd LDPC4QKD
         cmake -S . -B build -DLDPC4QKD_BUILD_UNIT_TESTS=OFF
         cmake --build build --config Release
-        
 All executables will be built inside the `build` folder.
 
+If you're feeling adventurous, you can add custom compiler flags. E.g., with GCC, this may improve decoding speed of simulations:
+
+        cmake -S . -B build -DLDPC4QKD_BUILD_UNIT_TESTS=OFF -DCMAKE_CXX_FLAGS="-march=native -flto -Ofast -ffast-math" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        cmake --build build
+(If you include the header-only library in your software, of course only those compiler flags apply which are used by your build.)
+
 For a demo of how to use the C++ header-only library, see the `examples` directory, which shows a basic example ("demo_error_correction") of how to use the C++ header containing the decoder.
-This example is built by CMake (executable `build/examples/demo_error_correction`.
-Note: the executable produces no output; look at the C++ source code to see how the header can be used.
+This example is built by CMake (executable `build/examples/demo_error_correction`).
+Note: this executable produces no output; look at the C++ source code at `examples/main_demo_error_correction.cpp`.
 
 For more advanced examples, looking at the unit tests may be helpful.
 
