@@ -81,11 +81,11 @@ std::vector<std::size_t> run_simulation_nobisect(RateAdaptiveCodeTemplate &H,
                     // here we stop adding new syndrome because decoder thinks it succeeded.
                     // The error is noticed later, but we failed overall and record worst-case syndrome size.
                     // This assignment is redundant (default value is written again) but we want to be explicit.
+                    std::cerr << "DECODER CONVERGED TO WRONG CODEWORD!!!!" << std::endl;
                     final_syndrome_sizes.at(frame_idx) = H.getNCols();
                     break;
                 }
                 current_syndrome_size += step_size; //  try again with more syndrome.
-
             }
         }
         if (update_console_every_n_frames && frame_idx % update_console_every_n_frames == 0) {
