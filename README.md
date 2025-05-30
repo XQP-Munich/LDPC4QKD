@@ -46,7 +46,7 @@ To build the C++ executables (except for unit tests) using CMake (Julia not requ
 
         git clone <github url>
         cd LDPC4QKD
-        cmake -S . -B build -DBUILD_UNIT_TESTS=OFF
+        cmake -S . -B build -DLDPC4QKD_BUILD_UNIT_TESTS=OFF
         cmake --build build --config Release
         
 All executables will be built inside the `build` folder.
