@@ -44,6 +44,18 @@ namespace LDPC4QKD::CodeSimulationHelpers {
         return tmp / static_cast<double>(in.size());
     }
 
+    template<typename T>
+    void write_vector_to_csv(const std::string &filepath, const std::vector<T> &vec, bool cast_to_long) {
+        std::ofstream myfile(filepath);
+        for (std::size_t n = 0; n < vec.size(); n++) {
+            if (cast_to_long) {
+                myfile << static_cast<long>(vec[n]) << '\n';
+            } else {
+                myfile << vec[n] << '\n';
+            }
+        }
+    }
+
 
     /*!
      * Loads LDPC code (and optionally also rate adaption) from files.

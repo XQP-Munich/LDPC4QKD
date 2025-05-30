@@ -41,6 +41,7 @@ std::vector<std::size_t> run_simulation_nobisect(RateAdaptiveCodeTemplate &H,
                                                  std::mt19937_64 &rng,
                                                  const std::size_t step_size,
                                                  const std::size_t start_syndrome_size,
+                                                 const std::string &n_messages_out_csv_file_path = "",
                                                  const std::size_t max_num_iter = 50,
                                                  const std::size_t update_console_every_n_frames = 100) {
     // assume whole codeword leaked unless decoding success
@@ -95,10 +96,14 @@ std::vector<std::size_t> run_simulation_nobisect(RateAdaptiveCodeTemplate &H,
                                    std::next(n_messages.begin(), static_cast<int32_t>(frame_idx + 1))}) {
                 std::cout << " " << x;
             }
-            std:: cout << " ." << '\n';
+            std::cout << " ." << '\n';
         }
     }
     std::cout << std::endl;
+
+    if (!n_messages_out_csv_file_path.empty()) {
+        write_vector_to_csv(n_messages_out_csv_file_path, n_messages, true);
+    }
 
     return final_syndrome_sizes;
 }
@@ -286,8 +291,9 @@ int main(int argc, char *argv[]) {
                     H, p, num_frames_to_test, rng,
                     max_bp_iter, update_console_every_n_frames);
         } else {
+            const auto out_file_path = std::string{"n_messages"} + std::to_string(rng_seed);
             return run_simulation_nobisect(
-                    H, p, num_frames_to_test, rng, step_size, start_syndrome_size,
+                    H, p, num_frames_to_test, rng, step_size, start_syndrome_size, out_file_path,
                     max_bp_iter, update_console_every_n_frames);
         }
     }();
