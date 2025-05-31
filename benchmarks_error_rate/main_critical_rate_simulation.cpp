@@ -252,9 +252,13 @@ int main(int argc, char *argv[]) {
     const auto step_size = parser.get<std::size_t>("d");
     const bool run_bisection = (step_size == 0);
     const auto min_supported_syndrome_size = H.get_n_rows_mother_matrix() - H.get_max_ra_steps();
-    const auto start_syndrome_size = [&parser, &min_supported_syndrome_size]() {
+    const auto start_syndrome_size = [&]() {
         auto user_requested_start_syndrome_size = parser.get<std::size_t>("st");
-        if (user_requested_start_syndrome_size < min_supported_syndrome_size) {
+        if (run_bisection && user_requested_start_syndrome_size != 0) {
+            std::cerr << "Warning: ignoring start-syndrome-size because bisection rate search is enabled "
+                         "(where we check all available rates anyway)."
+                      << std::endl;
+        } else if (user_requested_start_syndrome_size < min_supported_syndrome_size) {
             std::cerr << "Warning:  Requested start syndrome size not supported. "
                          "Using smallest supported by selected code, which is "
                       << min_supported_syndrome_size << std::endl;
@@ -262,12 +266,6 @@ int main(int argc, char *argv[]) {
         }
         return user_requested_start_syndrome_size;
     }();
-
-    if (run_bisection && start_syndrome_size != 0) {
-        std::cerr << "Warning: ignoring start-syndrome-size because bisection rate search is enabled "
-                     "(where we check all available rates anyway)."
-                  << std::endl;
-    }
 
     std::cout << "Code size: " << H.get_n_rows_after_rate_adaption() << " x " << H.getNCols() << '\n';
     std::cout << "Running FER decoding test on channel parameter p : " << p << '\n';
