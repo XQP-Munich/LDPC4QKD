@@ -39,7 +39,7 @@ namespace LDPC4QKD {
      */
     template<typename Bit>
     std::vector<double> llrs_bsc(const std::vector<Bit> &bitstring, const double bsc_channel_parameter) {
-        double vlog = log((1 - bsc_channel_parameter) / bsc_channel_parameter);
+        double vlog = ::log((1 - bsc_channel_parameter) / bsc_channel_parameter);
         std::vector<double> llrs(bitstring.size());
         for (std::size_t i{}; i < llrs.size(); ++i) {
             llrs[i] = vlog * (1 - 2 * bitstring[i]); // log likelihood ratios
@@ -72,7 +72,7 @@ namespace LDPC4QKD {
          * @param colptr column pointer array for specifying mother parity check matrix.
          * @param rowIdx row index array for specifying mother parity check matrix.
          */
-        template <typename colptr_t>
+        template<typename colptr_t>
         RateAdaptiveCode(const std::vector<colptr_t> &colptr, const std::vector<idx_t> &rowIdx)
                 : n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
@@ -101,7 +101,7 @@ namespace LDPC4QKD {
          * @param rows_to_combine_rate_adapt array of mother-matrix line indices to be combined for rate adaption
          * @param initial_row_combs number of line indices to combine initially
          */
-        template <typename colptr_t>
+        template<typename colptr_t>
         RateAdaptiveCode(std::vector<colptr_t> colptr,
                          std::vector<idx_t> rowIdx,
                          std::vector<idx_t> rows_to_combine_rate_adapt,
@@ -511,9 +511,9 @@ namespace LDPC4QKD {
         }
 
         template<typename T>
-        static void saturate(std::vector<std::vector<T>> &mv, const double vsat) {
-            for (auto &v : mv) {
-                for (auto &a : v) {
+        static void saturate(std::vector<std::vector<T>> &mv, const T vsat) {
+            for (auto &v: mv) {
+                for (auto &a: v) {
                     if (a > vsat) { a = vsat; }
                     else if (a < -vsat) { a = -vsat; }
                 }
@@ -587,7 +587,7 @@ namespace LDPC4QKD {
                 pos_checkn.assign(n_cols, std::vector<idx_t>{});
 
                 for (idx_t i{}; i < pos_varn.size(); ++i) {
-                    for (auto &vn : pos_varn[i]) {
+                    for (auto &vn: pos_varn[i]) {
                         pos_checkn[vn].push_back(i);
                     }
                 }
