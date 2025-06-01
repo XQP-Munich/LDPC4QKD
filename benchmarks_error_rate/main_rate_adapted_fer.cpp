@@ -22,6 +22,7 @@ constexpr auto help_text =
 // Project scope
 #include "LDPC4QKD/rate_adaptive_code.hpp"
 #include "code_simulation_helpers.hpp"
+#include "LDPC4QKD/encoder_advanced.hpp"
 
 using namespace LDPC4QKD::CodeSimulationHelpers;
 
@@ -109,12 +110,13 @@ void configure_parser(cli::Parser &parser) {
 
     parser.set_required<std::string>(
             "cp", "code-path",
-            "Path to file containing LDPC code (`.cscmat` or `bincsc.json` format. Note: does not accept QC exponents!)");
+            "Path to file containing LDPC code (`.cscmat` or `bincsc.json` format. Note: does not accept QC exponents!)"
+            "Alternatively, a numeric index selecting pre-compiled code (e.g., `3` selects code 2048x4096 hash 0c809c3).");
 
     parser.set_optional<std::string>(
             "rp", "rate-adaption-path", "",
             "Path to file containing rate adaption for the LDPC code (`csv` format. Two columns of indices). "
-            "If unspecified, no rate adaption is available.");
+            "If unspecified, either no rate adaption, or the code's default rate adaption is used if available.");
 
     parser.set_optional<std::size_t>(
             "rn", "rate-adaption-steps", 0,
@@ -140,7 +142,22 @@ int main(int argc, char *argv[]) {
     auto n_line_combs = parser.get<std::size_t>("rn");
 
     // create LDPC code, with rate adaption if specified.
-    auto H = load_ldpc(code_file_path, rate_adaption_file_path);
+    auto H = [&code_file_path, &rate_adaption_file_path]() {
+        try {
+            int idx = std::stoi(code_file_path); // we expect this to fail.
+            auto H = LDPC4QKD::HelperFixedSize::get_rate_adaptive_code(static_cast<size_t>(idx));
+            std::cout << "Pre-compiled LDPC Code and rate adaption used from index: " << idx << '\n';
+            if (!rate_adaption_file_path.empty()) {
+                std::cerr << "Warning: given rate adaption file path is ignored!" << std::endl;
+            }
+            return H;
+        } catch (...) {
+            auto H = load_ldpc(code_file_path, rate_adaption_file_path);
+            std::cout << "LDPC Code loaded from file: " << code_file_path << '\n';
+            std::cout << "Rate adaption loaded from file: " << rate_adaption_file_path << '\n';
+            return H;
+        }
+    }();
     // set rate adaption. Only works if rate adaption was specified!
     H.set_rate(n_line_combs);
 
