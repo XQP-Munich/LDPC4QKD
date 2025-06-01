@@ -30,6 +30,10 @@
 
 namespace LDPC4QKD {
 
+    constexpr double tanh_half(double x) {
+        return ::tanh(0.5 * x);
+    }
+
     /*!
      * compute log-likelihood-ratios for a given keye and channel parameter
      * @tparam Bit e.g. std::uint8_t or bool
@@ -418,7 +422,7 @@ namespace LDPC4QKD {
          * @param rowIdx row index array for specifying mother parity check matrix.
          * @return Input variable nodes to each check node (of the Tanner graph)
          */
-        template <typename colptr_t>
+        template<typename colptr_t>
         static std::vector<std::vector<idx_t>> compute_mother_pos_varn(
                 const std::vector<colptr_t> &colptr,
                 const std::vector<idx_t> &rowIdx) {
@@ -449,21 +453,22 @@ namespace LDPC4QKD {
                 // Note: pos_varn[m].size() = check_node_degrees[m]
                 const auto curr_check_node_degree = pos_varn[m].size();
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
-                    mc_prod *= ::tanh(0.5 * msg_v[m][k]);
+                    mc_prod *= tanh_half(msg_v[m][k]);
                 }
 
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
                     // computing message from
-                    if (msg_v[m][k] == 0.) {  // TODO test this bit more carefully.
-                        LDPC4QKD_DEBUG_MESSAGE("Decoder went into the 'untested bit'!!");
+                    const auto msg = msg_v[m][k];
+                    if (msg == 0.) {
+                        LDPC4QKD_DEBUG_MESSAGE("Decoder found a zero message!!");
                         msg_part = 1;
                         for (std::size_t non_k{}; non_k < curr_check_node_degree; ++non_k) {
                             if (non_k != k) {
-                                msg_part *= ::tanh(0.5 * msg_v[m][k]);
+                                msg_part *= tanh_half(msg);
                             }
                         }
                     } else {
-                        msg_part = mc_prod / ::tanh(0.5 * msg_v[m][k]);
+                        msg_part = mc_prod / tanh_half(msg);
                     }
 
                     auto msg_final = ::log((1 + msg_part) / (1 - msg_part));
