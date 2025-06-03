@@ -1,11 +1,15 @@
 COMMAND=$1
+OUT_FOLDER_NAME=$2
+
+echo $OUT_FOLDER_NAME
 
 seconds_since_1970=$(date +%s)
-out_dirname="simout_$seconds_since_1970"
+out_dirname="simout_${OUT_FOLDER_NAME}_${seconds_since_1970}"
 mkdir $out_dirname
 
 git rev-parse HEAD >> status.txt
 git diff >> status.txt
+echo $COMMAND >> status.txt
 
 cp status.txt "$out_dirname/results0.txt"
 cp status.txt "$out_dirname/results1.txt"
@@ -26,7 +30,7 @@ cp status.txt "$out_dirname/results15.txt"
 
 rm status.txt
 
-echo COMMAND
+echo $COMMAND
 
 $COMMAND --seed 0  >> "$out_dirname/results0.txt" 2>&1 &
 $COMMAND --seed 1  >> "$out_dirname/results1.txt" 2>&1 &
