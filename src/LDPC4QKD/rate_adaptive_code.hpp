@@ -31,7 +31,9 @@
 namespace LDPC4QKD {
 
     constexpr double tanh_half(double x) {
-        return ::tanh(0.5 * x);
+        auto exp_x = ::exp(x);
+        return (exp_x - 1) / (exp_x + 1);
+        // Note: this seems to be faster than `::tanh(0.5 * x)`.
     }
 
     /*!
