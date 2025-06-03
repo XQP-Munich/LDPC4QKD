@@ -188,10 +188,6 @@ void configure_parser(cli::Parser &parser) {
             "Maximum number of belief propagation (BP) algorithm iterations.");
 
     parser.set_optional<std::size_t>(
-            "me", "max-frame-errors", 50,
-            "Number of frame errors at which to quit the simulation. Specify zero for 'no condition'.");
-
-    parser.set_optional<std::size_t>(
             "d", "step-size", 0,
             "If non-zero, we start at start-syndrome-size and increase the syndrome in steps of step-size.");
 
