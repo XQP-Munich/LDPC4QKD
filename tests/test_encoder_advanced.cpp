@@ -30,6 +30,32 @@ namespace {
     }
 }
 
+void debug_print_sizes() {
+    std::cout
+            // Protograph-based
+            << "encoder_2048x6144_4663d91: " << sizeof(encoder_2048x6144_4663d91) << '\n'
+            << "encoder_8192x24576_71b51c1: " << sizeof(encoder_8192x24576_71b51c1) << '\n'
+            << "encoder_524288x1572864_4d78a9f: " << sizeof(encoder_524288x1572864_4d78a9f) << '\n'
+            << "encoder_2048x4096_0c809c3: " << sizeof(encoder_2048x4096_0c809c3) << '\n'
+            << "encoder_8192x16384_3fcad37: " << sizeof(encoder_8192x16384_3fcad37) << '\n'
+            << "encoder_524288x1048576_9b50f98: " << sizeof(encoder_524288x1048576_9b50f98) << '\n'
+            // degree-distribution-based
+            << std::endl
+            << "encoder_lrate_P1_block_819k: " << sizeof(encoder_lrate_P1_block_819k) << "\n"
+            << "encoder_lrate_P15_block_819k: " << sizeof(encoder_lrate_P15_block_819k) << "\n"
+            << "encoder_lrate_P2_block_819k: " << sizeof(encoder_lrate_P2_block_819k) << "\n"
+            << "encoder_lrate_P25_block_819k: " << sizeof(encoder_lrate_P25_block_819k) << "\n"
+            << "encoder_lrate_P3_block_819k: " << sizeof(encoder_lrate_P3_block_819k) << "\n"
+            << "encoder_lrate_P35_block_819k: " << sizeof(encoder_lrate_P35_block_819k) << "\n"
+            << "encoder_lrate_P4_block_819k: " << sizeof(encoder_lrate_P4_block_819k) << "\n"
+            << "encoder_lrate_P45_block_819k: " << sizeof(encoder_lrate_P45_block_819k) << "\n"
+            << "encoder_lrate_P5_block_819k: " << sizeof(encoder_lrate_P5_block_819k) << "\n";
+}
+
+TEST(test_encoder_advanced, memory_usage_encoder_storage) {
+    debug_print_sizes();
+}
+
 TEST(test_encoder_advanced, basic_example_code_choice_runtime) {
     unsigned seed = 42; // seed for PRNG
 

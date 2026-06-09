@@ -30,6 +30,12 @@
 
 namespace LDPC4QKD {
 
+    constexpr double tanh_half(double x) {
+        auto exp_x = ::exp(x);
+        return (exp_x - 1) / (exp_x + 1);
+        // Note: this seems to be faster than `::tanh(0.5 * x)`.
+    }
+
     /*!
      * compute log-likelihood-ratios for a given keye and channel parameter
      * @tparam Bit e.g. std::uint8_t or bool
@@ -39,7 +45,7 @@ namespace LDPC4QKD {
      */
     template<typename Bit>
     std::vector<double> llrs_bsc(const std::vector<Bit> &bitstring, const double bsc_channel_parameter) {
-        double vlog = log((1 - bsc_channel_parameter) / bsc_channel_parameter);
+        double vlog = ::log((1 - bsc_channel_parameter) / bsc_channel_parameter);
         std::vector<double> llrs(bitstring.size());
         for (std::size_t i{}; i < llrs.size(); ++i) {
             llrs[i] = vlog * (1 - 2 * bitstring[i]); // log likelihood ratios
@@ -72,7 +78,7 @@ namespace LDPC4QKD {
          * @param colptr column pointer array for specifying mother parity check matrix.
          * @param rowIdx row index array for specifying mother parity check matrix.
          */
-        template <typename colptr_t>
+        template<typename colptr_t>
         RateAdaptiveCode(const std::vector<colptr_t> &colptr, const std::vector<idx_t> &rowIdx)
                 : n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
@@ -91,11 +97,9 @@ namespace LDPC4QKD {
          * variable node eliminations, disable the elimination check to speed up this constructor.
          *
          * note: invalid `rows_to_combine_rate_adapt`, for example non-zero based, may lead to a segmentation fault.
-         * TODO add extra checks for validity of `rows_to_combine_rate_adapt`
          *
          * note: there used to be a parameter `do_elimination_check` to check for repeated node indices after rate adaption.
          *      Such indices are now removed during `recompute_pos_vn_cn`. Consequentially, node eliminations are allowed.
-         *              TODO make sure this is correct
          *
          * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
          * @param colptr column pointer array for specifying mother parity check matrix.
@@ -103,7 +107,7 @@ namespace LDPC4QKD {
          * @param rows_to_combine_rate_adapt array of mother-matrix line indices to be combined for rate adaption
          * @param initial_row_combs number of line indices to combine initially
          */
-        template <typename colptr_t>
+        template<typename colptr_t>
         RateAdaptiveCode(std::vector<colptr_t> colptr,
                          std::vector<idx_t> rowIdx,
                          std::vector<idx_t> rows_to_combine_rate_adapt,
@@ -232,7 +236,7 @@ namespace LDPC4QKD {
 
         /// decoder infers rate from the length of the syndrome and changes the internal decoder state to match this rate.
         /// Note: since this function modifies the code (by performing rate adaption), it is NOT CONST.
-        /// this change may be somewhat computationally expensive TODO benchmark this
+        /// this change may be somewhat computationally expensive
         /// `Bit` should be e.g. std::uint8_t or bool. TODO use concept `std::unsigned_integral` when using C++20
         template<typename Bit>
         bool decode_infer_rate(const std::vector<double> &llrs,
@@ -420,7 +424,7 @@ namespace LDPC4QKD {
          * @param rowIdx row index array for specifying mother parity check matrix.
          * @return Input variable nodes to each check node (of the Tanner graph)
          */
-        template <typename colptr_t>
+        template<typename colptr_t>
         static std::vector<std::vector<idx_t>> compute_mother_pos_varn(
                 const std::vector<colptr_t> &colptr,
                 const std::vector<idx_t> &rowIdx) {
@@ -451,21 +455,22 @@ namespace LDPC4QKD {
                 // Note: pos_varn[m].size() = check_node_degrees[m]
                 const auto curr_check_node_degree = pos_varn[m].size();
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
-                    mc_prod *= ::tanh(0.5 * msg_v[m][k]);
+                    mc_prod *= tanh_half(msg_v[m][k]);
                 }
 
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
                     // computing message from
-                    if (msg_v[m][k] == 0.) {  // TODO test this bit more carefully.
-                        LDPC4QKD_DEBUG_MESSAGE("Decoder went into the 'untested bit'!!");
+                    const auto msg = msg_v[m][k];
+                    if (msg == 0.) {
+                        LDPC4QKD_DEBUG_MESSAGE("Decoder found a zero message!!");
                         msg_part = 1;
                         for (std::size_t non_k{}; non_k < curr_check_node_degree; ++non_k) {
                             if (non_k != k) {
-                                msg_part *= ::tanh(0.5 * msg_v[m][k]);
+                                msg_part *= tanh_half(msg);
                             }
                         }
                     } else {
-                        msg_part = mc_prod / ::tanh(0.5 * msg_v[m][k]);
+                        msg_part = mc_prod / tanh_half(msg);
                     }
 
                     auto msg_final = ::log((1 + msg_part) / (1 - msg_part));
@@ -513,9 +518,9 @@ namespace LDPC4QKD {
         }
 
         template<typename T>
-        static void saturate(std::vector<std::vector<T>> &mv, const double vsat) {
-            for (auto &v : mv) {
-                for (auto &a : v) {
+        static void saturate(std::vector<std::vector<T>> &mv, const T vsat) {
+            for (auto &v: mv) {
+                for (auto &a: v) {
                     if (a > vsat) { a = vsat; }
                     else if (a < -vsat) { a = -vsat; }
                 }
@@ -536,7 +541,6 @@ namespace LDPC4QKD {
             }
 
             {   // recompute pos_varn ---------------------------------------------------------------
-                // TODO check if this assumes full rank of H (should have that anyway)
                 // This uses different size vectors for nodes with different degrees.
                 // Alternatively, one could set the sizes to be the same (set them to the largest check node degree)
 
@@ -590,7 +594,7 @@ namespace LDPC4QKD {
                 pos_checkn.assign(n_cols, std::vector<idx_t>{});
 
                 for (idx_t i{}; i < pos_varn.size(); ++i) {
-                    for (auto &vn : pos_varn[i]) {
+                    for (auto &vn: pos_varn[i]) {
                         pos_checkn[vn].push_back(i);
                     }
                 }

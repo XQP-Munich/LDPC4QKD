@@ -44,6 +44,10 @@ namespace {
         return RateAdaptiveCode(colptr, row_idx);
     }
 
+    auto get_code_819k(std::size_t id) {
+        return HelperFixedSize::get_rate_adaptive_code(id);
+    }
+
 }
 
 TEST(rate_adaptive_code_from_colptr_rowIdx, decode_test_small) {
@@ -238,6 +242,60 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, decode_infer_rate) {
     ASSERT_EQ(prediction, x);
 }
 
+TEST(new_819k_code, fer_simulation) {
+    // assert that the rate adapted FER (at set fraction of mother syndrome) is small.
+    std::mt19937_64 rng(42);
+    auto H = get_code_819k(14);
+
+    constexpr double p = 0.095;
+    constexpr std::size_t num_frames_to_test = 5;
+    constexpr std::size_t max_num_iter = 50;
+    const std::size_t syndrome_size = H.get_n_rows_mother_matrix();
+
+    std::cout << "Testing code with size " << H.get_n_rows_mother_matrix() << " x " << H.getNCols()
+              << " at QBER = " << p << std::endl;
+
+    std::size_t num_frame_errors{};
+    std::size_t frame_idx{0};  // counts the number of iterations
+    for (; frame_idx < num_frames_to_test; ++frame_idx) {
+        std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
+        noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
+
+        std::vector<bool> syndrome;  // syndrome for error correction, which is sent over a noise-less channel.
+        H.encode_with_ra(x, syndrome, syndrome_size);
+
+        std::vector<bool> x_noised = x; // copy for distorted data
+        noise_bitstring_inplace(rng, x_noised, p);
+
+        // log likelihood ratio (llr) computation
+        double vlog = ::log((1 - p) / p);
+        std::vector<double> llrs(x.size());
+        for (std::size_t i{}; i < llrs.size(); ++i) {
+            llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
+        }
+
+        std::vector<bool> solution;
+        bool success = H.decode_infer_rate(llrs, syndrome, solution, max_num_iter);
+
+        if (solution == x) {
+            if (!success) {
+                std::cerr << "DECODER GIVES CORRECT RESULT ALTHOUGH IT HAS NOT CONVERGED!!!!" << std::endl;
+                FAIL();
+            }
+        } else {
+            num_frame_errors++;
+            if (success) {
+                std::cerr << "\n\nDECODER CONVERGED TO WRONG CODEWORD!!!!\n" << std::endl;
+                FAIL();
+            }
+        }
+    }
+
+    double fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_to_test);
+    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from " << num_frames_to_test << " frames )"
+              << std::endl;
+    ASSERT_EQ(fer, 0.);
+}
 
 TEST(rate_adaptive_code_from_colptr_rowIdx, rate_adapted_fer) {
     // assert that the rate adapted FER (at set fraction of mother syndrome) is small.
@@ -248,6 +306,9 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, rate_adapted_fer) {
     constexpr std::size_t num_frames_to_test = 100;
     constexpr std::size_t max_num_iter = 50;
     const std::size_t syndrome_size = H.get_n_rows_mother_matrix() - 10;
+
+    std::cout << "Testing rate adaption for mother code with size " << H.get_n_rows_mother_matrix() << " x " << H.getNCols()
+              << " at QBER = " << p << std::endl;
 
     std::size_t num_frame_errors{};
     std::size_t frame_idx{1};  // counts the number of iterations

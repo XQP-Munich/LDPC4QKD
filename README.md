@@ -46,14 +46,13 @@ To build the C++ executables (except for unit tests) using CMake (Julia not requ
 
         git clone <github url>
         cd LDPC4QKD
-        cmake -S . -B build -DBUILD_UNIT_TESTS=OFF
+        cmake -S . -B build -DLDPC4QKD_BUILD_UNIT_TESTS=OFF
         cmake --build build --config Release
-        
 All executables will be built inside the `build` folder.
 
 For a demo of how to use the C++ header-only library, see the `examples` directory, which shows a basic example ("demo_error_correction") of how to use the C++ header containing the decoder.
-This example is built by CMake (executable `build/examples/demo_error_correction`.
-Note: the executable produces no output; look at the C++ source code to see how the header can be used.
+This example is built by CMake (executable `build/examples/demo_error_correction`).
+Note: this executable produces no output; look at the C++ source code at `examples/main_demo_error_correction.cpp`.
 
 For more advanced examples, looking at the unit tests may be helpful.
 
@@ -129,6 +128,29 @@ If you need some feature for your applications, let us know, e.g. by creating an
   + [x] Encoder that can be used separately from encoder (e.g. for embedded applications)
   + [x] Save memory by storing QC-exponents of structured codes, rather than CSC storage
   + [x] Encoder that directly uses CSC-storage of QC-exponents instead of expanding to CSC storage of binary matrix
+
+## Is it fast?
+
+This implementation is single-threaded.
+Applications using several processor cores should decode multiple frames simultaneously, which is anyway the most efficient way to parallelize the decoder.
+
+Furthermore, careful use of SIMD and other processor capabilities can easily make the decoder 2x faster on standard hardware.
+It's straightforward to modify this code in order to vectorize the loops.
+For example, see [how AFF3CT does it](https://github.com/aff3ct/aff3ct/blob/44d89d074fe24dc9742998adf1f2df689a56b958/include/Module/Decoder/LDPC/BP/Flooding/SPA/Decoder_LDPC_BP_flooding_SPA.hxx#L62).
+However, this project also targets embedded platforms without SIMD, and generally aims to be simple and portable.
+Therefore, we don't use intrinsics or SIMD (other than what your compiler emits by default).
+
+If you're feeling adventurous, you can still add custom compiler flags to this build, which might also help the compiler vectorize loops.
+E.g., with GCC, this may improve decoding speed of simulations on your platform:
+
+        cmake -S . -B build -DLDPC4QKD_BUILD_UNIT_TESTS=OFF -DCMAKE_CXX_FLAGS="-march=native -flto -funsafe-math-optimizations -fno-math-errno -O3" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        cmake --build build
+
+Using aggressive optimizations (particularly, GCC's `-Ofast`, which includes `-ffast-math`), can make the decoder faster.
+However, it definitely affects the decoder's behavior and will likely increase the number of frame errors, especially for large matrices and many iterations (since errors accumulate).
+If you use such unsafe optimizations, test carefully for your specific platform and specific LDPC matrices!
+
+If you include the header-only library in your software, of course only those compiler flags apply which are used by your build.
 
 ## Attributions
 
