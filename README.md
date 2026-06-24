@@ -35,6 +35,9 @@ This is different from what is used for forward error correction (as in e.g. [AF
 
 
 ## How to use
+
+For a Python wrapper of the main library functionality, see [Py_LDPC4QKD](https://github.com/XQP-Munich/Py_LDPC4QKD).
+
 In order to use all the functionality provided in this repository, install
 - CMake (at least version 3.19)
 - C++ compiler (supporting C++20; parts of the project also work with only C++17)
