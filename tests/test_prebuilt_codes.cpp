@@ -52,11 +52,11 @@ void debug_print_sizes() {
             << "encoder_lrate_P5_block_819k: " << sizeof(encoder_lrate_P5_block_819k) << "\n";
 }
 
-TEST(test_encoder_advanced, memory_usage_encoder_storage) {
+TEST(test_prebuilt_codes, memory_usage_encoder_storage) {
     debug_print_sizes();
 }
 
-TEST(test_encoder_advanced, basic_example_code_choice_runtime) {
+TEST(test_prebuilt_codes, basic_example_code_choice_runtime) {
     unsigned seed = 42; // seed for PRNG
 
     // If the code choice is done at RUNTIME (will usually be the case, e.g. because QBER is known only at runtime),
@@ -84,7 +84,7 @@ TEST(test_encoder_advanced, basic_example_code_choice_runtime) {
     std::cout << std::endl;
 }
 
-TEST(test_encoder_advanced, basic_example_code_choice_runtime_vectorbool) {
+TEST(test_prebuilt_codes, basic_example_code_choice_runtime_vectorbool) {
     unsigned seed = 42; // seed for PRNG
 
     // same thing with `vector<bool>`
@@ -110,7 +110,7 @@ TEST(test_encoder_advanced, basic_example_code_choice_runtime_vectorbool) {
     std::cout << std::endl;
 }
 
-TEST(test_encoder_advanced, basic_example_code_choicecomptime) {
+TEST(test_prebuilt_codes, basic_example_code_choicecomptime) {
     unsigned seed = 42; // seed for PRNG
 
     // If the block size and syndrome size are known at compile time, we can use fixed-length buffers (`std::array`)
