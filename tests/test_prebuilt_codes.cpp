@@ -10,7 +10,7 @@
 #include <iostream>
 
 // To be tested
-#include "LDPC4QKD/encoder_advanced.hpp"
+#include "LDPC4QKD/prebuilt_codes.hpp"
 
 using namespace LDPC4QKD;
 
