@@ -22,7 +22,7 @@ constexpr auto help_text =
 // Project scope
 #include "LDPC4QKD/rate_adaptive_code.hpp"
 #include "code_simulation_helpers.hpp"
-#include "LDPC4QKD/encoder_advanced.hpp"
+#include "LDPC4QKD/prebuilt_codes.hpp"
 
 using namespace LDPC4QKD::CodeSimulationHelpers;
 

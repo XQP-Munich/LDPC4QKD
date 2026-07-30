@@ -11,7 +11,7 @@
 
 // To be tested
 #include "LDPC4QKD/rate_adaptive_code.hpp"
-#include "LDPC4QKD/encoder_advanced.hpp"
+#include "LDPC4QKD/prebuilt_codes.hpp"
 
 // Test cases test against constants known to be correct for the LDPC-matrix defined here:
 #include "fortest_autogen_ldpc_matrix_csc.hpp"
