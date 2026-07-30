@@ -122,48 +122,6 @@ namespace LDPC4QKD {
         }
     }
 
-
-    template<typename Bit>
-    [[deprecated("TODO this function is probably slow and should not be used. Update to be like 'safe' version?")]]
-    constexpr void rate_adapt_unsafe(
-            const std::array<Bit, AutogenLDPC::M> &syndrome,
-            Bit *rate_adapted_syndrome,
-            const std::size_t size_rate_adapted_syndrome) {
-        using AutogenRateAdapt::rows;
-        if(size_rate_adapted_syndrome >= syndrome.size()) {
-            LDPC4QKD_DEBUG_MESSAGE("Requested rate adapted syndrome size must be less than the original syndrome size.");
-            // TODO consider removing exception?
-            throw std::runtime_error("Requested rate adapted syndrome size must be less than the original syndrome size.");
-        }
-        std::size_t n_row_combs = syndrome.size() - size_rate_adapted_syndrome;
-        if(rows.size() / 2 < n_row_combs) {
-            LDPC4QKD_DEBUG_MESSAGE("The specified rate adaption does not support such a high amount of line combinations");
-            // TODO consider removing exception?
-            throw std::runtime_error("The specified rate adaption does not support such a high amount of line combinations");
-        }
-
-        // Depending on the rate adaption requested, only part of the `rows` array will be used.
-        // This corresponds to `used_rows.end()`,
-        // where `used_rows` is the portion of `rows` that is relevant for the specified rate (given by `reduced_size`)
-        auto rows_end_indx = rows.begin() + 2 * n_row_combs;
-
-        std::size_t reduced_syndrome_idx{};
-        for (std::size_t i{}; i < syndrome.size(); ++i) {
-            // if `i` is not the list of line indices to be combined,
-            // add the corresponding syndrome bit to the `reduced_syndrome`
-            if (std::find(rows.begin(), rows_end_indx, i) == rows_end_indx) {
-                rate_adapted_syndrome[reduced_syndrome_idx] = syndrome[i];
-                reduced_syndrome_idx++;
-            }
-        }
-
-        // combine the lines as specified by the indices in the array `AutogenRateAdapt::rows`.
-        for (std::size_t i{}; i < 2 * n_row_combs; i += 2) {
-            rate_adapted_syndrome[reduced_syndrome_idx] = xor_as_bools(syndrome[rows[i]], syndrome[rows[i + 1]]);
-            reduced_syndrome_idx++;
-        }
-    }
-
 }  // namespace RALDPC
 
 #endif //LDPC4QKD_ENCODER_HPP
