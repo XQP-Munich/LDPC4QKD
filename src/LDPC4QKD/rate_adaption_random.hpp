@@ -97,15 +97,11 @@ namespace LDPC4QKD {
         /*!
          * Get a linear congruential generator with period exactly `m`, for any `m >= 1`.
          * Chooses `C` coprime to `m` and `A` such that `(A - 1)` is divisible by all prime factors of `m`
-         * (and by 4 if `m` is divisible by 4), satisfying the Hull-Dobell theorem for full period.
+         * (and by 4 if `m` is divisible by 4), satisfying the Hull-Dobell condition for full period.
          *
-         * `C` is picked by searching forward from `nextprime(m/4)` for the first value coprime to `m` (see
-         * `find_coprime_at_least`). This is a strict generalization of just using `nextprime(m/4)` directly:
-         * whenever that candidate already happens to be coprime to `m` (true for every mother matrix size used
-         * in this codebase) the search terminates immediately and returns exactly that value; it only searches
-         * further for the rare `m` where the plain `nextprime(m/4)` choice would not have given full period
-         * (e.g. `m == 2` or `m == 4`). Unlike an earlier version of this function, this construction always
-         * succeeds -- there is no longer a degenerate `m` for which it throws.
+         * `C` is picked by searching forward from `nextprime(m/4)` (somewhat arbitrary)
+         * for the first value coprime to `m` (see `find_coprime_at_least`):
+         * For every mother matrix size used so far, nextprime(m/4) is already coprime.
          *
          * @param m period of the generator. Must be >= 1.
          * @param seed initial state of the generator.

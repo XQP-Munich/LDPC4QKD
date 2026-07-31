@@ -77,9 +77,10 @@ namespace LDPC4QKD {
                 std::span<bit_type const, input_size> key,
                 std::span<bit_type, output_size> syndrome) const = 0;
 
-        /// general, with runtime size check
-        /// (a runtime cost usually not worth worrying about)
-        constexpr void encode(auto const &key, auto &syndrome) const {
+        /// general syndrome computation with runtime size check (a runtime cost usually not worth worrying about).
+        /// Not constexpr: using `std::stringstream` in constexpr context only possible in C++23
+        //  Compile-time checks use `encode_span` instead.
+        void encode(auto const &key, auto &syndrome) const {
             if (key.size() == input_size && syndrome.size() == output_size) {
                 encode_span(
                         std::span<bit_type const, input_size>{key},
@@ -113,10 +114,9 @@ namespace LDPC4QKD {
                                      std::array<values_uintx_t, num_nz> values) :
                 colptr(colptr), row_idx(row_idx), values(values) {
             if (!matrix_consistent_with_input_size()) {
-                // Note: this will show up as a compile-time error if the constructor is called at compile time!
-                // The error will not have the exception text, just say that throwing is disallowed at compile time!
-                // If you get "error: expression ‘<throw-expression>’ is not a constant expression",
-                // this is still the error though!
+                // If constructed at compile time, this throw surfaces as "expression is not a constant
+                // expression" rather than showing the message.
+                // If that happens, assume there is an issue with the given inputs.
                 throw std::runtime_error("Inputs would make encoder that performs out-of-memory access!");
             }
         }
@@ -147,12 +147,13 @@ namespace LDPC4QKD {
                     auto QCrow = row_idx[j];  // row index into matrix of exponents
                     // `outIdx` is the row (into the full matrix) at which this sub-block places a `1`:
                     // the sub-block's base row `expansion_factor * QCrow`, plus the shifted position of
-                    // `col` within the block. `col_in_block` and `shift_in_block` are both already in
-                    // [0, expansion_factor), so subtracting and re-adding `expansion_factor` before the
-                    // final `% expansion_factor` keeps the result correct (and non-negative) for any
-                    // expansion_factor.
+                    // `col` within the block.
+                    // `col_in_block` and `shift_in_block` are both already in [0, expansion_factor),
+                    // so subtracting and re-adding `expansion_factor` before the final `% expansion_factor`
+                    // keeps the result correct (and non-negative) for any expansion_factor.
                     auto shift_in_block = (shiftVal % expansion_factor);
-                    auto outIdx = (expansion_factor * QCrow) + ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
+                    auto outIdx = (expansion_factor * QCrow) +
+                        ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
                     pos_varn[outIdx].push_back(static_cast<idx_t>(col));
                 }
             }
@@ -174,14 +175,10 @@ namespace LDPC4QKD {
                 for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
                     auto QCrow = row_idx[j];  // row index into matrix of exponents
-                    // `outIdx` is the row (into the full matrix) at which this sub-block places a `1`:
-                    // the sub-block's base row `expansion_factor * QCrow`, plus the shifted position of
-                    // `col` within the block. `col_in_block` and `shift_in_block` are both already in
-                    // [0, expansion_factor), so subtracting and re-adding `expansion_factor` before the
-                    // final `% expansion_factor` keeps the result correct (and non-negative) for any
-                    // expansion_factor.
+                    // outIdx formula: see the comment in get_pos_varn() above.
                     auto shift_in_block = (shiftVal % expansion_factor);
-                    auto outIdx = (expansion_factor * QCrow) + ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
+                    auto outIdx = (expansion_factor * QCrow) +
+                        ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
 
                     out[outIdx] = xor_as_bools(out[outIdx], in[col]);
                 }
@@ -189,7 +186,8 @@ namespace LDPC4QKD {
         }
 
         /// General overload, which does not assume spans, but does a **runtime length check!**.
-        constexpr void encode_qc(auto const &in, auto &out) const {
+        /// Note: deliberately NOT constexpr, for the same reason as `FixedSizeEncoder::encode` above.
+        void encode_qc(auto const &in, auto &out) const {
             if (std::size(in) != N * expansion_factor || std::size(out) != M * expansion_factor) {
                 std::stringstream s;
                 s << "LDPC encoder: incorrect sizes of intput / output arrays\n"
@@ -205,14 +203,10 @@ namespace LDPC4QKD {
                 for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
                     auto QCrow = row_idx[j];  // row index into matrix of exponents
-                    // `outIdx` is the row (into the full matrix) at which this sub-block places a `1`:
-                    // the sub-block's base row `expansion_factor * QCrow`, plus the shifted position of
-                    // `col` within the block. `col_in_block` and `shift_in_block` are both already in
-                    // [0, expansion_factor), so subtracting and re-adding `expansion_factor` before the
-                    // final `% expansion_factor` keeps the result correct (and non-negative) for any
-                    // expansion_factor.
+                    // outIdx formula: see the comment in get_pos_varn() above.
                     auto shift_in_block = (shiftVal % expansion_factor);
-                    auto outIdx = (expansion_factor * QCrow) + ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
+                    auto outIdx = (expansion_factor * QCrow) +
+                        ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
 
                     out[outIdx] = xor_as_bools(out[outIdx], in[col]);
                 }
@@ -220,20 +214,15 @@ namespace LDPC4QKD {
         }
 
     private:
-        /// checks that a constexpr QC-encoder will never access input or output arrays outside bounds.
-        /// I.e., for the input the size is `expansion_factor*N` while output size is `expansion_factor*M`.
-        /// NOTE: IF THIS RETURNS FALSE, THE OBJECT IS INVALID!!!
-        ///
-        /// Two independent things can each cause an out-of-bounds access, so both are checked:
-        ///  1. `colptr` must be non-decreasing and bounded by `num_nz`, since `colptr[QCcol]` and
-        ///     `colptr[QCcol + 1]` are used directly as the [begin, end) range into `row_idx`/`values`
-        ///     below -- a malformed `colptr` would read past the end of those arrays.
-        ///  2. Every entry's row `QCrow = row_idx[j]` must be `< M`. `outIdx = expansion_factor*QCrow + r`
-        ///     where `r` is a `% expansion_factor` result and so always in `[0, expansion_factor)`; that
-        ///     makes `outIdx < M*expansion_factor` exactly equivalent to `QCrow < M`, so checking each
-        ///     entry's `QCrow` once suffices -- no need to expand to the full N*expansion_factor column
-        ///     range (which is prohibitively expensive here, since this runs at compile time for every
-        ///     prebuilt code).
+        /// Checks that this QC-encoder never accesses input/output arrays out of bounds.
+        /// Runs at compile time for every prebuilt code.
+        /// If false, the object is invalid and must not be used.
+        /// Two conditions are checked:
+        ///  1. `colptr` is non-decreasing and bounded by `num_nz` (it's used as the [begin, end) range into
+        ///     `row_idx`/`values`).
+        ///  2. every `row_idx[j] < M` -- since `outIdx = expansion_factor*QCrow + r` with `r` always in
+        ///     `[0, expansion_factor)`, this is equivalent to `outIdx < M*expansion_factor`, so checking each
+        ///     row once suffices without expanding to the full column range
         [[nodiscard]] constexpr bool matrix_consistent_with_input_size() const {
             for (std::size_t QCcol = 0; QCcol < N; QCcol++) {
                 if (colptr[QCcol + 1] < colptr[QCcol] || colptr[QCcol + 1] > num_nz) {
@@ -258,8 +247,8 @@ namespace LDPC4QKD {
     };
 
 
-/// don't waste your time reading this...
-/// just reduces the number of templates that needs to be specified for the `FixedSizeEncoderQC<...>` constructor
+    /// Deduces `bit_type`/`N`/`num_nz` from the array arguments,
+    /// so callers don't have to spell out every template parameter of `FixedSizeEncoderQC` manually.
     template<std::size_t M, std::size_t expansion_factor>
     consteval auto helper_create_FixedSizeEncoderQC(auto colptr, auto row_idx, auto values) {
         using bit_type = std::uint8_t;
