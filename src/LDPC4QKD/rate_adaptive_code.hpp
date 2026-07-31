@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <concepts>
 #include <utility>
+#include <limits>
 
 #include "rate_adaption_random.hpp"
 
@@ -32,6 +33,14 @@
 
 
 namespace LDPC4QKD {
+
+    //! Selects which belief-propagation variant `decode_at_current_rate`/`decode_infer_rate` runs.
+    enum class Decoder {
+        Flooding,  //!< Original flooding-schedule BP (see `decode_flooding`). Simplest decoder.
+        Layered,   //!< Layered/serial-schedule BP (see `decode_layered`): default. Typically converges in about
+                   //!< half the iterations of flooding, for equal or better FER.
+        Improved,  //!< Layered BP with damping and a bit-flip rescue stage (see `decode_improved`).
+    };
 
     constexpr double tanh_half(double x) {
         auto exp_x = ::exp(x);
@@ -96,13 +105,10 @@ namespace LDPC4QKD {
          * The mother parity check matrix is stored using Compressed Sparse Column (CSC) format.
          * The rate adaption is stored as an array of matrix row indices, which are combined for rate adaption.
          *
-         * note: if you for some reason find yourself creating a lot of such objects and you know that there are no
-         * variable node eliminations, disable the elimination check to speed up this constructor.
-         *
          * note: invalid `rows_to_combine_rate_adapt`, for example non-zero based, may lead to a segmentation fault.
          *
-         * note: there used to be a parameter `do_elimination_check` to check for repeated node indices after rate adaption.
-         *      Such indices are now removed during `recompute_pos_vn_cn`. Consequentially, node eliminations are allowed.
+         * note: repeated node indices (variable node eliminations) after rate adaption are detected and
+         *      removed automatically during `recompute_pos_vn_cn`.
          *
          * @tparam colptr_t unsigned integer type that fits ("number of non-zero matrix entries" + 1)
          * @param colptr column pointer array for specifying mother parity check matrix.
@@ -264,16 +270,17 @@ namespace LDPC4QKD {
                                const std::vector<Bit> &syndrome,
                                std::vector<Bit> &out,
                                const std::size_t max_num_iter = 50,
-                               const double vsat = 100) {
+                               const double vsat = 100,
+                               const Decoder decoder = Decoder::Layered) {
             if (syndrome.size() != n_ra_rows) {
                 set_rate(get_n_rows_mother_matrix() - syndrome.size());
             }
-            return decode_at_current_rate(llrs, syndrome, out, max_num_iter, vsat);
+            return decode_at_current_rate(llrs, syndrome, out, max_num_iter, vsat, decoder);
         }
 
-
         /*!
-         * Decode using belief propagation
+         * Decode using belief propagation, at the code's current rate (see `decode_infer_rate` to have the
+         * rate inferred from `syndrome`'s length instead).
          *
          * @tparam Bit: e.g. std::uint8_t or bool
          * @param llrs: Log likelihood ratios representing the received message
@@ -283,6 +290,8 @@ namespace LDPC4QKD {
          *      Note that the algorithm always terminates automatically when the current prediction matches
          *      the syndrome (early termination), which means that the actual number of iterations cannot be controlled.
          * @param vsat: Cut-off value for messages.
+         * @param decoder: which BP variant to run (see `Decoder`); dispatches to `decode_flooding`,
+         *      `decode_layered`, or `decode_improved` (gives no access to additional parameters, e.g. damping/rescue settings for `Decoder::Improved`).
          * @return true if and only if the syndrome of buffer `out` matches given `syndrome` (i.e., decoder converged).
          */
         template<std::unsigned_integral Bit>
@@ -290,7 +299,38 @@ namespace LDPC4QKD {
                                     const std::vector<Bit> &syndrome,
                                     std::vector<Bit> &out,
                                     const std::size_t max_num_iter = 50,
-                                    const double vsat = 100) const {
+                                    const double vsat = 100,
+                                    const Decoder decoder = Decoder::Layered) const {
+            switch (decoder) {
+                case Decoder::Flooding:
+                    return decode_flooding(llrs, syndrome, out, max_num_iter, vsat);
+                case Decoder::Layered:
+                    return decode_layered(llrs, syndrome, out, max_num_iter, vsat);
+                case Decoder::Improved:
+                    return decode_improved(llrs, syndrome, out, max_num_iter);
+            }
+            throw std::logic_error("decode_at_current_rate: unhandled Decoder");
+        }
+
+        /*!
+         * Decode using belief propagation with the original FLOODING schedule (all check nodes, then all
+         * variable nodes, once per iteration).
+         *
+         * @tparam Bit: std::uint8_t or bool
+         * @param llrs: Log likelihood ratios representing the received message
+         * @param syndrome: Syndrome of the sent message
+         * @param out: Buffer to which the function writes its prediction for the sent message.
+         * @param max_num_iter: Maximum number of iterations for the PB algorithm.
+         *      It also terminates when the current prediction matches the syndrome (early termination).
+         * @param vsat: Cut-off value for messages.
+         * @return whether decoder converged, i.e., whether the syndrome of buffer `out` matches given `syndrome`.
+         */
+        template<std::unsigned_integral Bit>
+        bool decode_flooding(const std::vector<double> &llrs,
+                            const std::vector<Bit> &syndrome,
+                            std::vector<Bit> &out,
+                            const std::size_t max_num_iter = 50,
+                            const double vsat = 100) const {
             // check inputs.
             if (llrs.size() != n_cols) {
                 throw std::runtime_error("Decoder received invalid input length.");
@@ -298,7 +338,7 @@ namespace LDPC4QKD {
 
             if (syndrome.size() != get_n_rows_after_rate_adaption()) {
                 throw std::runtime_error(
-                        "Decoder (decode_at_current_rate) received invalid syndrome size for current rate. "
+                        "Decoder (decode_flooding) received invalid syndrome size for current rate. "
                         "Use decode_infer_rate to deduce rate automatically.");
             }
 
@@ -351,6 +391,241 @@ namespace LDPC4QKD {
             }
 
             return false;  // Decoding was not successful.
+        }
+
+        /*!
+         * Decode using belief propagation with LAYERED (serial-C) scheduling.
+         * Each check node immediately updates the variable-node posteriors, so information
+         * propagates through the graph within a single iteration. Typically converges in
+         * roughly half the iterations of flooding and gives equal or better FER.
+         */
+        template<std::unsigned_integral Bit>
+        bool decode_layered(const std::vector<double> &llrs,
+                            const std::vector<Bit> &syndrome,
+                            std::vector<Bit> &out,
+                            const std::size_t max_num_iter = 50,
+                            const double vsat = 100) const {
+            if (llrs.size() != n_cols) {
+                throw std::runtime_error("Decoder received invalid input length.");
+            }
+            if (syndrome.size() != get_n_rows_after_rate_adaption()) {
+                throw std::runtime_error("Decoder received invalid syndrome size for current rate.");
+            }
+            constexpr double max_tanh = 1. - std::numeric_limits<double>::epsilon();
+
+            out.resize(llrs.size());
+            std::vector<double> posterior(llrs);  // current posterior LLR of each variable node
+
+            // check-to-variable message stored per edge, indexed like pos_varn
+            std::vector<std::vector<double>> R(n_ra_rows);
+            for (std::size_t m{}; m < n_ra_rows; ++m) {
+                R[m].assign(pos_varn[m].size(), 0.);
+            }
+
+            std::vector<double> tanh_buf;
+            std::vector<double> suffix_prod;
+            std::vector<Bit> decision_syndrome(syndrome.size());
+
+            for (std::size_t it{}; it < max_num_iter; ++it) {
+                for (std::size_t m{}; m < n_ra_rows; ++m) {
+                    const auto deg = pos_varn[m].size();
+                    tanh_buf.resize(deg);
+                    suffix_prod.resize(deg + 1);
+
+                    // variable-to-check messages computed on the fly from current posteriors
+                    for (std::size_t k{}; k < deg; ++k) {
+                        double t = posterior[pos_varn[m][k]] - R[m][k];
+                        t = std::clamp(t, -vsat, vsat);
+                        tanh_buf[k] = tanh_half(t);
+                    }
+
+                    suffix_prod[deg] = 1.;
+                    for (std::size_t k = deg; k-- > 0;) {
+                        suffix_prod[k] = suffix_prod[k + 1] * tanh_buf[k];
+                    }
+
+                    double prefix = 1 - 2 * static_cast<double>(syndrome[m]);
+                    for (std::size_t k{}; k < deg; ++k) {
+                        double msg_part = prefix * suffix_prod[k + 1];
+                        prefix *= tanh_buf[k];
+                        msg_part = std::clamp(msg_part, -max_tanh, max_tanh);
+                        const double R_new = std::log1p(msg_part) - std::log1p(-msg_part);
+
+                        // immediately update posterior (this is what makes it "layered")
+                        const auto v = pos_varn[m][k];
+                        posterior[v] += R_new - R[m][k];
+                        R[m][k] = R_new;
+                    }
+                }
+
+                for (std::size_t j{}; j < n_cols; ++j) {
+                    out[j] = posterior[j] < 0 ? 1 : 0;
+                }
+                encode_at_current_rate(out, decision_syndrome);
+                if (decision_syndrome == syndrome) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /*!
+         * Improved decoder: layered SPA with message damping, best-state tracking,
+         * and a syndrome-weight bit-flipping rescue stage on failure.
+         *
+         * \param damping       weight of the new check-to-variable message (1.0 = no damping).
+         * \param rescue_weight_cap   only attempt the bit-flip rescue if the best state seen
+         *                            has at most this many unsatisfied checks.
+         * \param rescue_max_flips    flip budget of the rescue stage.
+         */
+        template<std::unsigned_integral Bit>
+        bool decode_improved(const std::vector<double> &llrs,
+                             const std::vector<Bit> &syndrome,
+                             std::vector<Bit> &out,
+                             const std::size_t max_num_iter = 200,
+                             const double damping = 0.8,
+                             const std::size_t rescue_weight_cap = 64,
+                             const std::size_t rescue_max_flips = 64,
+                             const double vsat = 100) const {
+            if (llrs.size() != n_cols) {
+                throw std::runtime_error("Decoder received invalid input length.");
+            }
+            if (syndrome.size() != get_n_rows_after_rate_adaption()) {
+                throw std::runtime_error("Decoder received invalid syndrome size for current rate.");
+            }
+            constexpr double max_tanh = 1. - std::numeric_limits<double>::epsilon();
+
+            out.resize(llrs.size());
+            std::vector<double> posterior(llrs);
+            std::vector<std::vector<double>> R(n_ra_rows);
+            for (std::size_t m{}; m < n_ra_rows; ++m) {
+                R[m].assign(pos_varn[m].size(), 0.);
+            }
+
+            std::vector<double> tanh_buf, suffix_prod;
+            std::vector<Bit> decision_syndrome(syndrome.size());
+            std::vector<Bit> best_out;
+            std::size_t best_weight = std::numeric_limits<std::size_t>::max();
+
+            for (std::size_t it{}; it < max_num_iter; ++it) {
+                for (std::size_t m{}; m < n_ra_rows; ++m) {
+                    const auto deg = pos_varn[m].size();
+                    tanh_buf.resize(deg);
+                    suffix_prod.resize(deg + 1);
+                    for (std::size_t k{}; k < deg; ++k) {
+                        double t = posterior[pos_varn[m][k]] - R[m][k];
+                        t = std::clamp(t, -vsat, vsat);
+                        tanh_buf[k] = tanh_half(t);
+                    }
+                    suffix_prod[deg] = 1.;
+                    for (std::size_t k = deg; k-- > 0;) {
+                        suffix_prod[k] = suffix_prod[k + 1] * tanh_buf[k];
+                    }
+                    double prefix = 1 - 2 * static_cast<double>(syndrome[m]);
+                    for (std::size_t k{}; k < deg; ++k) {
+                        double msg_part = prefix * suffix_prod[k + 1];
+                        prefix *= tanh_buf[k];
+                        msg_part = std::clamp(msg_part, -max_tanh, max_tanh);
+                        const double R_bp = std::log1p(msg_part) - std::log1p(-msg_part);
+                        // damping: convex combination of old and new message
+                        const double R_new = damping * R_bp + (1. - damping) * R[m][k];
+                        const auto v = pos_varn[m][k];
+                        posterior[v] += R_new - R[m][k];
+                        R[m][k] = R_new;
+                    }
+                }
+
+                for (std::size_t j{}; j < n_cols; ++j) {
+                    out[j] = posterior[j] < 0 ? 1 : 0;
+                }
+                encode_at_current_rate(out, decision_syndrome);
+
+                // best-state tracking: count unsatisfied checks
+                std::size_t weight = 0;
+                for (std::size_t m{}; m < decision_syndrome.size(); ++m) {
+                    weight += (decision_syndrome[m] != syndrome[m]);
+                }
+                if (weight == 0) {
+                    return true;
+                }
+                if (weight < best_weight) {
+                    best_weight = weight;
+                    best_out = out;
+                }
+            }
+
+            LDPC4QKD_DEBUG_MESSAGE("[decode_improved] best_weight at failure: " << best_weight);
+            // ---- bit-flip rescue stage on the best state seen ----
+            if (best_weight > rescue_weight_cap) {
+                out = best_out.empty() ? out : best_out;
+                return false;
+            }
+            out = best_out;
+            encode_at_current_rate(out, decision_syndrome);
+
+            // column -> adjacent (rate-adapted) check nodes, built once per rescue
+            std::vector<std::vector<idx_t>> col_to_checks(n_cols);
+            for (std::size_t m{}; m < n_ra_rows; ++m) {
+                for (const auto v : pos_varn[m]) {
+                    col_to_checks[v].push_back(static_cast<idx_t>(m));
+                }
+            }
+
+            std::vector<std::uint8_t> unsat(n_ra_rows);
+            std::size_t weight = 0;
+            for (std::size_t m{}; m < n_ra_rows; ++m) {
+                unsat[m] = (decision_syndrome[m] != syndrome[m]);
+                weight += unsat[m];
+            }
+
+            std::vector<std::uint8_t> flipped(n_cols, 0);  // tabu marker for escape moves
+            for (std::size_t flip{}; flip < rescue_max_flips && weight > 0; ++flip) {
+                // candidates: variables adjacent to at least one unsatisfied check.
+                // Greedy: take the best positive-gain flip. If none exists (absorbing-set
+                // pattern: every wrong bit sees a majority of satisfied checks), take an
+                // escape move: the not-yet-flipped candidate with the lowest reliability.
+                long best_gain = std::numeric_limits<long>::min();
+                double best_rel = std::numeric_limits<double>::infinity();
+                std::size_t best_v = n_cols;
+                long esc_gain = std::numeric_limits<long>::min();
+                double esc_rel = std::numeric_limits<double>::infinity();
+                std::size_t esc_v = n_cols;
+                for (std::size_t m{}; m < n_ra_rows; ++m) {
+                    if (!unsat[m]) continue;
+                    for (const auto v : pos_varn[m]) {
+                        long u = 0;
+                        for (const auto c : col_to_checks[v]) u += unsat[c];
+                        const long gain = 2 * u - static_cast<long>(col_to_checks[v].size());
+                        const double rel = std::abs(posterior[v]);
+                        if (gain > best_gain || (gain == best_gain && rel < best_rel)) {
+                            best_gain = gain;
+                            best_rel = rel;
+                            best_v = v;
+                        }
+                        if (!flipped[v] &&
+                            (rel < esc_rel || (rel == esc_rel && gain > esc_gain))) {
+                            esc_gain = gain;
+                            esc_rel = rel;
+                            esc_v = v;
+                        }
+                    }
+                }
+                std::size_t v_flip;
+                if (best_v != n_cols && best_gain > 0) {
+                    v_flip = best_v;            // strict descent
+                } else if (esc_v != n_cols) {
+                    v_flip = esc_v;             // sideways/uphill escape, tabu-guarded
+                } else {
+                    break;                      // nothing left to try
+                }
+                flipped[v_flip] = 1;
+                out[v_flip] = out[v_flip] ? 0 : 1;
+                for (const auto c : col_to_checks[v_flip]) {
+                    if (unsat[c]) { weight--; } else { weight++; }
+                    unsat[c] = !unsat[c];
+                }
+            }
+            return weight == 0;
         }
 
         //! manually trigger rate adaption. In normal circumstances, the user does not need this function
@@ -471,34 +746,41 @@ namespace LDPC4QKD {
         void check_node_update(std::vector<std::vector<double>> &msg_c,
                                const std::vector<std::vector<double>> &msg_v,
                                const std::vector<Bit> &syndrome) const {
-            double msg_part{};
+            // Largest value strictly below 1, so that log1p(x) - log1p(-x) stays finite.
+            constexpr double max_tanh = 1. - std::numeric_limits<double>::epsilon();
             std::vector<idx_t> mc_position(n_cols);
+            std::vector<double> tanh_buf;    // tanh(msg/2) of each incoming message
+            std::vector<double> suffix_prod; // suffix products of tanh_buf
 
             for (std::size_t m{}; m < n_ra_rows; ++m) {
-                // product of incoming messages
-                double mc_prod = 1 - 2 * static_cast<double>(syndrome[m]);
                 // Note: pos_varn[m].size() = check_node_degrees[m]
                 const auto curr_check_node_degree = pos_varn[m].size();
+                tanh_buf.resize(curr_check_node_degree);
+                suffix_prod.resize(curr_check_node_degree + 1);
+
                 for (std::size_t k{}; k < curr_check_node_degree; ++k) {
-                    mc_prod *= tanh_half(msg_v[m][k]);
+                    tanh_buf[k] = tanh_half(msg_v[m][k]);
                 }
 
-                for (std::size_t k{}; k < curr_check_node_degree; ++k) {
-                    // computing message from
-                    const auto msg = msg_v[m][k];
-                    if (msg == 0.) {
-                        LDPC4QKD_DEBUG_MESSAGE("Decoder found a zero message!!");
-                        msg_part = 1;
-                        for (std::size_t non_k{}; non_k < curr_check_node_degree; ++non_k) {
-                            if (non_k != k) {
-                                msg_part *= tanh_half(msg);
-                            }
-                        }
-                    } else {
-                        msg_part = mc_prod / tanh_half(msg);
-                    }
+                // suffix_prod[k] = product of tanh_buf[k..deg-1]
+                suffix_prod[curr_check_node_degree] = 1.;
+                for (std::size_t k = curr_check_node_degree; k-- > 0;) {
+                    suffix_prod[k] = suffix_prod[k + 1] * tanh_buf[k];
+                }
 
-                    auto msg_final = ::log((1 + msg_part) / (1 - msg_part));
+                // prefix accumulates syndrome sign times product of tanh_buf[0..k-1]
+                double prefix = 1 - 2 * static_cast<double>(syndrome[m]);
+                for (std::size_t k{}; k < curr_check_node_degree; ++k) {
+                    // extrinsic product: all incoming tanh's except edge k. No division needed,
+                    // so exact zeros and saturated (+-1) messages are handled correctly.
+                    double msg_part = prefix * suffix_prod[k + 1];
+                    prefix *= tanh_buf[k];
+
+                    // clamp into (-1, 1) so the result is always finite (cf. AFF3CT SPA decoder)
+                    msg_part = std::clamp(msg_part, -max_tanh, max_tanh);
+
+                    // log1p is more accurate than log((1+x)/(1-x)) for |msg_part| << 1
+                    const double msg_final = std::log1p(msg_part) - std::log1p(-msg_part);
 
                     // place the message at the correct position in the output array
                     const idx_t curr_pos_varn = pos_varn[m][k];
