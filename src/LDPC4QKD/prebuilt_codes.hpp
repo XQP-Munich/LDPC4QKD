@@ -15,6 +15,8 @@
 #include <optional>
 #include <cmath>
 #include <algorithm>
+#include <array>
+#include <string>
 
 #include "LDPC4QKD/fixed_size_encoder.hpp"
 #include "LDPC4QKD/rate_adaptive_code.hpp"
@@ -296,7 +298,8 @@ namespace LDPC4QKD {
         }
         if (N == code_id) {
             // if/when `all_encoders_tuple` contains non-QC matrices, this needs to change!
-            // Originally, this was using `encode` instead of `encode_qc` but then it doesn't work with `vector<bool>`
+            // Using encode_qc, which supports `vector<bool>`.
+            // Unfortunately, `encode` does not support it.
             std::get<N>(all_encoders_tuple).encode_qc(key, result);
             return;
         }
@@ -365,27 +368,86 @@ namespace LDPC4QKD {
         return -p * std::log2(p) - (1 - p) * std::log2(1 - p);
     }
 
-    //! Result of `select_suitable_code`: a prebuilt code ID and the recommended syndrome size (in bits) for a
-    //! single block of that code.
+    //! Specification of a code with rate adaption. Result of `select_suitable_code`.
     struct SuitableCodeChoice {
         std::size_t code_id;
+        std::size_t ldpc_block_size; // this is redundant with `code_id`
         std::size_t syndrome_bits_per_block;
+        std::string ecc_type; // this is redundant with `code_id`
     };
 
-    //! Select a suitable prebuilt LDPC code and a recommended syndrome size for a given estimated channel
-    //! parameter.
+    //! Selects a suitable code among the degree-distribution-based N=819k codes (ids 6-14)    //!
+    //! Branches below are based on aff3ct simulations in `codes/aff3ct_fer_simulations/raw_output`.
+    //! Only directly-confirmed-safe points are used, in ascending rate order.
+    //! TODO do interpolation, simulate our improved decoder
     //!
+    //! \return the suitable code specification, or `std::nullopt` if `ch_param_estimate` is outside the supported QBER range.
+    inline std::optional<SuitableCodeChoice> select_819k_code(double ch_param_estimate) {
+        std::size_t code_id;
+        std::size_t n_line_combs;
+        if (ch_param_estimate <= 0.0070) {
+            code_id = 6; n_line_combs = 10240;   // P1, rate-adapted to rate 0.0875
+        } else if (ch_param_estimate <= 0.0104) {
+            code_id = 6; n_line_combs = 0;       // P1 native, rate 0.10
+        } else if (ch_param_estimate <= 0.0190) {
+            code_id = 7; n_line_combs = 0;       // P15 native, rate 0.15
+        } else if (ch_param_estimate <= 0.0250) {
+            code_id = 8; n_line_combs = 10240;   // P2, rate-adapted to rate 0.1875
+        } else if (ch_param_estimate <= 0.0284) {
+            code_id = 8; n_line_combs = 0;       // P2 native, rate 0.20
+        } else if (ch_param_estimate <= 0.0340) {
+            code_id = 9; n_line_combs = 10240;   // P25, rate-adapted to rate 0.2375
+        } else if (ch_param_estimate <= 0.0380) {
+            code_id = 9; n_line_combs = 0;       // P25 native, rate 0.25
+        } else if (ch_param_estimate <= 0.0478) {
+            code_id = 10; n_line_combs = 0;      // P3 native, rate 0.30 (its rate-adapted variants are bad)
+        } else if (ch_param_estimate <= 0.0520) {
+            code_id = 11; n_line_combs = 30720;  // P35, rate-adapted to rate 0.3125
+        } else if (ch_param_estimate <= 0.0550) {
+            code_id = 11; n_line_combs = 20480;  // P35, rate-adapted to rate 0.325
+        } else if (ch_param_estimate <= 0.0580) {
+            code_id = 11; n_line_combs = 10240;  // P35, rate-adapted to rate 0.3375
+        } else if (ch_param_estimate <= 0.0600) {
+            code_id = 11; n_line_combs = 0;      // P35 native, rate 0.35
+        } else if (ch_param_estimate <= 0.0706) {
+            code_id = 12; n_line_combs = 0;      // P4 native, rate 0.40 (its rate-adapted variants are bad)
+        } else if (ch_param_estimate <= 0.0844) {
+            code_id = 13; n_line_combs = 0;      // P45 native, rate 0.45 (its rate-adapted variants are bad)
+        } else if (ch_param_estimate <= 0.0900) {
+            code_id = 14; n_line_combs = 30720;  // P5, rate-adapted to rate 0.4625
+        } else if (ch_param_estimate <= 0.0960) {
+            code_id = 14; n_line_combs = 10240;  // P5, rate-adapted to rate 0.4875
+        } else if (ch_param_estimate <= 0.0984) {
+            code_id = 14; n_line_combs = 0;      // P5 native, rate 0.50
+        } else {
+            return std::nullopt;  // ch_param_estimate outside supported QBER range for 819k codes
+        }
+
+        const auto code = HelperFixedSize::get_rate_adaptive_code(code_id);
+        const auto syndrome_bits_per_block = code.get_n_rows_mother_matrix() - n_line_combs;
+        return SuitableCodeChoice{
+                code_id, code.getNCols(), syndrome_bits_per_block,
+                "QC-LDPC RandomRateAdaption-OR"};
+    }
+
+    //! Select a suitable prebuilt LDPC code and a recommended syndrome size for a given estimated channel
+    //! parameter and input block size.
     //! \param ch_param_estimate estimated bit-flip probability of a binary symmetric channel.
     //! \param input_block_size size (in bits) of the caller's input block.
-    //! \return chosen code ID and suggested syndrome size, or `std::nullopt` if no code available.
-    //! The selected code may have a **lower** `input_block_size` than requested but not higher.
+    //!         The selected code's block size is never larger than this.
+    //! \return the suitable code, or `std::nullopt` if `ch_param_estimate` is outside the supported QBER range, or if there is no code with `N < input_block_size`.
     inline std::optional<SuitableCodeChoice> select_suitable_code(
-            double ch_param_estimate,
-            [[maybe_unused]] std::size_t input_block_size) {
+            double ch_param_estimate, std::size_t input_block_size) {
         if (ch_param_estimate <= 0) {
             throw std::invalid_argument("ch_param_estimate estimate must be > 0");
         }
 
+        if (input_block_size >= 819200) {
+            return select_819k_code(ch_param_estimate);
+        }
+
+        // Small-block protograph codes (ids 1 and 4): mother matrix chosen by ch_param range, then
+        // rate-adapted to a target rate computed from the Shannon binary entropy of ch_param_estimate.
         std::size_t code_id;
         double target_lrate;
         if (ch_param_estimate < 0.01) {
@@ -408,11 +470,15 @@ namespace LDPC4QKD {
         }
 
         const auto code = HelperFixedSize::get_rate_adaptive_code(code_id);
+        if (code.getNCols() > input_block_size) {
+            return std::nullopt;
+        }
         const auto syndrome_bits_per_block = std::min<std::size_t>(
                 code.get_n_rows_mother_matrix(),
                 static_cast<std::size_t>(std::floor(static_cast<double>(code.getNCols()) * target_lrate)));
 
-        return SuitableCodeChoice{code_id, syndrome_bits_per_block};
+        return SuitableCodeChoice{
+                code_id, code.getNCols(), syndrome_bits_per_block, "QC-LDPC Protograph-specific-XOR"};
     }
 
 }
