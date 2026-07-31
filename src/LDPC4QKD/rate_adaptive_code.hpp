@@ -307,7 +307,7 @@ namespace LDPC4QKD {
                 case Decoder::Layered:
                     return decode_layered(llrs, syndrome, out, max_num_iter, vsat);
                 case Decoder::Improved:
-                    return decode_improved(llrs, syndrome, out, max_num_iter);
+                    return decode_improved(llrs, syndrome, out, max_num_iter, vsat);
             }
             throw std::logic_error("decode_at_current_rate: unhandled Decoder");
         }
@@ -473,6 +473,7 @@ namespace LDPC4QKD {
          * Improved decoder: layered SPA with message damping, best-state tracking,
          * and a syndrome-weight bit-flipping rescue stage on failure.
          *
+         * \param vsat          cut-off value for messages.
          * \param damping       weight of the new check-to-variable message (1.0 = no damping).
          * \param rescue_weight_cap   only attempt the bit-flip rescue if the best state seen
          *                            has at most this many unsatisfied checks.
@@ -483,10 +484,10 @@ namespace LDPC4QKD {
                              const std::vector<Bit> &syndrome,
                              std::vector<Bit> &out,
                              const std::size_t max_num_iter = 200,
+                             const double vsat = 100,
                              const double damping = 0.8,
                              const std::size_t rescue_weight_cap = 64,
-                             const std::size_t rescue_max_flips = 64,
-                             const double vsat = 100) const {
+                             const std::size_t rescue_max_flips = 64) const {
             if (llrs.size() != n_cols) {
                 throw std::runtime_error("Decoder received invalid input length.");
             }
