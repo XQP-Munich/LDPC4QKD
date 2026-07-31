@@ -40,16 +40,16 @@ namespace LDPC4QKD {
     }
 
     struct FixedSizeInputOutput {
-        [[nodiscard]] virtual std::size_t get_input_size() const = 0;
+        [[nodiscard]] virtual constexpr std::size_t get_input_size() const = 0;
 
-        [[nodiscard]] virtual std::size_t get_output_size() const = 0;
+        [[nodiscard]] virtual constexpr std::size_t get_output_size() const = 0;
 
         virtual constexpr ~FixedSizeInputOutput() = default;
     };
 
     template<typename idx_t>
     struct ComputablePosVar : public FixedSizeInputOutput {
-        [[nodiscard]] virtual std::vector<std::vector<idx_t>> get_pos_varn() const = 0;
+        [[nodiscard]] virtual constexpr std::vector<std::vector<idx_t>> get_pos_varn() const = 0;
 
         constexpr ~ComputablePosVar() override = default;
     };
@@ -62,24 +62,24 @@ namespace LDPC4QKD {
         static constexpr std::size_t outputSize = output_size;
         static constexpr std::size_t inputSize = input_size;
 
-        [[nodiscard]] std::size_t get_input_size() const override {
+        [[nodiscard]] constexpr std::size_t get_input_size() const override {
             return inputSize;
         }
 
-        [[nodiscard]] std::size_t get_output_size() const override {
+        [[nodiscard]] constexpr std::size_t get_output_size() const override {
             return output_size;
         }
 
         /// performant but no size check (user has to provide valid std::span)
         /// key shall not be changed!
         /// also: inputs/outputs have to be contiguous in memory.
-        virtual void encode_span(
+        virtual constexpr void encode_span(
                 std::span<bit_type const, input_size> key,
                 std::span<bit_type, output_size> syndrome) const = 0;
 
         /// general, with runtime size check
         /// (a runtime cost usually not worth worrying about)
-        void encode(auto const &key, auto &syndrome) const {
+        constexpr void encode(auto const &key, auto &syndrome) const {
             if (key.size() == input_size && syndrome.size() == output_size) {
                 encode_span(
                         std::span<bit_type const, input_size>{key},
@@ -121,7 +121,7 @@ namespace LDPC4QKD {
             }
         }
 
-        void encode_span(
+        constexpr void encode_span(
                 std::span<bit_type const, N * expansion_factor> key,
                 std::span<bit_type, M * expansion_factor> syndrome) const override {
             encode_qc(key, syndrome);
@@ -132,7 +132,7 @@ namespace LDPC4QKD {
 
         using idx_t = smallest_type<FixedSizeEncoderQC::inputSize>;
 
-        [[nodiscard]] std::vector<std::vector<idx_t>> get_pos_varn() const override {
+        [[nodiscard]] constexpr std::vector<std::vector<idx_t>> get_pos_varn() const override {
             const auto n_cols = FixedSizeEncoderQC::inputSize;
             const auto n_rows = FixedSizeEncoderQC::outputSize;
 
@@ -141,14 +141,18 @@ namespace LDPC4QKD {
 
             for (idx_t col = 0; col < n_cols; col++) {
                 auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                auto col_in_block = (col % expansion_factor);  // column's position within its own QC block
                 for (auto j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
                     auto QCrow = row_idx[j];  // row index into matrix of exponents
-                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
-                    // arising from the current sub-block.
-                    // The sub-block is determined by the QC-exponent `shiftVal`.
-                    // Add the base row-index of the current sub-block to the shift
-                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+                    // `outIdx` is the row (into the full matrix) at which this sub-block places a `1`:
+                    // the sub-block's base row `expansion_factor * QCrow`, plus the shifted position of
+                    // `col` within the block. `col_in_block` and `shift_in_block` are both already in
+                    // [0, expansion_factor), so subtracting and re-adding `expansion_factor` before the
+                    // final `% expansion_factor` keeps the result correct (and non-negative) for any
+                    // expansion_factor.
+                    auto shift_in_block = (shiftVal % expansion_factor);
+                    auto outIdx = (expansion_factor * QCrow) + ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
                     pos_varn[outIdx].push_back(static_cast<idx_t>(col));
                 }
             }
@@ -158,7 +162,7 @@ namespace LDPC4QKD {
 
         /// Avoiding runtime length-check from the types.
         /// TODO this template overload does not match things like `std::array`, although it would be nice!
-        void encode_qc(
+        constexpr void encode_qc(
                 std::span<bit_type const, N * expansion_factor> in,
                 std::span<bit_type, M * expansion_factor> out) const {
 
@@ -166,14 +170,18 @@ namespace LDPC4QKD {
 
             for (std::size_t col = 0; col < in.size(); col++) {
                 auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                auto col_in_block = (col % expansion_factor);  // column's position within its own QC block
                 for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
                     auto QCrow = row_idx[j];  // row index into matrix of exponents
-                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
-                    // arising from the current sub-block.
-                    // The sub-block is determined by the QC-exponent `shiftVal`.
-                    // Add the base row-index of the current sub-block to the shift
-                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+                    // `outIdx` is the row (into the full matrix) at which this sub-block places a `1`:
+                    // the sub-block's base row `expansion_factor * QCrow`, plus the shifted position of
+                    // `col` within the block. `col_in_block` and `shift_in_block` are both already in
+                    // [0, expansion_factor), so subtracting and re-adding `expansion_factor` before the
+                    // final `% expansion_factor` keeps the result correct (and non-negative) for any
+                    // expansion_factor.
+                    auto shift_in_block = (shiftVal % expansion_factor);
+                    auto outIdx = (expansion_factor * QCrow) + ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
 
                     out[outIdx] = xor_as_bools(out[outIdx], in[col]);
                 }
@@ -181,7 +189,7 @@ namespace LDPC4QKD {
         }
 
         /// General overload, which does not assume spans, but does a **runtime length check!**.
-        void encode_qc(auto const &in, auto &out) const {
+        constexpr void encode_qc(auto const &in, auto &out) const {
             if (std::size(in) != N * expansion_factor || std::size(out) != M * expansion_factor) {
                 std::stringstream s;
                 s << "LDPC encoder: incorrect sizes of intput / output arrays\n"
@@ -193,14 +201,18 @@ namespace LDPC4QKD {
 
             for (std::size_t col = 0; col < in.size(); col++) {
                 auto QCcol = col / expansion_factor;  // column index into matrix of exponents
+                auto col_in_block = (col % expansion_factor);  // column's position within its own QC block
                 for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
                     auto shiftVal = values[j];
                     auto QCrow = row_idx[j];  // row index into matrix of exponents
-                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
-                    // arising from the current sub-block.
-                    // The sub-block is determined by the QC-exponent `shiftVal`.
-                    // Add the base row-index of the current sub-block to the shift
-                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+                    // `outIdx` is the row (into the full matrix) at which this sub-block places a `1`:
+                    // the sub-block's base row `expansion_factor * QCrow`, plus the shifted position of
+                    // `col` within the block. `col_in_block` and `shift_in_block` are both already in
+                    // [0, expansion_factor), so subtracting and re-adding `expansion_factor` before the
+                    // final `% expansion_factor` keeps the result correct (and non-negative) for any
+                    // expansion_factor.
+                    auto shift_in_block = (shiftVal % expansion_factor);
+                    auto outIdx = (expansion_factor * QCrow) + ((col_in_block + expansion_factor - shift_in_block) % expansion_factor);
 
                     out[outIdx] = xor_as_bools(out[outIdx], in[col]);
                 }
@@ -211,19 +223,28 @@ namespace LDPC4QKD {
         /// checks that a constexpr QC-encoder will never access input or output arrays outside bounds.
         /// I.e., for the input the size is `expansion_factor*N` while output size is `expansion_factor*M`.
         /// NOTE: IF THIS RETURNS FALSE, THE OBJECT IS INVALID!!!
+        ///
+        /// Two independent things can each cause an out-of-bounds access, so both are checked:
+        ///  1. `colptr` must be non-decreasing and bounded by `num_nz`, since `colptr[QCcol]` and
+        ///     `colptr[QCcol + 1]` are used directly as the [begin, end) range into `row_idx`/`values`
+        ///     below -- a malformed `colptr` would read past the end of those arrays.
+        ///  2. Every entry's row `QCrow = row_idx[j]` must be `< M`. `outIdx = expansion_factor*QCrow + r`
+        ///     where `r` is a `% expansion_factor` result and so always in `[0, expansion_factor)`; that
+        ///     makes `outIdx < M*expansion_factor` exactly equivalent to `QCrow < M`, so checking each
+        ///     entry's `QCrow` once suffices -- no need to expand to the full N*expansion_factor column
+        ///     range (which is prohibitively expensive here, since this runs at compile time for every
+        ///     prebuilt code).
         [[nodiscard]] constexpr bool matrix_consistent_with_input_size() const {
-            for (std::size_t col = 0; col < N; col++) {
-                auto QCcol = col / expansion_factor;  // column index into matrix of exponents
-                for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
-                    auto shiftVal = values[j];
-                    auto QCrow = row_idx[j];  // row index into matrix of exponents
-                    // computes `outIdx`, which is the unique row index (into full matrix) at which there is a `1`
-                    // arising from the current sub-block.
-                    // The sub-block is determined by the QC-exponent `shiftVal`.
-                    // Add the base row-index of the current sub-block to the shift
-                    auto outIdx = (expansion_factor * QCrow) + ((col - shiftVal) % expansion_factor);
+            for (std::size_t QCcol = 0; QCcol < N; QCcol++) {
+                if (colptr[QCcol + 1] < colptr[QCcol] || colptr[QCcol + 1] > num_nz) {
+                    return false;
+                }
+            }
 
-                    if (outIdx >= M * expansion_factor || col >= N * expansion_factor) {
+            for (std::size_t QCcol = 0; QCcol < N; QCcol++) {
+                for (std::size_t j = colptr[QCcol]; j < colptr[QCcol + 1]; j++) {
+                    auto QCrow = row_idx[j];  // row index into matrix of exponents
+                    if (QCrow >= M) {
                         return false;
                     }
                 }

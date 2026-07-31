@@ -21,6 +21,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(unit_tests_error_correction test_main.cpp
         # -------- Actual Unit tests --------
         test_encoder.cpp
+        test_fixed_size_encoder.cpp
         test_prebuilt_codes.cpp
 
         test_rate_adaptive_code.cpp
