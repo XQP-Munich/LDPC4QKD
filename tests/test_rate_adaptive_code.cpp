@@ -51,57 +51,6 @@ namespace {
 
 }
 
-TEST(rate_adaptive_code_from_colptr_rowIdx, decode_test_small) {
-    auto H = get_code_small();
-
-    std::vector<Bit> x{1, 1, 1, 1, 0, 0, 0}; // true data to be sent
-    std::vector<Bit> syndrome;
-    H.encode_no_ra(x, syndrome);
-
-    std::vector<Bit> x_noised{1, 1, 1, 1, 0, 0, 1}; // distorted data
-    double p = 1. / 7; // channel error probability (we flipped 1 symbol out of 7)
-
-    double vlog = log((1 - p) / p);
-    std::vector<double> llrs(x.size());
-    for (std::size_t i{}; i < llrs.size(); ++i) {
-        llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
-    }
-
-    std::vector<Bit> solution;
-    bool success = H.decode_at_current_rate(llrs, syndrome, solution);
-    EXPECT_TRUE(success);
-    EXPECT_EQ(solution, x);
-}
-
-TEST(rate_adaptive_code_from_colptr_rowIdx, decode_test_big) {
-    auto H = get_code_big_nora();
-
-    std::vector<Bit> x = get_bitstring(H.getNCols()); // true data to be sent
-    std::vector<Bit> syndrome;
-    H.encode_no_ra(x, syndrome);
-
-    constexpr double p = 0.04; // channel error probability
-    std::vector<Bit> x_noised = x; // distorted data
-    noise_bitstring_inplace(x_noised, p);
-
-    double vlog = log((1 - p) / p);
-    std::vector<double> llrs(x.size());
-    for (std::size_t i{}; i < llrs.size(); ++i) {
-        llrs[i] = vlog * (1 - 2 * x_noised[i]); // log likelihood ratios
-    }
-
-    std::vector<Bit> solution;
-    bool success = H.decode_at_current_rate(llrs, syndrome, solution);
-    EXPECT_TRUE(success);
-    EXPECT_EQ(solution, x);
-    for (std::size_t i{}; i < x.size(); ++i) {
-        if (solution[i] != x[i]) {
-            std::cout << "Error at bit position " << i << std::endl;
-        }
-    }
-}
-
-
 TEST(rate_adaptive_code_from_colptr_rowIdx, encode_no_ra) {
     auto H = get_code_big_nora();
     std::vector<Bit> in = get_bitstring(H.getNCols());
@@ -459,7 +408,7 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, rate_adapted_fer) {
               << " at QBER = " << p << std::endl;
 
     std::size_t num_frame_errors{};
-    std::size_t frame_idx{1};  // counts the number of iterations
+    std::size_t frame_idx{0};  // counts the number of iterations
     for (; frame_idx < num_frames_to_test; ++frame_idx) {
         std::vector<bool> x(H.getNCols()); // true data sent over a noisy channel
         noise_bitstring_inplace(rng, x, 0.5);  // choose it randomly.
@@ -560,4 +509,210 @@ TEST(rate_adaptive_code_from_decoder, obtain_from_advanced_encoder_equals) {
     // TODO add random rate adaption for comparison
     auto H2 = get_code_big_wra();
     EXPECT_TRUE(H1 == H2);
+}
+
+// Parameterized over every `Decoder` variant. Correctness-style scenarios that apply equally to
+// Flooding/Layered/Improved live here once, instead of being duplicated per decoder -- as a bonus,
+// this now also exercises Flooding's exception guards and FER consistency, which previously had no
+// dedicated coverage at all (only Layered, via decode_at_current_rate's default, was tested this way).
+class DecoderVariant : public ::testing::TestWithParam<Decoder> {};
+
+TEST_P(DecoderVariant, decode_small) {
+    const Decoder decoder = GetParam();
+    auto H = get_code_small();
+
+    std::vector<Bit> x{1, 1, 1, 1, 0, 0, 0}; // true data to be sent
+    std::vector<Bit> syndrome;
+    H.encode_no_ra(x, syndrome);
+
+    std::vector<Bit> x_noised{1, 1, 1, 1, 0, 0, 1}; // distorted data
+    constexpr double p = 1. / 7; // channel error probability (we flipped 1 symbol out of 7)
+    std::vector<double> llrs = llrs_bsc(x_noised, p);
+
+    std::vector<Bit> solution;
+    bool success = H.decode_at_current_rate(llrs, syndrome, solution, 50, 100, decoder);
+    EXPECT_TRUE(success);
+    EXPECT_EQ(solution, x);
+}
+
+TEST_P(DecoderVariant, decode_big) {
+    const Decoder decoder = GetParam();
+    auto H = get_code_big_nora();
+
+    std::vector<Bit> x = get_bitstring(H.getNCols()); // true data to be sent
+    std::vector<Bit> syndrome;
+    H.encode_no_ra(x, syndrome);
+
+    constexpr double p = 0.04; // channel error probability
+    std::vector<Bit> x_noised = x; // distorted data
+    noise_bitstring_inplace(x_noised, p);
+    std::vector<double> llrs = llrs_bsc(x_noised, p);
+
+    std::vector<Bit> solution;
+    bool success = H.decode_at_current_rate(llrs, syndrome, solution, 50, 100, decoder);
+    EXPECT_TRUE(success);
+    EXPECT_EQ(solution, x);
+}
+
+TEST_P(DecoderVariant, invalid_llrs_size_throws) {
+    const Decoder decoder = GetParam();
+    auto H = get_code_small();
+    std::vector<Bit> x{1, 1, 1, 1, 0, 0, 0};
+    std::vector<Bit> syndrome;
+    H.encode_no_ra(x, syndrome);
+
+    std::vector<double> bad_llrs(x.size() - 1, 0.0); // wrong length: should be x.size(), not x.size() - 1
+    std::vector<Bit> solution;
+    EXPECT_ANY_THROW(H.decode_at_current_rate(bad_llrs, syndrome, solution, 50, 100, decoder));
+}
+
+TEST_P(DecoderVariant, invalid_syndrome_size_throws) {
+    const Decoder decoder = GetParam();
+    auto H = get_code_small();
+    std::vector<Bit> x{1, 1, 1, 1, 0, 0, 0};
+    std::vector<double> llrs = llrs_bsc(x, 0.01);
+
+    std::vector<Bit> bad_syndrome(H.get_n_rows_after_rate_adaption() + 1, 0); // wrong length
+    std::vector<Bit> solution;
+    EXPECT_ANY_THROW(H.decode_at_current_rate(llrs, bad_syndrome, solution, 50, 100, decoder));
+}
+
+TEST_P(DecoderVariant, fer_consistency_never_wrong) {
+    // Over many random frames, the decoder must never report success on an incorrect codeword,
+    // nor failure while actually having found the right one.
+    const Decoder decoder = GetParam();
+    std::mt19937_64 rng(42);
+    auto H = get_code_big_nora();
+
+    constexpr double p = 0.03;
+    constexpr std::size_t num_frames_to_test = 50;
+    constexpr std::size_t max_num_iter = 50;
+
+    std::size_t num_frame_errors{};
+    for (std::size_t frame_idx{}; frame_idx < num_frames_to_test; ++frame_idx) {
+        std::vector<Bit> x(H.getNCols());
+        noise_bitstring_inplace(rng, x, 0.5);
+
+        std::vector<Bit> syndrome;
+        H.encode_no_ra(x, syndrome);
+
+        std::vector<Bit> x_noised = x;
+        noise_bitstring_inplace(rng, x_noised, p);
+        std::vector<double> llrs = llrs_bsc(x_noised, p);
+
+        std::vector<Bit> solution;
+        bool success = H.decode_at_current_rate(llrs, syndrome, solution, max_num_iter, 100, decoder);
+
+        if (solution == x) {
+            EXPECT_TRUE(success) << "gives correct result although it has not converged, at frame " << frame_idx;
+        } else {
+            num_frame_errors++;
+            EXPECT_FALSE(success) << "converged to a wrong codeword, at frame " << frame_idx;
+        }
+    }
+
+    const double fer = static_cast<double>(num_frame_errors) / static_cast<double>(num_frames_to_test);
+    std::cout << "FER: " << fer << " ( " << num_frame_errors << " errors from "
+              << num_frames_to_test << " frames )" << std::endl;
+    ASSERT_EQ(fer, 0.);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllDecoders,
+    DecoderVariant,
+    ::testing::Values(Decoder::Flooding, Decoder::Layered, Decoder::Improved),
+    [](const ::testing::TestParamInfo<Decoder> &info) {
+        switch (info.param) {
+            case Decoder::Flooding: return "Flooding";
+            case Decoder::Layered: return "Layered";
+            case Decoder::Improved: return "Improved";
+        }
+        return "Unknown";
+    });
+
+TEST(rate_adaptive_code_decode_improved, dispatch_via_decode_at_current_rate_matches_direct_call) {
+    // `Decoder::Improved` dispatch in decode_at_current_rate should behave identically to
+    // calling decode_improved directly with the same max_num_iter AND vsat (and otherwise-default
+    // parameters). Uses a non-default vsat so this actually catches decode_at_current_rate failing
+    // to forward it (previously vsat was silently dropped for the Improved case).
+    auto H = get_code_big_nora();
+
+    std::vector<Bit> x = get_bitstring(H.getNCols());
+    std::vector<Bit> syndrome;
+    H.encode_no_ra(x, syndrome);
+
+    constexpr double p = 0.04;
+    std::vector<Bit> x_noised = x;
+    noise_bitstring_inplace(x_noised, p);
+    std::vector<double> llrs = llrs_bsc(x_noised, p);
+
+    constexpr std::size_t max_num_iter = 50;
+    constexpr double vsat = 20; // deliberately non-default (decode_improved's own default is 100)
+
+    std::vector<Bit> solution_direct;
+    bool success_direct = H.decode_improved(llrs, syndrome, solution_direct, max_num_iter, vsat);
+
+    std::vector<Bit> solution_dispatched;
+    bool success_dispatched = H.decode_at_current_rate(
+            llrs, syndrome, solution_dispatched, max_num_iter, vsat, Decoder::Improved);
+
+    EXPECT_TRUE(success_direct);
+    EXPECT_EQ(success_direct, success_dispatched);
+    EXPECT_EQ(solution_direct, solution_dispatched);
+}
+
+TEST(rate_adaptive_code_decode_improved, rescue_stage_recovers_when_layered_decoder_fails) {
+    // Demonstrates that decode_improved's bit-flip rescue stage actually does useful work:
+    // with a tight iteration budget, plain layered BP (same schedule as decode_improved's own SPA
+    // loop, just without damping/rescue) fails on this specific (fixed-seed) scenario, while
+    // decode_improved recovers the exact correct codeword via its rescue stage.
+    // Seed/parameters were chosen empirically (see conversation) to reliably reproduce this gap.
+    auto H = get_code_big_nora();
+
+    std::mt19937_64 rng(3);
+    constexpr double p = 0.02;
+    constexpr std::size_t max_num_iter = 3;
+
+    std::vector<Bit> x(H.getNCols());
+    noise_bitstring_inplace(rng, x, 0.5);
+
+    std::vector<Bit> syndrome;
+    H.encode_no_ra(x, syndrome);
+
+    std::vector<Bit> x_noised = x;
+    noise_bitstring_inplace(rng, x_noised, p);
+    std::vector<double> llrs = llrs_bsc(x_noised, p);
+
+    std::vector<Bit> solution_layered;
+    bool success_layered = H.decode_layered(llrs, syndrome, solution_layered, max_num_iter);
+    ASSERT_FALSE(success_layered && solution_layered == x)
+                                << "Test fixture assumption violated: plain layered BP was expected to "
+                                   "fail within " << max_num_iter << " iterations for this seed/scenario.";
+
+    std::vector<Bit> solution_improved;
+    bool success_improved = H.decode_improved(llrs, syndrome, solution_improved, max_num_iter);
+    EXPECT_TRUE(success_improved);
+    EXPECT_EQ(solution_improved, x);
+}
+
+TEST(rate_adaptive_code_decode_improved, damping_parameter_still_converges) {
+    // Non-default damping should still be a valid, working configuration.
+    auto H = get_code_big_nora();
+
+    std::vector<Bit> x = get_bitstring(H.getNCols());
+    std::vector<Bit> syndrome;
+    H.encode_no_ra(x, syndrome);
+
+    constexpr double p = 0.04;
+    std::vector<Bit> x_noised = x;
+    noise_bitstring_inplace(x_noised, p);
+    std::vector<double> llrs = llrs_bsc(x_noised, p);
+
+    std::vector<Bit> solution;
+    constexpr std::size_t max_num_iter = 50;
+    constexpr double vsat = 100; // default; explicit since damping is no longer the 5th positional arg
+    constexpr double damping = 0.5;
+    bool success = H.decode_improved(llrs, syndrome, solution, max_num_iter, vsat, damping);
+    EXPECT_TRUE(success);
+    EXPECT_EQ(solution, x);
 }
