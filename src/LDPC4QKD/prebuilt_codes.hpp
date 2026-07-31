@@ -12,6 +12,9 @@
 #include <vector>
 #include <tuple>
 #include <stdexcept>
+#include <optional>
+#include <cmath>
+#include <algorithm>
 
 #include "LDPC4QKD/fixed_size_encoder.hpp"
 #include "LDPC4QKD/rate_adaptive_code.hpp"
@@ -273,28 +276,19 @@ namespace LDPC4QKD {
         }
     }
 
-    //! Encodes the `key` using the LDPC code specified by the `code_id`. The result is the syndrome.
-    //! Note: if `code_id` known at compile time, use templated version instead!
+    //! Encodes `key` using the LDPC code specified by a runtime `code_id`; result is the syndrome.
+    //! If `code_id` is known at compile time, prefer `encode_with_static` instead.
     //!
-    //! NOTE: Containers will be converted to a `std::span` internally.
-    //! Sizes of `key` and `result` are checked at runtime and must match exactly, otherwise an exception is thrown.
-    //!
-    //! For **containers with compile-time known sizes**, using an incorrect size may also give a COMPILE ERROR.
-    //! (something like "no matching function for call to ‘std::span<...>::span(...)").
-    //! When using such containers, the input and output sizes must exactly match ALL available codes
-    //! (which is usually impossible when there are several different codes).
-    //! If `code_id` is known at compile time, use templated version instead!
-    //! If `code_id` isn't known at compile time,
-    //! then use `std::vector` and `FixedSizeEncoder::outputSize`, `FixedSizeEncoder::inputSize`
-    //! to get the size exactly right.
-    //! Alternatively, to avoid this check completely, use `std::span`
-    //! and make sure manually that you own enough memory (otherwise you get out-of-memory access!).
+    //! Containers are converted to `std::span` internally: sizes are checked at runtime and must match
+    //! exactly, or an exception is thrown. Containers with a compile-time-known size may instead fail to
+    //! *compile*, since that size would have to match every registered code at once.
+    //! Use `get_input_size`/`get_output_size` to size a `std::vector` buffer correctly, or pass `std::span`
+    //! to skip the check entirely (then you must ensure the sizes are correct yourself).
     //!
     //! \tparam N internal implementation detail, need not use.
     //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
-    //! \param key  Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
-    //! \param result  Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
-    //!                     Used to store syndrome. Must already be sized correctly for the given code!
+    //! \param key Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
+    //! \param result Contiguous container of bits. Used to store syndrome; must already be sized correctly for the given code!
     template<std::size_t N = 0>
     void encode_with(std::size_t code_id, auto const &key, auto &result) {
         if (code_id >= std::tuple_size_v<decltype(all_encoders_tuple)>) {
@@ -312,20 +306,10 @@ namespace LDPC4QKD {
         }
     }
 
-    //! Encodes the `key` using the LDPC code specified by the `code_id`.
-    //! The result is the syndrome. Note: code id must be known at compile time.
-    //! For runtime inference, use `encode_with(std::size_t code_id, auto const& key, auto &result)`
-    //!
-    //! NOTE: Containers will be converted to a `std::span` internally.
-    //! Sizes of `key` and `result` are checked at runtime and must match exactly, otherwise an exception is thrown.
-    //! For containers with compile-time known sizes, using an incorrect **size may also give a COMPILE ERROR**.
-    //! Use `get_input_size` and `get_input_size` to allocate correctly sized arrays
-    //! (to avoid this check, use `std::span` and make sure manually that you own enough memory!).
-    //!
+    //! Same as `encode_with`, but for a `code_id` known at compile time.
     //! \tparam code_id integer index into tuple of codes. Make sure both sides agree on these!
     //! \param key Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
-    //! \param result Contiguous container (e.g. `std::vector`, `std::array`, `std::span`) of bits (e.g. `bool` or `uint8_t`).
-    //!                 Used to store syndrome. Must already be sized correctly for the given code!
+    //! \param result Contiguous container of bits. Used to store syndrome; must already be sized correctly for the given code!
     template<std::size_t code_id>
     void encode_with_static(auto const &key, auto &result) {
         std::get<code_id>(all_encoders_tuple).encode(key, result);
@@ -350,7 +334,7 @@ namespace LDPC4QKD {
         return 0; // this should never happen
     }
 
-    //! Get input size of code with given ID.
+    //! Get output size (number rows of parity check matrix) of code with given ID.
     //!
     //! \tparam N internal implementation detail, need not use.
     //! \param code_id integer index into tuple of codes. Make sure both sides agree on these!
@@ -367,6 +351,68 @@ namespace LDPC4QKD {
             return get_output_size<N + 1>(code_id);
         }
         return 0; // this should never happen
+    }
+
+    //! Shannon binary entropy function (in bits).
+    //! \param p must be in [0, 1].
+    inline double binary_entropy(double p) {
+        if (p < 0 || p > 1) {
+            throw std::domain_error("binary_entropy: p must be between 0 and 1");
+        }
+        if (p == 0 || p == 1) {
+            return 0;
+        }
+        return -p * std::log2(p) - (1 - p) * std::log2(1 - p);
+    }
+
+    //! Result of `select_suitable_code`: a prebuilt code ID and the recommended syndrome size (in bits) for a
+    //! single block of that code.
+    struct SuitableCodeChoice {
+        std::size_t code_id;
+        std::size_t syndrome_bits_per_block;
+    };
+
+    //! Select a suitable prebuilt LDPC code and a recommended syndrome size for a given estimated channel
+    //! parameter.
+    //!
+    //! \param ch_param_estimate estimated bit-flip probability of a binary symmetric channel.
+    //! \param input_block_size size (in bits) of the caller's input block.
+    //! \return chosen code ID and suggested syndrome size, or `std::nullopt` if no code available.
+    //! The selected code may have a **lower** `input_block_size` than requested but not higher.
+    inline std::optional<SuitableCodeChoice> select_suitable_code(
+            double ch_param_estimate,
+            [[maybe_unused]] std::size_t input_block_size) {
+        if (ch_param_estimate <= 0) {
+            throw std::invalid_argument("ch_param_estimate estimate must be > 0");
+        }
+
+        std::size_t code_id;
+        double target_lrate;
+        if (ch_param_estimate < 0.01) {
+            code_id = 1;
+            target_lrate = 1. / 6.;
+        } else if (ch_param_estimate < 0.03) {
+            code_id = 1;
+            target_lrate = 3. * binary_entropy(ch_param_estimate);
+        } else if (ch_param_estimate < 0.049) {
+            code_id = 1;
+            target_lrate = 1.8 * binary_entropy(ch_param_estimate);
+        } else if (ch_param_estimate < 0.07) {
+            code_id = 4;
+            target_lrate = 1.7 * binary_entropy(ch_param_estimate);
+        } else if (ch_param_estimate < 0.092) {
+            code_id = 4;
+            target_lrate = 1.3 * binary_entropy(ch_param_estimate);
+        } else {
+            return std::nullopt;
+        }
+
+        const auto code = HelperFixedSize::get_rate_adaptive_code(code_id);
+        const auto syndrome_bits_per_block = std::min<std::size_t>(
+                code.get_n_rows_mother_matrix(),
+                static_cast<std::size_t>(std::floor(static_cast<double>(code.getNCols()) * target_lrate)));
+
+        return SuitableCodeChoice{code_id, syndrome_bits_per_block};
     }
 
 }
