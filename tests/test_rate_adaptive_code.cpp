@@ -12,6 +12,7 @@
 // To be tested
 #include "LDPC4QKD/rate_adaptive_code.hpp"
 #include "LDPC4QKD/prebuilt_codes.hpp"
+#include "LDPC4QKD/rate_adaption_random.hpp"
 
 // Test cases test against constants known to be correct for the LDPC-matrix defined here:
 #include "fortest_autogen_ldpc_matrix_csc.hpp"
@@ -130,9 +131,23 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, encode_current_rate) {
 }
 
 
-TEST(rate_adaptive_code_from_colptr_rowIdx, no_ra_if_no_linecombs) {
+TEST(rate_adaptive_code_from_colptr_rowIdx, set_rate_throws_beyond_max_steps) {
+    // mother-only-constructed code: auto-generated rate adaption supports up to `n_mother_rows / 2` line combs.
     auto H = get_code_big_nora();
-    EXPECT_ANY_THROW(H.set_rate(H.get_n_rows_mother_matrix() - 5));
+    EXPECT_ANY_THROW(H.set_rate(H.get_max_ra_steps() + 1));
+}
+
+TEST(rate_adaptive_code_from_colptr_rowIdx, set_rate_at_max_steps_succeeds) {
+    auto H = get_code_big_nora();
+    EXPECT_NO_THROW(H.set_rate(H.get_max_ra_steps()));
+    EXPECT_EQ(H.get_n_rows_after_rate_adaption(), H.get_n_rows_mother_matrix() - H.get_max_ra_steps());
+}
+
+TEST(rate_adaptive_code_from_colptr_rowIdx, auto_rate_adaption_max_steps) {
+    // Before this change, a mother-only-constructed code had `rows_to_combine` empty AND no rate adaption at all
+    // (`get_max_ra_steps() == 0`). Now it has real auto-generated (LCG-based) rate adaption instead.
+    auto H = get_code_big_nora();
+    EXPECT_EQ(H.get_max_ra_steps(), H.get_n_rows_mother_matrix() / 2);
 }
 
 
@@ -151,6 +166,139 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, init_pos_CN_pos_VN) {
                                                                     {3, 4, 5, 6}};
     EXPECT_EQ(H.getPosVarn(), expect_posVN);
     EXPECT_EQ(H.getPosCheckn(), expect_posCN);
+}
+
+
+TEST(rate_adaptive_code_from_colptr_rowIdx, auto_rate_adaption_golden_small) {
+    // `get_code_small()` is mother-only-constructed (no explicit `rows_to_combine`), so `set_rate` must use the
+    // auto-generated (LCG-based) scheme. n_mother_rows = 3, so LCG(m=3, seed=0) applies; golden values for this
+    // LCG were independently cross-checked in Python (see test_rate_adaption_random.cpp for the same method):
+    // it yields the pair (2, 1) -- i.e. combine mother rows 2 and 1.
+    auto H = get_code_small();
+    ASSERT_EQ(H.get_max_ra_steps(), 1u); // n_mother_rows / 2 = 3 / 2 = 1
+
+    H.set_rate(1);
+
+    // front-placed convention: the combined row goes to position 0, the leftover row (0) to position 1.
+    // mother row 1 = {1, 2, 5, 6}, mother row 2 = {3, 4, 5, 6} (see `init_pos_CN_pos_VN` above);
+    // their union (sorted, deduplicated) is {1, 2, 3, 4, 5, 6}. Mother row 0 = {0, 2, 4, 6} is the leftover.
+    std::vector<std::vector<decltype(H)::MatrixIndex>> expect_posVN{{1, 2, 3, 4, 5, 6},
+                                                                    {0, 2, 4, 6}};
+    EXPECT_EQ(H.getPosVarn(), expect_posVN);
+}
+
+
+TEST(rate_adaptive_code_from_colptr_rowIdx, auto_rate_adaption_round_trip) {
+    // mother-only-constructed code (no explicit `rows_to_combine`): verify encode/decode agree across a range of
+    // auto-generated (LCG-based) rate-adapted rates.
+    auto H = get_code_big_nora();
+    std::vector<Bit> x = get_bitstring(H.getNCols());
+
+    constexpr double p = 0.02;
+    std::vector<Bit> x_noised = x;
+    noise_bitstring_inplace(x_noised, p);
+    ASSERT_FALSE(x_noised == x);
+
+    double vlog = log((1 - p) / p);
+    std::vector<double> llrs(x.size());
+    for (std::size_t i{}; i < llrs.size(); ++i) {
+        llrs[i] = vlog * (1 - 2 * x_noised[i]);
+    }
+
+    for (const double frac: {1.0, 0.95, 0.9, 0.8, 0.7}) {
+        const auto syndrome_len = static_cast<std::size_t>(
+                static_cast<double>(H.get_n_rows_mother_matrix()) * frac);
+
+        std::vector<Bit> syndrome;
+        H.encode_with_ra(x, syndrome, syndrome_len);
+
+        std::vector<Bit> solution;
+        const bool success = H.decode_infer_rate(llrs, syndrome, solution);
+        EXPECT_TRUE(success) << "frac=" << frac;
+        EXPECT_EQ(solution, x) << "frac=" << frac;
+    }
+}
+
+
+TEST(rate_adaptive_code_from_colptr_rowIdx, auto_rate_adaption_equals) {
+    auto H1 = get_code_big_nora();
+    auto H2 = get_code_big_nora();
+    EXPECT_TRUE(H1 == H2); // two auto-generated codes from the same mother compare equal.
+    H1.set_rate(3);
+    H2.set_rate(3);
+    EXPECT_TRUE(H1 == H2);
+
+    // explicitly feeding back the auto-generated scheme's own materialized pairs is NOT equivalent: a non-empty
+    // `rows_to_combine` always uses the back-placed convention (see rate_adaption_random.hpp caveat). Materialize
+    // those pairs by hand here (rather than via a library-level utility -- there is none; `rate_adaptive_code.hpp`
+    // consumes `RateAdaptLCG::LCG::next()` directly, never a materialized array) by replaying the same LCG the
+    // auto-generated scheme uses internally.
+    std::vector<std::uint32_t> colptr(AutogenLDPC::colptr.begin(), AutogenLDPC::colptr.end());
+    std::vector<std::uint16_t> row_idx(AutogenLDPC::row_idx.begin(), AutogenLDPC::row_idx.end());
+    auto lcg = RateAdaptLCG::get_LCG_with_period(H1.get_n_rows_mother_matrix(), 0);
+    std::vector<std::uint16_t> explicit_pairs(2 * (H1.get_n_rows_mother_matrix() / 2));
+    for (auto &v: explicit_pairs) {
+        v = static_cast<std::uint16_t>(lcg.next());
+    }
+    RateAdaptiveCode<std::uint16_t> H3(colptr, row_idx, explicit_pairs);
+
+    EXPECT_FALSE(H1 == H3);
+}
+
+
+TEST(rate_adaptive_code_from_decoder, auto_rate_adaption_no_materialized_array) {
+    // A mother-only-constructed 819k-sized code must not materialize an O(n_mother_rows)-sized `rows_to_combine`
+    // vector. There is no direct public getter for `rows_to_combine`, but `get_max_ra_steps()` can only equal
+    // `n_mother_rows / 2` via the auto-generated (empty `rows_to_combine`) branch: `prebuilt_codes.hpp` passes an
+    // explicit empty `std::vector<Idx>{}` for these codes (see `get_rate_adaptive_code` cases 6-14), so this
+    // indirectly confirms no large vector was built.
+    auto H = get_code_819k(6);
+    EXPECT_EQ(H.get_max_ra_steps(), H.get_n_rows_mother_matrix() / 2);
+}
+
+
+TEST(rate_adaptive_code_from_decoder, get_code_819k_round_trip_with_rate_adaption) {
+    // Cases 6-13 (819k degree-distribution codes) previously passed an explicit empty `rows_to_combine`, which
+    // used to mean NO rate adaption at all. Now this triggers real auto-generated (LCG-based) rate adaption;
+    // verify encode/decode still agree once some lines are actually combined (unlike `new_819k_code.fer_simulation`,
+    // which only tests case 14 at the mother rate, without exercising rate adaption).
+    // Only the smallest (6) and largest (13) mother matrices are exercised here: the rate-adaption code path under
+    // test (front-placed LCG scheme in `recompute_pos_vn_cn`/`encode_with_ra`) is identical for every id, and
+    // doesn't depend on matrix content -- only on `n_mother_rows`, whose generality across all 9 819k mother row
+    // counts is separately (and much more cheaply) covered by
+    // `rate_adaption_random.real_mother_sizes_do_not_hit_degenerate_case`. Testing all 8 ids here would mostly
+    // re-run the same code path at extra BP-decode cost without adding independent coverage.
+    // `p` must stay well under the channel capacity bound of the least redundant code tested here (case 6,
+    // lrate 0.1: capacity bound is at a bit-flip probability of ~0.013), which is far more restrictive than the
+    // 0.03-0.5 range used for the other (much higher-lrate) codes tested elsewhere in this file.
+    std::mt19937_64 rng(42);
+    constexpr double p = 0.006;
+    constexpr std::size_t max_num_iter = 50;
+
+    for (const std::size_t id: {6u, 13u}) {
+        auto H = get_code_819k(id);
+        const std::size_t syndrome_size = H.get_n_rows_mother_matrix() - 10;
+
+        std::vector<bool> x(H.getNCols());
+        noise_bitstring_inplace(rng, x, 0.5);
+
+        std::vector<bool> syndrome;
+        H.encode_with_ra(x, syndrome, syndrome_size);
+
+        std::vector<bool> x_noised = x;
+        noise_bitstring_inplace(rng, x_noised, p);
+
+        double vlog = ::log((1 - p) / p);
+        std::vector<double> llrs(x.size());
+        for (std::size_t i{}; i < llrs.size(); ++i) {
+            llrs[i] = vlog * (1 - 2 * x_noised[i]);
+        }
+
+        std::vector<bool> solution;
+        const bool success = H.decode_infer_rate(llrs, syndrome, solution, max_num_iter);
+        EXPECT_TRUE(success) << "id=" << id;
+        EXPECT_EQ(solution, x) << "id=" << id;
+    }
 }
 
 
@@ -242,7 +390,7 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, decode_infer_rate) {
     ASSERT_EQ(prediction, x);
 }
 
-TEST(new_819k_code, fer_simulation) {
+TEST(rate_adaptive_code_819k, fer_simulation) {
     // assert that the rate adapted FER (at set fraction of mother syndrome) is small.
     std::mt19937_64 rng(42);
     auto H = get_code_819k(14);

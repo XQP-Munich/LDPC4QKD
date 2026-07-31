@@ -25,6 +25,7 @@ add_executable(unit_tests_error_correction test_main.cpp
         test_prebuilt_codes.cpp
 
         test_rate_adaptive_code.cpp
+        test_rate_adaption_random.cpp
         test_read_ldpc_from_files.cpp
 
         # Static data LDPC code used for tests:

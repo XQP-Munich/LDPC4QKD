@@ -15,6 +15,8 @@
 #include <exception>
 #include <stdexcept>
 
+#include "rate_adaption_random.hpp"
+
 #ifdef LDPC4QKD_DEBUG_MESSAGES_ENABLED
 
 #include <iostream>
@@ -59,11 +61,10 @@ namespace LDPC4QKD {
      * Intended for distributed source coding (a.k.a. Slepian-Wolf coding).
      * LDPC code is stored in sparse column storage (CSC) format.
      *
-     * (TODO use concept `std::unsigned_integral` when using C++20)
      *
      * @tparam idx_t unsigned integer type fitting number of columns N (thus also number of rows M)
      */
-    template<typename idx_t=std::uint16_t>
+    template<std::unsigned_integral idx_t=std::uint16_t>
     class RateAdaptiveCode {
     public:
         // ------------------------------------------------------------------------------------------------ type aliases
@@ -83,7 +84,8 @@ namespace LDPC4QKD {
                 : n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
                   mother_pos_varn(compute_mother_pos_varn(colptr, rowIdx)), // computed here and henceforth `const`!
-                  rows_to_combine({}) {
+                  rows_to_combine({}),
+                  auto_rate_adaption(RateAdaptLCG::get_LCG_with_period(n_mother_rows, 0)) {
             constexpr idx_t n_line_combs = 0;
             recompute_pos_vn_cn(n_line_combs);
         }
@@ -115,13 +117,14 @@ namespace LDPC4QKD {
                 : n_mother_rows(*std::max_element(rowIdx.begin(), rowIdx.end()) + 1u),
                   n_cols(colptr.size() - 1),
                   mother_pos_varn(compute_mother_pos_varn(colptr, rowIdx)), // computed here and henceforth `const`!
-                  rows_to_combine(std::move(rows_to_combine_rate_adapt)) {
+                  rows_to_combine(std::move(rows_to_combine_rate_adapt)),
+                  auto_rate_adaption(RateAdaptLCG::get_LCG_with_period(n_mother_rows, 0)) {
             if (rows_to_combine.size() % 2 != 0) {
                 throw std::domain_error("The number of rows to combine for rate adaption "
                                         "(size of argument array) is an odd number (expected even).");
             }
 
-            if (initial_row_combs > rows_to_combine.size() / 2) {
+            if (initial_row_combs > get_max_ra_steps()) {
                 throw std::domain_error("The number of desired initial row combinations for rate adaption "
                                         "is larger than the given array of lines to combine.");
             }
@@ -146,13 +149,14 @@ namespace LDPC4QKD {
                   n_cols(compute_n_cols(mother_pos_varn)),
                   mother_pos_varn(std::move(mother_pos_varn)), // computed here and henceforth `const`!
                   rows_to_combine(std::move(rows_to_combine_rate_adapt)),
+                  auto_rate_adaption(RateAdaptLCG::get_LCG_with_period(n_mother_rows, 0)),
                   n_ra_rows(n_mother_rows - initial_row_combs) {
             if (rows_to_combine.size() % 2 != 0) {
                 throw std::domain_error("The number of rows to combine for rate adaption "
                                         "(size of argument array) is an odd number (expected even).");
             }
 
-            if (initial_row_combs > rows_to_combine.size() / 2) {
+            if (initial_row_combs > get_max_ra_steps()) {
                 throw std::domain_error("The number of desired initial row combinations for rate adaption "
                                         "is larger than the given array of lines to combine.");
             }
@@ -187,12 +191,12 @@ namespace LDPC4QKD {
 
         /*!
          * Compute syndrome using given rate adaption. Does not change internal rate adaption state!
-         * @tparam Bit e.g. std::uint8_t or bool. TODO use concept `std::unsigned_integral` when using C++20
+         * @tparam Bit e.g. std::uint8_t or bool.
          * @param in input array
          * @param out Vector to store syndrome. Will be resized to `output_syndrome_length`
          * @param output_syndrome_length Desired length of syndrome (exception is thrown if not satisfiable)
          */
-        template<typename Bit>
+        template<std::unsigned_integral Bit>
         void encode_with_ra(
                 const std::vector<Bit> &in, std::vector<Bit> &out, std::size_t output_syndrome_length) const {
             if (in.size() != n_cols) {
@@ -201,7 +205,7 @@ namespace LDPC4QKD {
             if (output_syndrome_length > n_mother_rows) {
                 throw std::domain_error("Requested syndrome is larger than the number of rows of the mother matrix.");
             }
-            if (output_syndrome_length < n_mother_rows - (rows_to_combine.size() / 2)) {
+            if (output_syndrome_length < n_mother_rows - get_max_ra_steps()) {
                 throw std::domain_error("Requested syndrome is smaller than supported by the specified rate adaption.");
             }
 
@@ -213,19 +217,35 @@ namespace LDPC4QKD {
             const std::size_t n_line_combinations = n_mother_rows - output_syndrome_length;
             out.assign(output_syndrome_length, 0);
 
-            std::size_t start_of_ra_part = output_syndrome_length - n_line_combinations;
+            // If `rows_to_combine` is empty, pairs are auto-generated (LCG-based) and placed at the FRONT of the
+            // output; otherwise the explicitly given pairs are used, placed at the BACK.
+            const bool auto_generated = rows_to_combine.empty();
+            RateAdaptLCG::LCG local_lcg = auto_rate_adaption;
 
-            // put results of combined lines at the back of output.
+            const std::size_t start_of_ra_part = auto_generated
+                    ? 0 : (output_syndrome_length - n_line_combinations);
+
             for (std::size_t i{}; i < n_line_combinations; ++i) {
-                out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[rows_to_combine[2 * i]],
-                                                         non_ra_encoding[rows_to_combine[2 * i + 1]]);
-                non_ra_encoding[rows_to_combine[2 * i]] = -1;  // -1 marks that the value has been used.
-                non_ra_encoding[rows_to_combine[2 * i + 1]] = -1;
+                idx_t idx1, idx2;
+                if (auto_generated) {
+                    idx1 = static_cast<idx_t>(local_lcg.next());
+                    idx2 = static_cast<idx_t>(local_lcg.next());
+                } else {
+                    idx1 = rows_to_combine[2 * i];
+                    idx2 = rows_to_combine[2 * i + 1];
+                }
+
+                out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[idx1], non_ra_encoding[idx2]);
+                non_ra_encoding[idx1] = -1;  // -1 marks that the value has been used.
+                non_ra_encoding[idx2] = -1;
             }
 
             std::size_t j{};
-            // put the remaining bits that were not rate adapted at the front of output.
-            for (std::size_t i{}; i < start_of_ra_part; ++i) {
+            // put the remaining bits that were not rate adapted into the rest of output
+            // (after the combined bits for auto-generated rate adaption; before them otherwise).
+            const std::size_t leftover_begin = auto_generated ? n_line_combinations : 0;
+            const std::size_t leftover_end = auto_generated ? output_syndrome_length : start_of_ra_part;
+            for (std::size_t i = leftover_begin; i < leftover_end; ++i) {
                 while (non_ra_encoding[j] == -1) {
                     j++;
                 }
@@ -237,8 +257,8 @@ namespace LDPC4QKD {
         /// decoder infers rate from the length of the syndrome and changes the internal decoder state to match this rate.
         /// Note: since this function modifies the code (by performing rate adaption), it is NOT CONST.
         /// this change may be somewhat computationally expensive
-        /// `Bit` should be e.g. std::uint8_t or bool. TODO use concept `std::unsigned_integral` when using C++20
-        template<typename Bit>
+        /// `Bit` should be e.g. std::uint8_t or bool.
+        template<std::unsigned_integral Bit>
         bool decode_infer_rate(const std::vector<double> &llrs,
                                const std::vector<Bit> &syndrome,
                                std::vector<Bit> &out,
@@ -254,7 +274,7 @@ namespace LDPC4QKD {
         /*!
          * Decode using belief propagation
          *
-         * @tparam Bit: e.g. std::uint8_t or bool TODO use concept `std::unsigned_integral` when using C++20
+         * @tparam Bit: e.g. std::uint8_t or bool
          * @param llrs: Log likelihood ratios representing the received message
          * @param syndrome: Syndrome of the sent message
          * @param out: Buffer to which the function writes its prediction for the sent message.
@@ -264,7 +284,7 @@ namespace LDPC4QKD {
          * @param vsat: Cut-off value for messages.
          * @return true if and only if the syndrome of buffer `out` matches given `syndrome` (i.e., decoder converged).
          */
-        template<typename Bit>
+        template<std::unsigned_integral Bit>
         bool decode_at_current_rate(const std::vector<double> &llrs,
                                     const std::vector<Bit> &syndrome,
                                     std::vector<Bit> &out,
@@ -390,8 +410,12 @@ namespace LDPC4QKD {
             return n_cols;
         }
 
-        [[nodiscard]] auto get_max_ra_steps() const {
-            return rows_to_combine.size() / 2;
+        //! Maximum number of line combinations available for rate adaption, i.e. the largest `n_line_combs` that
+        //! `set_rate()` accepts, counted as steps of one combined pair each starting from the mother matrix (0
+        //! line combs = the unmodified mother matrix). Either from the auto-generated (LCG-based) scheme (used
+        //! when `rows_to_combine` is empty) or from the explicit `rows_to_combine`.
+        [[nodiscard]] std::size_t get_max_ra_steps() const {
+            return rows_to_combine.empty() ? (n_mother_rows / 2) : (rows_to_combine.size() / 2);
         }
 
     private:   // -------------------------------------------------------------------------------------- private members
@@ -536,7 +560,7 @@ namespace LDPC4QKD {
          * @param n_line_combs number of line combinations to perform for rate adaption.
          */
         void recompute_pos_vn_cn(std::size_t n_line_combs) {
-            if (rows_to_combine.size() < 2 * n_line_combs) {
+            if (get_max_ra_steps() < n_line_combs) {
                 throw std::runtime_error("Requested rate not supported. Not enough line combinations specified.");
             }
 
@@ -553,22 +577,36 @@ namespace LDPC4QKD {
                     // Make temporary copy of `mother_pos_varn`
                     std::vector<std::vector<idx_t>> pos_varn_nora{mother_pos_varn};
 
-                    // put results of combined lines at the back of the new LDPC code
-                    const auto start_of_ra_part = n_mother_rows - 2 * n_line_combs;
+                    // If `rows_to_combine` is empty, pairs are auto-generated (LCG-based) and placed at the FRONT
+                    // of the output; otherwise the explicitly given pairs are used, placed at the BACK.
+                    const bool auto_generated = rows_to_combine.empty();
+                    RateAdaptLCG::LCG local_lcg = auto_rate_adaption;
+
+                    // for auto-generated rate adaption, combined lines go at the front: [0, n_line_combs).
+                    // for explicit rate adaption, combined lines go at the back: [start_of_ra_part, n_ra_rows).
+                    const auto start_of_ra_part = auto_generated ? 0 : (n_mother_rows - 2 * n_line_combs);
 
                     for (std::size_t i{}; i < n_line_combs; ++i) {
+                        idx_t idx1, idx2;
+                        if (auto_generated) {
+                            idx1 = static_cast<idx_t>(local_lcg.next());
+                            idx2 = static_cast<idx_t>(local_lcg.next());
+                        } else {
+                            idx1 = rows_to_combine[2 * i];
+                            idx2 = rows_to_combine[2 * i + 1];
+                        }
+
                         auto &curr_varn_vec = pos_varn[start_of_ra_part + i];
                         curr_varn_vec.insert(curr_varn_vec.end(),
-                                             pos_varn_nora[rows_to_combine[2 * i]].begin(),
-                                             pos_varn_nora[rows_to_combine[2 * i]].end());
+                                             pos_varn_nora[idx1].begin(),
+                                             pos_varn_nora[idx1].end());
                         curr_varn_vec.insert(curr_varn_vec.end(),
-                                             pos_varn_nora[rows_to_combine[2 * i + 1]].begin(),
-                                             pos_varn_nora[rows_to_combine[2 * i + 1]].end());
+                                             pos_varn_nora[idx2].begin(),
+                                             pos_varn_nora[idx2].end());
 
-                        pos_varn_nora[rows_to_combine[2 * i]].clear();
-                        pos_varn_nora[rows_to_combine[2 * i + 1]].clear();
+                        pos_varn_nora[idx1].clear();
+                        pos_varn_nora[idx2].clear();
 
-                        // TODO speed up this part by producing the rate adaption as unique positions and already sorted
                         std::sort(curr_varn_vec.begin(), curr_varn_vec.end());
                         curr_varn_vec.erase(std::unique(curr_varn_vec.begin(), curr_varn_vec.end()),
                                             curr_varn_vec.end());
@@ -576,8 +614,11 @@ namespace LDPC4QKD {
 
                     std::size_t j{};
 
-                    // put the remaining lines that were not rate adapted at the front of the new LDPC code.
-                    for (std::size_t i{}; i < start_of_ra_part; ++i) {
+                    // put the remaining lines that were not rate adapted into the rest of the new LDPC code
+                    // (after the combined lines for auto-generated rate adaption; before them otherwise).
+                    const std::size_t leftover_begin = auto_generated ? n_line_combs : 0;
+                    const std::size_t leftover_end = auto_generated ? n_ra_rows : start_of_ra_part;
+                    for (std::size_t i = leftover_begin; i < leftover_end; ++i) {
                         while (pos_varn_nora[j].empty()) {
                             j++;
                         }
@@ -615,7 +656,13 @@ namespace LDPC4QKD {
 
         /// stores specification of rate adaption.
         /// Each rate adaption is re-computed using `mother_pos_checkn` and `rows_to_combine`.
-        const std::vector<idx_t> rows_to_combine;  // TODO if empty, use random rate adaption
+        /// If empty, rate adaption pairs are instead generated on demand from `auto_rate_adaption`.
+        const std::vector<idx_t> rows_to_combine;
+
+        /// Initial state of the LCG used to auto-generate rate adaption pairs whenever `rows_to_combine` is empty.
+        /// A pure deterministic function of `n_mother_rows` (fixed seed 0), computed unconditionally, but only
+        /// actually consumed (by replaying it from this state) when `rows_to_combine` is empty.
+        const RateAdaptLCG::LCG auto_rate_adaption;
 
         /// `pos_checkn` and `pos_varn` store the current rate adapted code, which is actually used for decoding.
         std::vector<std::vector<idx_t>> pos_checkn;  /// Input check nodes to each variable node
