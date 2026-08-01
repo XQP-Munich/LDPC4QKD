@@ -242,7 +242,28 @@ namespace LDPC4QKD {
                     idx2 = rows_to_combine[2 * i + 1];
                 }
 
-                out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[idx1], non_ra_encoding[idx2]);
+                if (auto_generated) {
+                    // LCG-selected pairs are not guaranteed variable-disjoint, so the two mother-code
+                    // syndrome bits alone don't determine this check's true value.
+                    // To compute the rate-adapted syndrome, we must recompute its parity
+                    // directly from `in`, over the union of both rows' variable lists.
+                    // This mirrors recompute_pos_vn_cn exactly, and is slower than the explicit version, when `auto_generated == false`.
+                    // Also slower than `encode_at_current_rate`, however, still faster than calling both `set_rate` and `encode_at_current_rate`.
+                    std::vector<idx_t> union_vars{mother_pos_varn[idx1]};
+                    union_vars.insert(union_vars.end(), mother_pos_varn[idx2].begin(), mother_pos_varn[idx2].end());
+                    std::sort(union_vars.begin(), union_vars.end());
+                    union_vars.erase(std::unique(union_vars.begin(), union_vars.end()), union_vars.end());
+
+                    Bit combined = 0;
+                    for (auto v : union_vars) {
+                        combined = xor_as_bools(combined, in[v]);
+                    }
+                    out[start_of_ra_part + i] = combined;
+                } else {
+                    // Explicit pairs are pre-verified variable-disjoint, so XOR of the two already-computed
+                    // mother-code syndrome bits is exact and cheaper than recomputing from `in`.
+                    out[start_of_ra_part + i] = xor_as_bools(non_ra_encoding[idx1], non_ra_encoding[idx2]);
+                }
                 non_ra_encoding[idx1] = -1;  // -1 marks that the value has been used.
                 non_ra_encoding[idx2] = -1;
             }
@@ -838,8 +859,20 @@ namespace LDPC4QKD {
         /*!
          * Recompute inner representation of rate adapted LDPC code (`pos_varn` and `pos_cn`),
          * starting from the mother code represented by `mother_pos_varn`.
-         * Note: this function "deals incorrectly" with variable node elimination during rate adaption.
-         * variable node elimination should not happen in the first place
+         *
+         * The combined row's variable-node list is built as the union of the two input rows'
+         * lists. This corresponds to elementwise OR of the two rows.
+         * However, this is correct for BOTH row-selection methods:
+         *   - auto-generated (LCG-based, `rows_to_combine.empty()`): pairs are not guaranteed to
+         *     be variable-disjoint (collisions do occur in practice, see `encode_with_ra`'s own
+         *     comment), so OR is the only choice that never silently drops a shared variable's
+         *     connection to the Tanner graph (XOR/symmetric-difference would, whenever both rows
+         *     already touch that variable).
+         *   - explicit (`rows_to_combine` given): these pairs are meant to be pre-verified
+         *     variable-disjoint, so union and symmetric-difference always agree.
+         * See `encode_with_ra` for the corresponding syndrome-*value* combination (which, unlike
+         * this structural step, does need to differ by scheme: XOR for explicit, OR for
+         * auto-generated).
          *
          * @param n_line_combs number of line combinations to perform for rate adaption.
          */
@@ -891,6 +924,8 @@ namespace LDPC4QKD {
                         pos_varn_nora[idx1].clear();
                         pos_varn_nora[idx2].clear();
 
+                        // Union of the two rows' variable-node lists, i.e., elementwise OR of rows
+                        // Correct for both schemes, see docstring.
                         std::sort(curr_varn_vec.begin(), curr_varn_vec.end());
                         curr_varn_vec.erase(std::unique(curr_varn_vec.begin(), curr_varn_vec.end()),
                                             curr_varn_vec.end());

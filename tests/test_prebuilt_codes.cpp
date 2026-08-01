@@ -185,3 +185,32 @@ TEST(test_prebuilt_codes, basic_example_code_choicecomptime) {
     }
     std::cout << std::endl;
 }
+
+TEST(test_prebuilt_codes, select_819k_code_round_trip) {
+    // `select_819k_code()` picks a (code_id, n_line_combs) pair for an estimated channel parameter
+    // Selects a heavily rate-adapted LCG-scheme code: id=11 at n_line_combs=30720.
+    // This rate adaption has 39 row pairs with colliding entries, which would be dropped if XOR were used for rate adaption.
+    // We must make sure OR is used to combine rows, both in decoder's internal representation and in `encode_with_ra`, which this tests.
+    constexpr double ch_param_estimate = 0.0500; // strictly inside (0.0478, 0.0520], id=11/30720's own bracket
+    const auto choice = select_819k_code(ch_param_estimate);
+    ASSERT_TRUE(choice.has_value());
+    ASSERT_EQ(choice->code_id, 11u);
+
+    auto H = HelperFixedSize::get_rate_adaptive_code(choice->code_id);
+    H.set_rate(H.get_n_rows_mother_matrix() - choice->syndrome_bits_per_block);
+
+    std::vector<bool> x(H.getNCols());
+    noise_bitstring_inplace(x, 0.5, 2024);
+
+    std::vector<bool> syndrome;
+    H.encode_with_ra(x, syndrome, choice->syndrome_bits_per_block);
+
+    std::vector<bool> x_noised = x;
+    noise_bitstring_inplace(x_noised, ch_param_estimate, 4);
+    std::vector<double> llrs = LDPC4QKD::llrs_bsc(x_noised, ch_param_estimate);
+
+    std::vector<bool> solution;
+    const bool success = H.decode_infer_rate(llrs, syndrome, solution, 60);
+    EXPECT_TRUE(success);
+    EXPECT_EQ(solution, x);
+}
