@@ -376,48 +376,57 @@ namespace LDPC4QKD {
         std::string ecc_type; // this is redundant with `code_id`
     };
 
-    //! Selects a suitable code among the degree-distribution-based N=819k codes (ids 6-14)    //!
-    //! Branches below are based on aff3ct simulations in `codes/aff3ct_fer_simulations/raw_output`.
-    //! Only directly-confirmed-safe points are used, in ascending rate order.
+    //! Selects a suitable code among the degree-distribution-based N=819k codes (ids 6-14)
+    //! Branches below are based on simulations of the default decoder in the repository.
     //! TODO do interpolation, simulate our improved decoder
+    //! TODO comment on heuristic
     //!
-    //! \return the suitable code specification, or `std::nullopt` if `ch_param_estimate` is outside the supported QBER range.
+    //! \return the suitable code specification,
+    //!      or `std::nullopt` if `ch_param_estimate` is outside the supported QBER range.
     inline std::optional<SuitableCodeChoice> select_819k_code(double ch_param_estimate) {
         std::size_t code_id;
         std::size_t n_line_combs;
-        if (ch_param_estimate <= 0.0070) {
+        if (ch_param_estimate <= 0.0054) {
             code_id = 6; n_line_combs = 10240;   // P1, rate-adapted to rate 0.0875
-        } else if (ch_param_estimate <= 0.0104) {
+        } else if (ch_param_estimate <= 0.0094) {
             code_id = 6; n_line_combs = 0;       // P1 native, rate 0.10
-        } else if (ch_param_estimate <= 0.0190) {
+        } else if (ch_param_estimate <= 0.0162) {
+            code_id = 7; n_line_combs = 10240;   // P15, rate-adapted to rate 0.1375
+        } else if (ch_param_estimate <= 0.0173) {
             code_id = 7; n_line_combs = 0;       // P15 native, rate 0.15
-        } else if (ch_param_estimate <= 0.0250) {
+        } else if (ch_param_estimate <= 0.0179) {
             code_id = 8; n_line_combs = 10240;   // P2, rate-adapted to rate 0.1875
-        } else if (ch_param_estimate <= 0.0284) {
+        } else if (ch_param_estimate <= 0.0252) {
             code_id = 8; n_line_combs = 0;       // P2 native, rate 0.20
-        } else if (ch_param_estimate <= 0.0340) {
+        } else if (ch_param_estimate <= 0.0289) {
             code_id = 9; n_line_combs = 10240;   // P25, rate-adapted to rate 0.2375
-        } else if (ch_param_estimate <= 0.0380) {
+        } else if (ch_param_estimate <= 0.0323) {
             code_id = 9; n_line_combs = 0;       // P25 native, rate 0.25
-        } else if (ch_param_estimate <= 0.0478) {
-            code_id = 10; n_line_combs = 0;      // P3 native, rate 0.30 (its rate-adapted variants are bad)
-        } else if (ch_param_estimate <= 0.0520) {
-            code_id = 11; n_line_combs = 30720;  // P35, rate-adapted to rate 0.3125
-        } else if (ch_param_estimate <= 0.0550) {
+        } else if (ch_param_estimate <= 0.0370) {
+            code_id = 10; n_line_combs = 30720;  // P3, rate-adapted to rate 0.2625
+        } else if (ch_param_estimate <= 0.0397) {
+            code_id = 10; n_line_combs = 20480;  // P3, rate-adapted to rate 0.275
+        } else if (ch_param_estimate <= 0.0427) {
+            code_id = 10; n_line_combs = 10240;  // P3, rate-adapted to rate 0.2875
+        } else if (ch_param_estimate <= 0.0446) {
+            code_id = 10; n_line_combs = 0;      // P3 native, rate 0.30
+        } else if (ch_param_estimate <= 0.0467) {
             code_id = 11; n_line_combs = 20480;  // P35, rate-adapted to rate 0.325
-        } else if (ch_param_estimate <= 0.0580) {
+        } else if (ch_param_estimate <= 0.0498) {
             code_id = 11; n_line_combs = 10240;  // P35, rate-adapted to rate 0.3375
-        } else if (ch_param_estimate <= 0.0600) {
+        } else if (ch_param_estimate <= 0.0560) {
             code_id = 11; n_line_combs = 0;      // P35 native, rate 0.35
-        } else if (ch_param_estimate <= 0.0706) {
-            code_id = 12; n_line_combs = 0;      // P4 native, rate 0.40 (its rate-adapted variants are bad)
-        } else if (ch_param_estimate <= 0.0844) {
+        } else if (ch_param_estimate <= 0.0598) {
+            code_id = 12; n_line_combs = 30720;  // P4, rate-adapted to rate 0.3625
+        } else if (ch_param_estimate <= 0.0656) {
+            code_id = 12; n_line_combs = 20480;  // P4, rate-adapted to rate 0.375
+        } else if (ch_param_estimate <= 0.0666) {
+            code_id = 12; n_line_combs = 0;      // P4 native, rate 0.40
+        } else if (ch_param_estimate <= 0.0796) {
             code_id = 13; n_line_combs = 0;      // P45 native, rate 0.45 (its rate-adapted variants are bad)
-        } else if (ch_param_estimate <= 0.0900) {
-            code_id = 14; n_line_combs = 30720;  // P5, rate-adapted to rate 0.4625
-        } else if (ch_param_estimate <= 0.0960) {
-            code_id = 14; n_line_combs = 10240;  // P5, rate-adapted to rate 0.4875
-        } else if (ch_param_estimate <= 0.0984) {
+        } else if (ch_param_estimate <= 0.0914) {
+            code_id = 14; n_line_combs = 20480;  // P5, rate-adapted to rate 0.475
+        } else if (ch_param_estimate <= 0.0928) {
             code_id = 14; n_line_combs = 0;      // P5 native, rate 0.50
         } else {
             return std::nullopt;  // ch_param_estimate outside supported QBER range for 819k codes
