@@ -137,11 +137,41 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, auto_rate_adaption_golden_small) {
 }
 
 
+TEST(rate_adaptive_code_from_colptr_rowIdx, encode_with_ra_recomputes_true_parity_for_colliding_pair) {
+    // Same setup as `auto_rate_adaption_golden_small` above: get_code_small()'s only combinable pair is mother
+    // rows 1={1,2,5,6} and 2={3,4,5,6}, which share variables 5 and 6 -- a real collision, not a hypothetical
+    // one. Directly verify `encode_with_ra`'s combined bit equals the TRUE parity of the union {1,2,3,4,5,6},
+    // not e.g. XOR-of-the-two-mother-bits (the old, buggy behaviour, which silently drops x[5]/x[6] from the
+    // combined check whenever they're equal) or OR-of-the-two-mother-bits (which isn't the parity of any row
+    // at all, see the rate-adaption plan doc).
+    auto H = get_code_small();
+    H.set_rate(1);
+
+    // x[5]=1, x[6]=1: both colliding variables set -- exactly the case the old XOR-shortcut got wrong
+    // (mother row 1's bit: 1^1^1^1=0; mother row 2's bit: 0^1^1^1=1; their XOR would give 1, but the true
+    // union parity below is 0).
+    std::vector<Bit> x{0, 1, 1, 0, 1, 1, 0};
+
+    std::vector<Bit> syndrome;
+    H.encode_with_ra(x, syndrome, 2);
+
+    const Bit expected_combined = x[1] ^ x[2] ^ x[3] ^ x[4] ^ x[5] ^ x[6];
+    EXPECT_EQ(syndrome[0], expected_combined);
+
+    // cross-check against the decoder's own structural recomputation too.
+    std::vector<Bit> syndrome_recomputed;
+    H.encode_at_current_rate(x, syndrome_recomputed);
+    EXPECT_EQ(syndrome, syndrome_recomputed);
+}
+
+
 TEST(rate_adaptive_code_from_colptr_rowIdx, auto_rate_adaption_round_trip) {
     // mother-only-constructed code (no explicit `rows_to_combine`): verify encode/decode agree across a range of
     // auto-generated (LCG-based) rate-adapted rates.
+    std::mt19937_64 rng(42);
     auto H = get_code_big_nora();
-    std::vector<Bit> x = get_bitstring(H.getNCols());
+    std::vector<Bit> x(H.getNCols());
+    noise_bitstring_inplace(rng, x, 0.5);
 
     constexpr double p = 0.02;
     std::vector<Bit> x_noised = x;
@@ -291,6 +321,52 @@ TEST(rate_adaptive_code_from_colptr_rowIdx, encode_with_ra) {
     H.encode_with_ra(input, syndrome,
                      static_cast<size_t>(static_cast<double>(H.get_n_rows_mother_matrix()) * 0.7));
     EXPECT_EQ(hash_vector(syndrome), 0x01dab680);
+}
+
+
+TEST(rate_adaptive_code_from_decoder, encode_with_ra_matches_encode_at_current_rate_lcg) {
+    // There are multiple ways to compute the syndrome, which don't use the same code but must agree.
+    // This tests that for the LCG-based rate adaption.
+    std::mt19937_64 rng(7);
+    auto H = get_code_819k(11);
+    constexpr std::size_t n_line_combs = 30720;
+    H.set_rate(n_line_combs);
+    const std::size_t syndrome_size = H.get_n_rows_after_rate_adaption();
+
+    std::vector<Bit> x(H.getNCols());
+    noise_bitstring_inplace(rng, x, 0.5);
+
+    // This computation does not depend on what rate is set currently in the code.
+    std::vector<Bit> syndrome_transmitted;
+    H.encode_with_ra(x, syndrome_transmitted, syndrome_size);
+
+    // This computation uses the current set rate, which allows using the internal representation
+    // of the LDPC matrix for syndrome computation.
+    std::vector<Bit> syndrome_recomputed;
+    H.encode_at_current_rate(x, syndrome_recomputed);
+
+    EXPECT_EQ(syndrome_transmitted, syndrome_recomputed);
+}
+
+
+TEST(rate_adaptive_code_from_colptr_rowIdx, encode_with_ra_matches_encode_at_current_rate_explicit) {
+    // Same as `encode_with_ra_matches_encode_at_current_rate_lcg`,
+    // but for when rows for rate adaption are hardcoded.
+    std::mt19937_64 rng(11);
+    auto H = get_code_big_wra();
+    H.set_rate(H.get_max_ra_steps());
+    const std::size_t syndrome_size = H.get_n_rows_after_rate_adaption();
+
+    std::vector<Bit> x(H.getNCols());
+    noise_bitstring_inplace(rng, x, 0.5);
+
+    std::vector<Bit> syndrome_transmitted;
+    H.encode_with_ra(x, syndrome_transmitted, syndrome_size);
+
+    std::vector<Bit> syndrome_recomputed;
+    H.encode_at_current_rate(x, syndrome_recomputed);
+
+    EXPECT_EQ(syndrome_transmitted, syndrome_recomputed);
 }
 
 
