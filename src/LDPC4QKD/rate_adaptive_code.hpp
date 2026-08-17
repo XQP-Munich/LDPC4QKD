@@ -290,7 +290,7 @@ namespace LDPC4QKD {
         bool decode_infer_rate(const std::vector<double> &llrs,
                                const std::vector<Bit> &syndrome,
                                std::vector<Bit> &out,
-                               const std::size_t max_num_iter = 50,
+                               const std::size_t max_num_iter = 100,
                                const double vsat = 100,
                                const Decoder decoder = Decoder::Layered) {
             if (syndrome.size() != n_ra_rows) {
@@ -319,7 +319,7 @@ namespace LDPC4QKD {
         bool decode_at_current_rate(const std::vector<double> &llrs,
                                     const std::vector<Bit> &syndrome,
                                     std::vector<Bit> &out,
-                                    const std::size_t max_num_iter = 50,
+                                    const std::size_t max_num_iter = 100,
                                     const double vsat = 100,
                                     const Decoder decoder = Decoder::Layered) const {
             switch (decoder) {
@@ -350,7 +350,7 @@ namespace LDPC4QKD {
         bool decode_flooding(const std::vector<double> &llrs,
                             const std::vector<Bit> &syndrome,
                             std::vector<Bit> &out,
-                            const std::size_t max_num_iter = 50,
+                            const std::size_t max_num_iter = 100,
                             const double vsat = 100) const {
             // check inputs.
             if (llrs.size() != n_cols) {
@@ -424,7 +424,7 @@ namespace LDPC4QKD {
         bool decode_layered(const std::vector<double> &llrs,
                             const std::vector<Bit> &syndrome,
                             std::vector<Bit> &out,
-                            const std::size_t max_num_iter = 50,
+                            const std::size_t max_num_iter = 100,
                             const double vsat = 100) const {
             if (llrs.size() != n_cols) {
                 throw std::runtime_error("Decoder received invalid input length.");
