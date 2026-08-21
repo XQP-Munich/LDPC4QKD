@@ -159,7 +159,7 @@ namespace LDPC4QKD {
         }
 
         template<typename T, std::size_t N>
-        std::vector<T> arr_to_vec(std::array<T, N> a) {
+        std::vector<T> arr_to_vec(const std::array<T, N> &a) {
             return std::vector<T>(a.begin(), a.end());
         }
 
