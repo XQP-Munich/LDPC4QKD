@@ -125,11 +125,11 @@ If you need some feature for your applications, let us know, e.g. by creating an
   + [ ] Automatic performance reports with code that generates plots
 - [ ] LDPC codes
   + [x] 3 LDPC codes each (different block sizes) for leak rates 1/2 and 1/3
-  + [ ] More sizes, more rates (coming soon!)
+  + [x] 9 LDPC codes with block size 819k for leak rates 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5
 - [ ] Decoding and decoding algorithms
-  + [x] Basic belief propagation (BP) decoder for Slepian-Wolf setting
+  + [x] Basic belief propagation (BP) decoder for Slepian-Wolf setting (Flooding and Layered)
+  + [ ] "Improved" BP decoder (LLM generated but can be tested and shown to be better)
   + [ ] Decoder performance improvements (look at [AFF3CT](https://github.com/aff3ct/aff3ct) for inspiration), plausibly achieve 2x runtime speedup at same decoding accuracy
-  + [ ] Decoding on GPU
   + [x] Encoder that can be used separately from encoder (e.g. for embedded applications)
   + [x] Save memory by storing QC-exponents of structured codes, rather than CSC storage
   + [x] Encoder that directly uses CSC-storage of QC-exponents instead of expanding to CSC storage of binary matrix
