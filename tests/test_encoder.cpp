@@ -163,33 +163,3 @@ TEST(encoder, rate_adapt_demo) {
     print_nz_inds(ratead_synd);
     std::cout << ratead_synd.size() << std::endl;
 }
-
-
-TEST(encoder, rate_adapt_unsafe_demo) {
-    std::array<Bit, AutogenLDPC::N> input{
-            1,1,1,1,0,0,0,0,1,1};
-    std::array<Bit, AutogenLDPC::M> syndrome{};
-    constexpr std::size_t rate_adaption_steps = AutogenRateAdapt::rows.size() / 2;
-    std::array<Bit, AutogenLDPC::M - rate_adaption_steps> ratead_synd{};
-//    vec_to_arr<Bit, AutogenLDPC::N>(get_bitstring(AutogenLDPC::N), input);
-
-    std::cout << "------------------------\n";
-    print_nz_inds(input);
-
-    encode(input, syndrome);
-
-    std::cout << "------------------------\n";
-    print_nz_inds(syndrome);
-
-    rate_adapt(syndrome, ratead_synd);
-
-    auto result_copy = ratead_synd;
-    ratead_synd = {};
-    rate_adapt_unsafe(syndrome, ratead_synd.data(), ratead_synd.size());
-
-    EXPECT_EQ(ratead_synd, result_copy);
-
-    std::cout << "------------------------\n";
-    print_nz_inds(ratead_synd);
-    std::cout << ratead_synd.size() << std::endl;
-}

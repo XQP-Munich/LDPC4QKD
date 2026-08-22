@@ -10,7 +10,7 @@
 #include <iostream>
 
 // To be tested
-#include "LDPC4QKD/encoder_advanced.hpp"
+#include "LDPC4QKD/prebuilt_codes.hpp"
 
 using namespace LDPC4QKD;
 
@@ -52,11 +52,55 @@ void debug_print_sizes() {
             << "encoder_lrate_P5_block_819k: " << sizeof(encoder_lrate_P5_block_819k) << "\n";
 }
 
-TEST(test_encoder_advanced, memory_usage_encoder_storage) {
+TEST(test_prebuilt_codes, memory_usage_encoder_storage) {
     debug_print_sizes();
+
+    constexpr std::size_t total_size_protograph =
+            sizeof(encoder_2048x6144_4663d91) +
+            sizeof(encoder_8192x24576_71b51c1) +
+            sizeof(encoder_524288x1572864_4d78a9f) +
+            sizeof(encoder_2048x4096_0c809c3) +
+            sizeof(encoder_8192x16384_3fcad37) +
+            sizeof(encoder_524288x1048576_9b50f98);
+
+    constexpr std::size_t total_size_819k =
+            sizeof(encoder_lrate_P1_block_819k) +
+            sizeof(encoder_lrate_P15_block_819k) +
+            sizeof(encoder_lrate_P2_block_819k) +
+            sizeof(encoder_lrate_P25_block_819k) +
+            sizeof(encoder_lrate_P3_block_819k) +
+            sizeof(encoder_lrate_P35_block_819k) +
+            sizeof(encoder_lrate_P4_block_819k) +
+            sizeof(encoder_lrate_P45_block_819k) +
+            sizeof(encoder_lrate_P5_block_819k);
+
+    constexpr std::size_t total_size = total_size_protograph + total_size_819k;
+
+    // Baselines measured directly (see this test's own `total_size`/`total_size_819k` computations)
+    // at the time these assertions were added. Guards against silently ballooning embedded encoder
+    // storage (e.g. from adding a new large prebuilt matrix, or a representation change) going
+    // unnoticed. If a test fails because of a deliberate change, update the corresponding baseline
+    // to the new measured value.
+    constexpr std::size_t baseline_total_size = 258448;
+    constexpr std::size_t baseline_819k_total_size = 156592;
+    constexpr double margin = 1.01; // allow up to 1% growth over baseline. Otherwise, check if change is reasonable!
+
+    EXPECT_LE(static_cast<double>(total_size), static_cast<double>(baseline_total_size) * margin)
+            << "Total encoder storage size (" << total_size << " bytes) grew by more than 1% over "
+            << "the baseline (" << baseline_total_size << " bytes). If this growth is intentional, "
+            << "update baseline_total_size to " << total_size << ".";
+
+    EXPECT_LE(static_cast<double>(total_size_819k), static_cast<double>(baseline_819k_total_size) * margin)
+            << "Total 819k-encoder storage size (" << total_size_819k << " bytes) grew by more than 1% "
+            << "over the baseline (" << baseline_819k_total_size << " bytes). If this growth is "
+            << "intentional, update baseline_819k_total_size to " << total_size_819k << ".";
+
+    std::cout << "Total encoder storage: " << total_size << " bytes (baseline: " << baseline_total_size
+              << ", +" << (100.0 * static_cast<double>(total_size) / static_cast<double>(baseline_total_size) - 100.0)
+              << "%)" << std::endl;
 }
 
-TEST(test_encoder_advanced, basic_example_code_choice_runtime) {
+TEST(test_prebuilt_codes, basic_example_code_choice_runtime) {
     unsigned seed = 42; // seed for PRNG
 
     // If the code choice is done at RUNTIME (will usually be the case, e.g. because QBER is known only at runtime),
@@ -84,7 +128,7 @@ TEST(test_encoder_advanced, basic_example_code_choice_runtime) {
     std::cout << std::endl;
 }
 
-TEST(test_encoder_advanced, basic_example_code_choice_runtime_vectorbool) {
+TEST(test_prebuilt_codes, basic_example_code_choice_runtime_vectorbool) {
     unsigned seed = 42; // seed for PRNG
 
     // same thing with `vector<bool>`
@@ -110,7 +154,7 @@ TEST(test_encoder_advanced, basic_example_code_choice_runtime_vectorbool) {
     std::cout << std::endl;
 }
 
-TEST(test_encoder_advanced, basic_example_code_choicecomptime) {
+TEST(test_prebuilt_codes, basic_example_code_choicecomptime) {
     unsigned seed = 42; // seed for PRNG
 
     // If the block size and syndrome size are known at compile time, we can use fixed-length buffers (`std::array`)
@@ -140,4 +184,33 @@ TEST(test_encoder_advanced, basic_example_code_choicecomptime) {
         std::cout << static_cast<int>(v) << ' ';  // print syndrome bits
     }
     std::cout << std::endl;
+}
+
+TEST(test_prebuilt_codes, select_819k_code_round_trip) {
+    // `select_819k_code()` picks a (code_id, n_line_combs) pair for an estimated channel parameter
+    // Selects a heavily rate-adapted LCG-scheme code: id=11 at n_line_combs=30720.
+    // This rate adaption has 39 row pairs with colliding entries, which would be dropped if XOR were used for rate adaption.
+    // We must make sure OR is used to combine rows, both in decoder's internal representation and in `encode_with_ra`, which this tests.
+    constexpr double ch_param_estimate = 0.0500; // strictly inside (0.0478, 0.0520], id=11/30720's own bracket
+    const auto choice = select_819k_code(ch_param_estimate);
+    ASSERT_TRUE(choice.has_value());
+    ASSERT_EQ(choice->code_id, 11u);
+
+    auto H = HelperFixedSize::get_rate_adaptive_code(choice->code_id);
+    H.set_rate(H.get_n_rows_mother_matrix() - choice->syndrome_bits_per_block);
+
+    std::vector<bool> x(H.getNCols());
+    noise_bitstring_inplace(x, 0.5, 2024);
+
+    std::vector<bool> syndrome;
+    H.encode_with_ra(x, syndrome, choice->syndrome_bits_per_block);
+
+    std::vector<bool> x_noised = x;
+    noise_bitstring_inplace(x_noised, ch_param_estimate, 4);
+    std::vector<double> llrs = LDPC4QKD::llrs_bsc(x_noised, ch_param_estimate);
+
+    std::vector<bool> solution;
+    const bool success = H.decode_infer_rate(llrs, syndrome, solution, 60);
+    EXPECT_TRUE(success);
+    EXPECT_EQ(solution, x);
 }

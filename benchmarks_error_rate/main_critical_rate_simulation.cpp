@@ -19,7 +19,7 @@ constexpr auto help_text =
 #undef LDPC4QKD_DEBUG_MESSAGES_ENABLED
 
 #include "LDPC4QKD/rate_adaptive_code.hpp"
-#include "LDPC4QKD/encoder_advanced.hpp"
+#include "LDPC4QKD/prebuilt_codes.hpp"
 
 #include "code_simulation_helpers.hpp"
 
