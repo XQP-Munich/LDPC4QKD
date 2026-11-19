@@ -378,8 +378,6 @@ namespace LDPC4QKD {
 
     //! Selects a suitable code among the degree-distribution-based N=819k codes (ids 6-14)
     //! Branches below are based on simulations of the default decoder in the repository.
-    //! TODO do interpolation, simulate our improved decoder
-    //! TODO comment on heuristic
     //!
     //! \return the suitable code specification,
     //!      or `std::nullopt` if `ch_param_estimate` is outside the supported QBER range.
@@ -439,12 +437,119 @@ namespace LDPC4QKD {
                 "QC-LDPC RandomRateAdaption-OR"};
     }
 
+    //! Selects a suitable code among the small protograph codes (ids 0, 1, 3, 4) for input blocks below 819200 bits.
+       inline std::optional<SuitableCodeChoice> select_small_code(double ch_param_estimate, std::size_t input_block_size) {
+        std::size_t code_id;
+        std::size_t n_line_combs;
+        if (input_block_size < 4096) {
+            return std::nullopt;  // smaller than every code
+        } else if (input_block_size < 6144) {  // id 3 only
+            if (ch_param_estimate <= 0.0021) {
+                code_id = 3; n_line_combs = 1024;  // id 3, rate-adapted to rate 0.25 (search ended unconfirmed at 0.23%)
+            } else if (ch_param_estimate <= 0.032) {
+                code_id = 3; n_line_combs = 256;   // id 3, rate-adapted to rate 0.4375 (search ended unconfirmed at 3.3%)
+            } else if (ch_param_estimate <= 0.0826) {
+                code_id = 3; n_line_combs = 0;     // id 3 native, rate 0.5 (8.27% failed with all data pooled)
+            } else {
+                return std::nullopt;
+            }
+        } else if (input_block_size < 16384) {  // ids 0 and 3
+            if (ch_param_estimate <= 0.0014) {
+                code_id = 0; n_line_combs = 1024;  // id 0, rate-adapted to rate 0.1667
+            } else if (ch_param_estimate <= 0.00372) {
+                code_id = 0; n_line_combs = 768;   // id 0, rate-adapted to rate 0.2083
+            } else if (ch_param_estimate <= 0.0137) {
+                code_id = 0; n_line_combs = 512;   // id 0, rate-adapted to rate 0.25
+            } else if (ch_param_estimate <= 0.022) {
+                code_id = 0; n_line_combs = 256;   // id 0, rate-adapted to rate 0.2917
+            } else if (ch_param_estimate <= 0.042) {
+                code_id = 0; n_line_combs = 0;     // id 0 native, rate 0.3333
+            } else if (ch_param_estimate <= 0.0826) {
+                code_id = 3; n_line_combs = 0;     // id 3 native, rate 0.5
+            } else {
+                return std::nullopt;
+            }
+        } else if (input_block_size < 24576) {  // ids 0, 3 and 4 (id 3 is never better here)
+            if (ch_param_estimate <= 0.0014) {
+                code_id = 0; n_line_combs = 1024;  // id 0, rate-adapted to rate 0.1667
+            } else if (ch_param_estimate <= 0.00372) {
+                code_id = 0; n_line_combs = 768;   // id 0, rate-adapted to rate 0.2083
+            } else if (ch_param_estimate <= 0.0137) {
+                code_id = 0; n_line_combs = 512;   // id 0, rate-adapted to rate 0.25
+            } else if (ch_param_estimate <= 0.022) {
+                code_id = 0; n_line_combs = 256;   // id 0, rate-adapted to rate 0.2917
+            } else if (ch_param_estimate <= 0.042) {
+                code_id = 0; n_line_combs = 0;     // id 0 native, rate 0.3333
+            } else if (ch_param_estimate <= 0.0813) {
+                code_id = 4; n_line_combs = 448;   // id 4, rate-adapted to rate 0.4727
+            } else if (ch_param_estimate <= 0.0828) {
+                code_id = 4; n_line_combs = 384;   // id 4, rate-adapted to rate 0.4766
+            } else if (ch_param_estimate <= 0.0839) {
+                code_id = 4; n_line_combs = 320;   // id 4, rate-adapted to rate 0.4805
+            } else if (ch_param_estimate <= 0.085) {
+                code_id = 4; n_line_combs = 256;   // id 4, rate-adapted to rate 0.4844
+            } else if (ch_param_estimate <= 0.0859) {
+                code_id = 4; n_line_combs = 192;   // id 4, rate-adapted to rate 0.4883
+            } else if (ch_param_estimate <= 0.0873) {
+                code_id = 4; n_line_combs = 128;   // id 4, rate-adapted to rate 0.4922
+            } else if (ch_param_estimate <= 0.0883) {
+                code_id = 4; n_line_combs = 64;    // id 4, rate-adapted to rate 0.4961
+            } else if (ch_param_estimate <= 0.0891) {
+                code_id = 4; n_line_combs = 0;     // id 4 native, rate 0.5
+            } else {
+                return std::nullopt;
+            }
+        } else {  // all small codes (id 0 native and id 3 are never better here)
+            if (ch_param_estimate <= 0.0014) {
+                code_id = 0; n_line_combs = 1024;  // id 0, rate-adapted to rate 0.1667
+            } else if (ch_param_estimate <= 0.00372) {
+                code_id = 0; n_line_combs = 768;   // id 0, rate-adapted to rate 0.2083
+            } else if (ch_param_estimate <= 0.0137) {
+                code_id = 0; n_line_combs = 512;   // id 0, rate-adapted to rate 0.25
+            } else if (ch_param_estimate <= 0.022) {
+                code_id = 0; n_line_combs = 256;   // id 0, rate-adapted to rate 0.2917
+            } else if (ch_param_estimate <= 0.0419) {
+                code_id = 1; n_line_combs = 384;   // id 1, rate-adapted to rate 0.3177
+            } else if (ch_param_estimate <= 0.0439) {
+                code_id = 1; n_line_combs = 256;   // id 1, rate-adapted to rate 0.3229
+            } else if (ch_param_estimate <= 0.0463) {
+                code_id = 1; n_line_combs = 128;   // id 1, rate-adapted to rate 0.3281
+            } else if (ch_param_estimate <= 0.0485) {
+                code_id = 1; n_line_combs = 0;     // id 1 native, rate 0.3333
+            } else if (ch_param_estimate <= 0.0813) {
+                code_id = 4; n_line_combs = 448;   // id 4, rate-adapted to rate 0.4727
+            } else if (ch_param_estimate <= 0.0828) {
+                code_id = 4; n_line_combs = 384;   // id 4, rate-adapted to rate 0.4766
+            } else if (ch_param_estimate <= 0.0839) {
+                code_id = 4; n_line_combs = 320;   // id 4, rate-adapted to rate 0.4805
+            } else if (ch_param_estimate <= 0.085) {
+                code_id = 4; n_line_combs = 256;   // id 4, rate-adapted to rate 0.4844
+            } else if (ch_param_estimate <= 0.0859) {
+                code_id = 4; n_line_combs = 192;   // id 4, rate-adapted to rate 0.4883
+            } else if (ch_param_estimate <= 0.0873) {
+                code_id = 4; n_line_combs = 128;   // id 4, rate-adapted to rate 0.4922
+            } else if (ch_param_estimate <= 0.0883) {
+                code_id = 4; n_line_combs = 64;    // id 4, rate-adapted to rate 0.4961
+            } else if (ch_param_estimate <= 0.0891) {
+                code_id = 4; n_line_combs = 0;     // id 4 native, rate 0.5
+            } else {
+                return std::nullopt;
+            }
+        }
+
+        const auto code = HelperFixedSize::get_rate_adaptive_code(code_id);
+        const auto syndrome_bits_per_block = code.get_n_rows_mother_matrix() - n_line_combs;
+        return SuitableCodeChoice{
+                code_id, code.getNCols(), syndrome_bits_per_block, "QC-LDPC Protograph-specific-XOR"};
+    }
+
     //! Select a suitable prebuilt LDPC code and a recommended syndrome size for a given estimated channel
     //! parameter and input block size.
     //! \param ch_param_estimate estimated bit-flip probability of a binary symmetric channel.
     //! \param input_block_size size (in bits) of the caller's input block.
     //!         The selected code's block size is never larger than this.
-    //! \return the suitable code, or `std::nullopt` if `ch_param_estimate` is outside the supported QBER range, or if there is no code with `N < input_block_size`.
+    //! \return the suitable code, or `std::nullopt` if `ch_param_estimate` is outside the supported QBER range,
+    //!         or if there is no code with `N < input_block_size`.
     inline std::optional<SuitableCodeChoice> select_suitable_code(
             double ch_param_estimate, std::size_t input_block_size) {
         if (ch_param_estimate <= 0) {
@@ -454,40 +559,7 @@ namespace LDPC4QKD {
         if (input_block_size >= 819200) {
             return select_819k_code(ch_param_estimate);
         }
-
-        // Small-block protograph codes (ids 1 and 4): mother matrix chosen by ch_param range, then
-        // rate-adapted to a target rate computed from the Shannon binary entropy of ch_param_estimate.
-        std::size_t code_id;
-        double target_lrate;
-        if (ch_param_estimate < 0.01) {
-            code_id = 1;
-            target_lrate = 1. / 6.;
-        } else if (ch_param_estimate < 0.03) {
-            code_id = 1;
-            target_lrate = 3. * binary_entropy(ch_param_estimate);
-        } else if (ch_param_estimate < 0.049) {
-            code_id = 1;
-            target_lrate = 1.8 * binary_entropy(ch_param_estimate);
-        } else if (ch_param_estimate < 0.07) {
-            code_id = 4;
-            target_lrate = 1.7 * binary_entropy(ch_param_estimate);
-        } else if (ch_param_estimate < 0.092) {
-            code_id = 4;
-            target_lrate = 1.3 * binary_entropy(ch_param_estimate);
-        } else {
-            return std::nullopt;
-        }
-
-        const auto code = HelperFixedSize::get_rate_adaptive_code(code_id);
-        if (code.getNCols() > input_block_size) {
-            return std::nullopt;
-        }
-        const auto syndrome_bits_per_block = std::min<std::size_t>(
-                code.get_n_rows_mother_matrix(),
-                static_cast<std::size_t>(std::floor(static_cast<double>(code.getNCols()) * target_lrate)));
-
-        return SuitableCodeChoice{
-                code_id, code.getNCols(), syndrome_bits_per_block, "QC-LDPC Protograph-specific-XOR"};
+        return select_small_code(ch_param_estimate, input_block_size);
     }
 
 }
